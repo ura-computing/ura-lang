@@ -6,15 +6,16 @@
 
     sized arrays
         postponed to milestone 4 (tests use Array<T> meanwhile)
+        - tests waiting for it: tests/pending/sized-arrays.md
 
-    unic: 32-bit Unicode code point (like Rust's char)
+    done: unic: 32-bit Unicode code point (like Rust's char)
         c unic = '🦀'
         output(c)                  // prints its UTF-8 bytes
         for u in s.unics():        // a String's code points (String stays UTF-8 bytes)
             output(u)
         - nothing existing changes: char stays i8, char[], String, libc protos stay
 
-    ura::line, ura::filename, ura::function (like __LINE__, __FILE__, __func__)
+    done: ura::line, ura::filename, ura::function (like __LINE__, __FILE__, __func__)
         io::err(ura::filename, ":", ura::line, " in ", ura::function, "\n")
 
     later: throw records where it happened
@@ -35,7 +36,7 @@
         fn apply(f fn(i32) i32, x i32) i32:
             return f(x)
         apply(square, 3)
-        - tests: milestone13 010-013, 015, 019, 039 (fn values, params, a zeroed fn value traps)
+        - tests waiting for it: tests/pending/function-values.md (fn values, params, a zeroed fn value traps)
 
     ** power operator (like Python)
         x i32 = 2 ** 10
@@ -66,13 +67,12 @@
 
 # milestone 3: fmt and io
 
-    $ strings (in progress)
+    done: $ strings
         s String = $"hp: {hp}, mp: {mp}\n"    // tokenizer: $("hp: ", hp, ", mp: ", mp, "\n")
         throw Error::create($"{ura::filename}:{ura::line} no file")
         - hidden builtin "$" (FORMAT): snprintf twice into a String that owns its buffer
-        - a struct inside {} is an error until operator $ exists
-        - handle %% in io::out
-        - done: \{ and \} for a literal brace
+        - done: \{ and \} for a literal brace; a struct inside {} uses its operator $
+        - left: handle %% in io::out
         - later: every string literal is a fmt string, $ goes away
             s String = "hp: {hp}\n"
 
@@ -91,25 +91,25 @@
                     "{ura::filename} "
                     "{ura::line}\n")
 
-    output / errput move to ura-core, the compiler loses WRITE
+    done: output / errput move to ura-core, the compiler loses WRITE
         fn output(text String):
             write(1, text.chars(), text.len())
-        - then delete WRITE, codegen_write, codegen_write_struct, ucg_write
+        - WRITE, READ, codegen_write, codegen_write_struct deleted (ucg_write stays for ucg's own tests)
 
-    operator $ (a struct formats itself)
+    done: operator $ (a struct formats itself)
         operator $() String:
             return $"({self.x}, {self.y})"
         output($"p = {p}\n")                 // calls p.operator $()
 
     colours as globals in io
         io::out(io::red, "failed", io::reset, "\n")
-        - then rewrite milestone06 005, 007, 010, 011 (old errput colour tests)
 
-    io in core, output / errput builtins removed
+    done: io in core, output / errput builtins removed
         io::out(...)
         io::err(...)
-        name String = io::input("Your name: ")
-        - buffered output instead of one dprintf per call
+        name String = io::input()
+        - left: io::input("Your name: ") with a prompt
+        - left: buffered output instead of one write per call
 
     alias + Stream (files, sockets)
         alias print = io::out
@@ -153,7 +153,7 @@
         @arena
         fn frame():                   // every heap allocation in it is freed when the fn exits
 
-    operators with both sides written (design fix)
+    done: operators with both sides written (design fix, free operators found by type)
         // today: left side is always self, so only "into String" exists
         operator =(text i8[]):                 // s = c_text   (inside String)
 
@@ -169,7 +169,7 @@
     assignment the C++ way
         x = y                         // operator = in place; a move operator for temporaries
         - then operator drop never sees a zeroed value
-        - today: drop must be safe on zeros (milestone08 033 guards with if self.id != 0)
+        - today: drop must be safe on zeros (m08 033 guards with if self.id != 0)
 
     optimization flags
         ura compile main.ura -O2      -O0 .. -O3, -Os, -Oz
@@ -211,6 +211,12 @@
         ura run                        a @script of ura.conf
 
     done: ura init starter (hello + user name per OS), the donut moved to ura-donut
+
+    done: tests hold only ura code
+        tests/m01/variables.md                 ## 017 — title + the ura code (// stdout: // expect: // error:)
+        tests/m01/llvm-ir.md                   ## 017 ```llvm (IR without ModuleID / datalayout / triple)
+                                               ## 042 ```stderr (an error test, last line = exit status)
+        tests/pending/                         tests of features not built yet (tests pending runs them)
 
     dependency without a url: found in the ura-computing organization
         @dependency "ura-math" "0.0.1"                              // github.com/ura-computing/ura-math
@@ -298,7 +304,7 @@
     done: ura-tcp-server became ura-chatroom (rooms, emojis, dice, 8-ball, rainbow, donut)
         - ura-libft rewritten from the subject
 
-    rewrite milestone13's projects on today's model (new<T>/free<T>, values own, refs borrow)
+    rewrite m13's projects on today's model (new<T>/free<T>, values own, refs borrow)
         025 calc, 026 libft, 027 net server, 028 net client, 032 dungeon boss,
         033 calculator, 037 038 040 libft lists
 
@@ -366,3 +372,10 @@
 # personal
 
     + 30 push dsrl
+
+	+ i macros like @dependecy etc...:
+		+ instead of hardocding them in the language
+		+ make the m programable
+	+ should support cliquein tab after wrting ura
+	like how clang works etc....
+	+ add a flag depedecies location

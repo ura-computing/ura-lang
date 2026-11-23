@@ -84,6 +84,18 @@ char *dependency_dir(char *project, Node *node) {
         project, entry_value(node, 0), entry_value(node, 1), entry_value(node, 2)
     );
 }
+// TODO: name, version, path should not be stored in array
+// the should be like
+/*
+node:
+	name: dependcy name
+	version: dependcy version
+	url: dependcy url
+
+Config struct must have children Configs
+when importing a conifg it should go recursively or somehting
+and skip the already imported files
+*/
 
 Node *find_dependency_node(Config *config, char *name) {
     for (int i = 0; i < config->tree->children_count; i++) {
@@ -130,7 +142,9 @@ int install_dependency(
         exit(1);
     }
     if (!is_folder(where) && !is_version(version)) {
-        eprint("dependency %s: version '%s' is not a number like 0.0.1\n", name, version);
+        eprint(
+            "dependency %s: version '%s' is not a number like 0.0.1\n", name, version
+        );
         exit(1);
     }
     bool is_download = is_missing && !is_folder(where);

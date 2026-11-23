@@ -3145,8 +3145,6 @@ int main(int ac, char **av) {
     // print_ucgs();
     ucg_compile();
     ucg_gen();
-    if (DEBUG) // TODO: I think it should be removed
-        code = ucg_run_bin();
     ucg_finish();
 #            endif // ASM
 #        endif     // ANALYZE
@@ -3273,6 +3271,7 @@ int _print(ioFile fp, char *fmt, ...) {
     return r;
 }
 
+// TODO: replace all of this with format function
 int _fprint(ioFile fp, const char *fmt, va_list ap) {
     int r = 0;
     for (int i = 0; fmt[i]; i++) {
