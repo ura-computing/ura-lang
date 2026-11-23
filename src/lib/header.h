@@ -33,10 +33,6 @@
 #    define false 0
 #endif
 
-#ifndef vfprint
-#    define vfprint vfprintf
-#endif
-
 #ifndef DEBUG
 #    define DEBUG 0
 #endif
@@ -89,6 +85,12 @@
 #    include <mach-o/dyld.h>
 #elif defined(__linux__)
 typedef struct _IO_FILE *ioFile;
+#endif
+
+#ifndef vfprint
+#    define vfprint vfprintf
+#else
+int vfprint(ioFile fp, const char *fmt, va_list ap);
 #endif
 
 typedef struct Arena Arena;

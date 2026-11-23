@@ -27,7 +27,7 @@ void expect(Type type, char *msg, char *fix) {
     );
 }
 
-bool check_lexeme(char *buff, int s, int e) {
+bool assert_lexeme(char *buff, int s, int e) {
     char c = buff[s];
     if (isdigit(c)) {
         bool is_real = memchr(buff + s, '.', e - s) != NULL;
@@ -120,7 +120,7 @@ bool check_lexeme(char *buff, int s, int e) {
     return is_valid;
 }
 
-void check_unexpected(Token *token) {
+void assert_unexpected(Token *token) {
     Token *scope = ura.scope->token;
     bool is_in_match = scope->type == MATCH && token->line != scope->line;
     char *text = token_text(token);
@@ -145,7 +145,7 @@ void check_unexpected(Token *token) {
     );
 }
 
-void check_template(Node *node) {
+void assert_template(Node *node) {
     Token *token = node->token;
     for (int i = 0; i < node->args->children_count; i++) {
         Token *param = node->args->children[i]->token;
@@ -174,7 +174,7 @@ void check_template(Node *node) {
     }
 }
 
-bool check_template_use(Token *token, Node *template, Node *types) {
+bool assert_template_use(Token *token, Node *template, Node *types) {
     if (template == NULL && types == NULL)
         return false;
     if (template == NULL) {
@@ -217,7 +217,7 @@ bool check_template_use(Token *token, Node *template, Node *types) {
     return false;
 }
 
-void check_macro(Node *node) {
+void assert_macro(Node *node) {
     Token *token = node->token;
     add_error(
         token->s,
@@ -227,7 +227,7 @@ void check_macro(Node *node) {
     );
 }
 
-void check_config(Node *node) {
+void assert_config(Node *node) {
     Token *token = node->token;
     char *text = token_text(token);
     bool is_config = strcmp2(basename(strdup2(file_at(token->s)->path)), "ura.conf");
@@ -251,7 +251,7 @@ void check_config(Node *node) {
     );
 }
 
-bool check_config_field(Node *node, Node *field) {
+bool assert_config_field(Node *node, Node *field) {
     Token *token = field->token;
     bool is_script = node->token->type == MACRO_SCRIPT;
     bool is_cmd = token->type == MACRO_CMD;
@@ -268,7 +268,7 @@ bool check_config_field(Node *node, Node *field) {
     return false;
 }
 
-void check_config_block(Node *node) {
+void assert_config_block(Node *node) {
     Token *token = node->token;
     char *text = token_text(token);
     bool is_script = token->type == MACRO_SCRIPT;
@@ -303,9 +303,53 @@ void check_config_block(Node *node) {
             format("dependency %s is a folder, it has no @version", token->name),
             "remove the @version line"
         );
+    else if (url->version && url->version->children_count)
+        assert_version(url->version);
 }
 
-bool check_module(Node *node) {
+void assert_version(Node *version) {
+    Token *token = version->children[0]->token;
+    bool ok = is_version(token->chars.value);
+    if (ok) return;
+    add_error(
+        token->s,
+        token->e,
+        format("version '%s' is not like 0.0.1", token->chars.value),
+        "use three numbers: @version \"0.0.1\""
+    );
+}
+
+bool assert_installed(Node *dependency, char *folder) {
+    bool ok = folder && access(folder, F_OK) == 0;
+    if (ok) return true;
+    Token *token = dependency->token;
+    Token *url = dependency->url->token;
+    if (url->type == MACRO_PATH)
+        add_error(
+            url->s,
+            url->e,
+            format("dependency %s: no folder %s", token->name, folder),
+            "fix the @path"
+        );
+    else
+        add_error(
+            token->s,
+            token->e,
+            format("dependency %s is not installed", token->name),
+            "run: ura deps install"
+        );
+    return false;
+}
+
+void assert_true(bool ok, char *msg, char *help) {
+    if (ok) return;
+    eprint("%s\n", msg);
+    if (help)
+        eprint("help: %s\n", help);
+    exit(1);
+}
+
+bool assert_module(Node *node) {
     Token *token = node->token;
     if (ura.scope->token->type == SCOPE)
         return true;
@@ -318,7 +362,7 @@ bool check_module(Node *node) {
     return false;
 }
 
-bool check_package(Token *name, char *path) {
+bool assert_package(Token *name, char *path) {
     char *package = name->chars.value;
     if (path)
         return true;
@@ -331,7 +375,7 @@ bool check_package(Token *name, char *path) {
     return false;
 }
 
-bool check_reuse(Token *name, File *file) {
+bool assert_reuse(Token *name, File *file) {
     for (int i = 0; i < ura.uses_count; i++) {
         if (!strcmp2(ura.uses[i]->path, file->path))
             continue;
@@ -346,7 +390,7 @@ bool check_reuse(Token *name, File *file) {
     return true;
 }
 
-bool check_parent(Token *name, Node *parent) {
+bool assert_parent(Token *name, Node *parent) {
     if (parent)
         return true;
     add_error(
@@ -358,7 +402,7 @@ bool check_parent(Token *name, Node *parent) {
     return false;
 }
 
-void check_operand(Node *node) {
+void assert_operand(Node *node) {
     Token *token = node->token;
     if (node->right)
         return;
@@ -375,7 +419,7 @@ void check_operand(Node *node) {
     );
 }
 
-void check_type_first(Token *token) {
+void assert_type_first(Token *token) {
     int end = 0;
     int depth = 0;
     while (peek(end)->type == LT || depth > 0) {
@@ -547,25 +591,25 @@ bool is_numeric(Node *type) {
     return type && includes(type->token->type, INT, FLOAT, 0) && type->token->shift != 1;
 }
 
-void check_type(Node *value, Node *expected, char *help) {
+void assert_type(Node *value, Node *expected, char *help) {
     if (expected && value->token->type == LCBRACK) {
-        check_struct_value(value, expected);
+        assert_struct_value(value, expected);
         return;
     }
     if (value->token->type == LBRACK) {
-        check_array_literal(value, expected);
+        assert_array_literal(value, expected);
         return;
     }
     if (value->token->type == ZERO) {
-        check_null(value, expected);
+        assert_null(value, expected);
         return;
     }
     bool is_numeric_math = is_math(value) && is_numeric(expected) &&
                            is_numeric(type_of(value->left)) &&
                            is_numeric(type_of(value->right));
     if (is_numeric_math) {
-        check_type(value->left, expected, help);
-        check_type(value->right, expected, help);
+        assert_type(value->left, expected, help);
+        assert_type(value->right, expected, help);
         return;
     }
     if (value->token->type == CHARS && is_chars(expected)) {
@@ -619,7 +663,7 @@ void check_type(Node *value, Node *expected, char *help) {
         );
 }
 
-void check_null_compare(Node *node) {
+void assert_null_compare(Node *node) {
     bool is_right = node->right->token->type == ZERO;
     Node *null = is_right ? node->right : node->left;
     Node *other = is_right ? node->left : node->right;
@@ -640,7 +684,7 @@ void check_null_compare(Node *node) {
     );
 }
 
-void check_null(Node *node, Node *expected) {
+void assert_null(Node *node, Node *expected) {
     bool is_pointer = expected && includes(expected->token->type, REF, ARRAY, 0);
     if (is_pointer) {
         node->data_type = expected;
@@ -655,7 +699,7 @@ void check_null(Node *node, Node *expected) {
     );
 }
 
-void check_array_literal(Node *node, Node *expected) {
+void assert_array_literal(Node *node, Node *expected) {
     Token *token = node->token;
     if (expected == NULL) {
         Node *first = node->children_count ? type_of(node->children[0]) : NULL;
@@ -678,11 +722,11 @@ void check_array_literal(Node *node, Node *expected) {
         return;
     }
     for (int i = 0; i < node->children_count; i++)
-        check_type(node->children[i], elem, NULL);
+        assert_type(node->children[i], elem, NULL);
     node->data_type = expected;
 }
 
-void check_struct_value(Node *value, Node *expected) {
+void assert_struct_value(Node *value, Node *expected) {
     Token *token = value->token;
     if (expected->token->type != ID) {
         add_error(
@@ -710,12 +754,12 @@ void check_struct_value(Node *value, Node *expected) {
             );
             continue;
         }
-        check_type(attr->left, attr->declared->data_type, NULL);
-        attr->left = check_copy(attr->left, attr->declared->data_type);
+        assert_type(attr->left, attr->declared->data_type, NULL);
+        attr->left = assert_copy(attr->left, attr->declared->data_type);
     }
 }
 
-Node *check_copy(Node *value, Node *type) {
+Node *assert_copy(Node *value, Node *type) {
     Node *found = type_of(value);
     bool is_named = type && type->token->type == ID;
     if (is_named && type->declared == NULL)
@@ -755,7 +799,7 @@ Node *check_copy(Node *value, Node *type) {
     return value;
 }
 
-void check_args(Node *fn, Node **args, int count, int self) {
+void assert_args(Node *fn, Node **args, int count, int self) {
     for (int i = 0; i < count && i + self < fn->args->children_count; i++) {
         Node *type = fn->args->children[i + self]->data_type;
         Node *found = type_of(args[i]);
@@ -767,9 +811,9 @@ void check_args(Node *fn, Node **args, int count, int self) {
         Node *param = takes_ref ? type->data_type : type;
         bool is_other = found && !same_type(found, param) && !is_child;
         if (!takes_ref || is_other)
-            args[i] = check_copy(args[i], param);
+            args[i] = assert_copy(args[i], param);
         if (!is_child)
-            check_type(args[i], param, NULL);
+            assert_type(args[i], param, NULL);
         if (!takes_ref || is_address)
             continue;
         Node *ref = new_node(new_token(REF, args[i]->token));
@@ -805,10 +849,10 @@ void analyze_operator(Node *node, Type symbol) {
     append(node->children, left);
     if (count)
         append(node->children, right);
-    check_args(fn, node->children, node->children_count, 0);
+    assert_args(fn, node->children, node->children_count, 0);
 }
 
-void check_name(Node *node) {
+void assert_name(Node *node) {
     Token *token = node->token;
     if (token->is_type && find_enum(token->name)) {
         token->type = INT;
@@ -888,7 +932,7 @@ void check_name(Node *node) {
     var->token->is_used = true;
 }
 
-void check_throw(Node *node) {
+void assert_throw(Node *node) {
     Token *token = node->token;
     Node *type = type_of(node->left);
     bool is_void = type == NULL || type->token->type == VOID;
@@ -901,10 +945,10 @@ void check_throw(Node *node) {
         );
         return;
     }
-    node->left = check_copy(node->left, type);
+    node->left = assert_copy(node->left, type);
 }
 
-void check_match(Node *node) {
+void assert_match(Node *node) {
     Token *token = node->token;
     Node *var = node->left->left;
     Node *type = type_of(node->left->right);
@@ -912,7 +956,7 @@ void check_match(Node *node) {
         type = type->data_type;
     var->data_type = type ? type : new_type(INT, 32, NULL);
     if (type)
-        check_operation(node->left);
+        assert_operation(node->left);
     if (node->children_count < 2 || node->children[1]->token->type == DEFAULT)
         add_error(
             token->s,
@@ -932,7 +976,7 @@ void check_match(Node *node) {
     }
 }
 
-void check_param_type(Token *token, Node *param) {
+void assert_param_type(Token *token, Node *param) {
     if (param->data_type)
         return;
     add_error(
@@ -944,7 +988,7 @@ void check_param_type(Token *token, Node *param) {
     param->data_type = new_type(INT, 32, NULL);
 }
 
-bool check_comma(Token *item, Token *after, char *list) {
+bool assert_comma(Token *item, Token *after, char *list) {
     bool is_comma = item->type == COMA;
     bool is_closing = includes(after->type, COMA, RPARENT, RBRACK, DOTS, LAST, 0);
     bool is_end = is_closing || after->is_type;
@@ -974,7 +1018,7 @@ int name_after(Token *keyword) {
     return pos;
 }
 
-void check_attribute(Node *node) {
+void assert_attribute(Node *node) {
     Token *token = node->token;
     if (includes(token->type, VAR, MACRO_IF, MACRO_ERROR, 0))
         return;
@@ -988,7 +1032,7 @@ void check_attribute(Node *node) {
     );
 }
 
-void check_struct(Node *node, Node *scope) {
+void assert_struct(Node *node, Node *scope) {
     Token *token = node->token;
     int name_s = name_after(token);
     int name_e = name_s + strlen(token->name);
@@ -1045,7 +1089,7 @@ bool contains_struct(Node *type, char *name, int depth) {
     return false;
 }
 
-void check_function(Node *node, Node *scope) {
+void assert_function(Node *node, Node *scope) {
     Token *token = node->token;
     int name_s = name_after(token);
     int name_e = name_s + strlen(token->name);
@@ -1202,7 +1246,7 @@ void check_function(Node *node, Node *scope) {
     }
 }
 
-void check_enum(Node *node) {
+void assert_enum(Node *node) {
     Token *token = node->token;
     if (node->children_count == 0)
         add_error(
@@ -1234,7 +1278,7 @@ void check_enum(Node *node) {
     }
 }
 
-void check_declare(Node *node) {
+void assert_declare(Node *node) {
     Token *token = node->var->token;
     Node *first = find_in_scope(ura.scope, token->name);
     if (first == node->var)
@@ -1249,7 +1293,7 @@ void check_declare(Node *node) {
     );
 }
 
-void check_return(Node *node) {
+void assert_return(Node *node) {
     Token *token = node->token;
     Node *fn = find_scope(FN_DEC);
     if (fn == NULL && find_function("main")) {
@@ -1274,12 +1318,12 @@ void check_return(Node *node) {
             );
         return;
     }
-    check_type(node->left, ret_type_of(fn), NULL);
+    assert_type(node->left, ret_type_of(fn), NULL);
     if (!is_local_variable(node->left))
-        node->left = check_copy(node->left, ret_type_of(fn));
+        node->left = assert_copy(node->left, ret_type_of(fn));
 }
 
-void check_ref(Node *node) {
+void assert_ref(Node *node) {
     Token *token = node->token;
     bool is_type = token->is_type;
     Node *to = node->operand;
@@ -1305,7 +1349,7 @@ void check_ref(Node *node) {
     );
 }
 
-void check_array(Node *node) {
+void assert_array(Node *node) {
     if (!node->token->is_type || node->index == NULL)
         return;
     Token *size = node->index->token;
@@ -1317,7 +1361,7 @@ void check_array(Node *node) {
     );
 }
 
-void check_cast(Node *node) {
+void assert_cast(Node *node) {
     Node *from = type_of(node->left);
     Node *to = node->to_type;
     if (from == NULL || to == NULL || same_type(from, to))
@@ -1335,7 +1379,7 @@ void check_cast(Node *node) {
     );
 }
 
-void check_unary(Node *node) {
+void assert_unary(Node *node) {
     Token *token = node->token;
     Node *type = type_of(node->operand);
     bool is_integer = is_numeric(type) && type->token->type == INT;
@@ -1350,7 +1394,7 @@ void check_unary(Node *node) {
     );
 }
 
-void check_for(Node *node) {
+void assert_for(Node *node) {
     Node *type = type_of(node->right);
     Node *in = find_operator(IN, type, NULL, 0);
     bool fits = in && in->args->children_count == 3;
@@ -1368,7 +1412,7 @@ void check_for(Node *node) {
     node->var->data_type = new_type(INT, 32, NULL);
 }
 
-void check_jump(Node *node) {
+void assert_jump(Node *node) {
     Token *token = node->token;
     if (node->loop)
         return;
@@ -1388,7 +1432,7 @@ void check_jump(Node *node) {
         );
 }
 
-void check_try(Node *node) {
+void assert_try(Node *node) {
     Token *token = node->token;
     char *help = "like: catch e Error:";
     if (token->type == TRY && node->next == NULL)
@@ -1414,7 +1458,7 @@ void check_try(Node *node) {
         );
 }
 
-void check_cond(Node *node) {
+void assert_cond(Node *node) {
     Token *token = node->token;
     Node *cond = node->cond;
     bool takes_cond = !includes(token->type, ELSE, DEFAULT, 0);
@@ -1448,10 +1492,10 @@ void check_cond(Node *node) {
     char *help = NULL;
     if (includes(cond->token->type, VAR, PARAM, 0))
         help = format("write '%s != 0'", cond->token->name);
-    check_type(cond, bool_type(), help);
+    assert_type(cond, bool_type(), help);
 }
 
-void check_variant(Node *node, Node *en) {
+void assert_variant(Node *node, Node *en) {
     Token *name = node->right->token;
     for (int i = 0; i < en->children_count; i++) {
         Token *variant = en->children[i]->token;
@@ -1470,7 +1514,7 @@ void check_variant(Node *node, Node *en) {
     );
 }
 
-void check_static_call(Node *node) {
+void assert_static_call(Node *node) {
     Token *name = node->left->token;
     if (is_module(name->name)) {
         Token *member = node->right->token;
@@ -1481,7 +1525,7 @@ void check_static_call(Node *node) {
     }
     Node *en = find_enum(name->name);
     if (en) {
-        check_variant(node, en);
+        assert_variant(node, en);
         return;
     }
     Node *st = find_struct(name->name);
@@ -1508,10 +1552,10 @@ void check_static_call(Node *node) {
         );
         return;
     }
-    check_args(call->to_call, call->children, call->children_count, 0);
+    assert_args(call->to_call, call->children, call->children_count, 0);
 }
 
-void check_link(Node *node) {
+void assert_link(Node *node) {
     Token *token = node->token;
     if (token->name == NULL)
         return;
@@ -1525,7 +1569,7 @@ void check_link(Node *node) {
         );
 }
 
-void check_index(Node *index) {
+void assert_index(Node *index) {
     Node *type = type_of(index);
     bool is_integer = type && type->token->type == INT && type->token->shift > 1;
     if (type == NULL || is_integer)
@@ -1538,14 +1582,14 @@ void check_index(Node *index) {
     );
 }
 
-void check_access(Node *node) {
+void assert_access(Node *node) {
     Node *type = type_of(node->left);
     bool is_struct = type && type->token->type == ID && type->declared;
     if (is_struct) {
         analyze_operator(node, LBRACK);
         return;
     }
-    check_index(node->index);
+    assert_index(node->index);
     if (type == NULL || type->token->type == ARRAY)
         return;
     Token *base = node->left->token;
@@ -1569,7 +1613,7 @@ char *names_in(Node *st, Type type) {
     return names;
 }
 
-void check_member(Node *node) {
+void assert_member(Node *node) {
     Node *type = type_of(node->left);
     if (type == NULL)
         return;
@@ -1624,7 +1668,7 @@ void check_member(Node *node) {
             );
             return;
         }
-        check_args(call->to_call, call->children, call->children_count, 1);
+        assert_args(call->to_call, call->children, call->children_count, 1);
         return;
     }
     Token *attr = node->right->token;
@@ -1639,7 +1683,7 @@ void check_member(Node *node) {
         );
 }
 
-void check_arg_count(Node *node) {
+void assert_arg_count(Node *node) {
     Node *fn = node->to_call;
     Node *params = fn->args;
     int count = params->children_count;
@@ -1678,7 +1722,7 @@ void check_arg_count(Node *node) {
     );
 }
 
-void check_call(Node *node) {
+void assert_call(Node *node) {
     Token *token = node->token;
     char *name = token->name;
     node->to_call = find_function(name);
@@ -1707,7 +1751,7 @@ void check_call(Node *node) {
         node->to_call = overload;
     Node *params = node->to_call->args;
     if (params && includes(node->to_call->token->type, FN_DEC, PROTO, 0))
-        check_arg_count(node);
+        assert_arg_count(node);
     for (int i = 0; i < node->children_count; i++) {
         if (params == NULL || i >= params->children_count)
             continue;
@@ -1728,12 +1772,12 @@ void check_call(Node *node) {
         char *help = NULL;
         if (takes_ref && is_variable)
             help = format("pass its address: '&%s'", token_text(arg->token));
-        node->children[i] = arg = check_copy(arg, param->data_type);
-        check_type(arg, param->data_type, help);
+        node->children[i] = arg = assert_copy(arg, param->data_type);
+        assert_type(arg, param->data_type, help);
     }
 }
 
-void check_builtin(Node *node) {
+void assert_builtin(Node *node) {
     Token *token = node->token;
     bool takes_one = includes(token->type, SIZEOF, TYPEOF, DROP, IS_ZERO, 0);
     if (takes_one && node->children_count != 1)
@@ -1748,7 +1792,7 @@ void check_builtin(Node *node) {
         analyze(arg);
         bool is_text = token->type == FORMAT;
         if (is_text && arg->token->type == CHARS)
-            check_type(arg, chars_type(), NULL);
+            assert_type(arg, chars_type(), NULL);
         if (is_text && arg->token->type == LBRACK)
             add_error(
                 arg->token->s,
@@ -1774,7 +1818,7 @@ void check_builtin(Node *node) {
         );
 }
 
-void check_operation(Node *node) {
+void assert_operation(Node *node) {
     bool is_assign = includes(
         node->token->type,
         ASSIGN,
@@ -1806,7 +1850,7 @@ void check_operation(Node *node) {
     bool is_compare = includes(node->token->type, EQ, NQ, 0);
     bool has_null = left->token->type == ZERO || right->token->type == ZERO;
     if (is_compare && has_null) {
-        check_null_compare(node);
+        assert_null_compare(node);
         return;
     }
     bool is_ref_declaration = is_ref_variable(left) && left->declared == NULL;
@@ -1852,7 +1896,7 @@ void check_operation(Node *node) {
             return;
         }
         if (is_left_struct)
-            node->right = check_copy(node->right, left_type);
+            node->right = assert_copy(node->right, left_type);
         right_type = type_of(node->right);
     }
     bool is_mismatch = is_known && !same_type(left_type, right_type) &&
@@ -1905,13 +1949,13 @@ void check_operation(Node *node) {
     bool is_both_numbers = is_number(node->left) && is_number(node->right);
     bool is_left_wider = is_both_numbers && node->left->token->shift > node->right->token->shift;
     if (is_ref_binding(node))
-        check_type(node->right, is_address ? ref_type : ref_type->data_type, NULL);
+        assert_type(node->right, is_address ? ref_type : ref_type->data_type, NULL);
     else if (!is_logic && is_number(node->left) && !is_left_wider)
-        check_type(node->left, type_of(node->right), NULL);
+        assert_type(node->left, type_of(node->right), NULL);
     else if (!is_logic)
-        check_type(node->right, type_of(node->left), NULL);
+        assert_type(node->right, type_of(node->left), NULL);
     else if (is_left_bool)
-        check_type(node->right, bool_type(), NULL);
+        assert_type(node->right, bool_type(), NULL);
     else
-        check_type(node->left, bool_type(), NULL);
+        assert_type(node->left, bool_type(), NULL);
 }

@@ -3,11 +3,11 @@ typedef struct Token Token;
 typedef struct Node Node;
 typedef struct NodePrint NodePrint;
 typedef struct Keyword Keyword;
-typedef struct Config Config;
 
-#define print(...)  (DEBUG ? _print(stdout, __VA_ARGS__) : 0)
-#define help(...)   _print(stdout, __VA_ARGS__)
-#define eprint(...) _print(stderr, __VA_ARGS__)
+#define print(...)  (DEBUG ? fputs(format(__VA_ARGS__), stdout) : 0)
+#define help(...)   fputs(format(__VA_ARGS__), stdout)
+#define eprint(...) fputs(format(RED("error: ") __VA_ARGS__), stderr)
+#define vfprint     _fprint
 
 #ifndef TOKENIZE
 #    define TOKENIZE 1
@@ -28,10 +28,6 @@ typedef struct Config Config;
 #include "./ucg.c"
 
 #define URA_VERSION "0.0.1"
-
-int _fprint(ioFile fp, const char *fmt, va_list ap);
-#undef vfprint
-#define vfprint _fprint
 
 struct Token {
     Type type;
@@ -113,16 +109,12 @@ struct Keyword {
     Token token;
 };
 
-struct Config {
-    char *dir;
-    Node *tree;
-};
-
 // Global Ura
 struct {
     expand(File *, files);
     expand(File *, uses);
-    expand(Config *, configs);
+    expand(File *, configs);
+    Node *config;
     File *file;
     int line;
 
@@ -315,7 +307,7 @@ char *escaped[256] = { // clang-format off
     ['\n'] = "\\n", ['\t'] = "\\t", ['\r'] = "\\r", ['\0'] = "\\0",
 }; // clang-format on
 
-#include "./check.c"
+#include "./assert.c"
 #include "./project.c"
 
 // TOKENIZE
@@ -342,10 +334,12 @@ Token *new_token_at(Type type, int s, int e, int space) {
 }
 
 File *file_at(int pos) {
-    File *found = ura.files[0];
-    for (int i = 0; i < ura.files_count; i++) {
-        File *file = ura.files[i];
-        if (!file->opened || file->start > pos || file->start < found->start)
+    File *found = NULL;
+    for (int i = 0; i < ura.files_count + ura.configs_count; i++) {
+        bool is_source = i < ura.files_count;
+        File *file = is_source ? ura.files[i] : ura.configs[i - ura.files_count];
+        bool is_before = found && file->start < found->start;
+        if (!file->opened || file->start > pos || is_before)
             continue;
         found = file;
     }
@@ -359,8 +353,9 @@ char *text_at(int pos) {
 
 int end_of_sources(void) {
     int end = 0;
-    for (int i = 0; i < ura.files_count; i++) {
-        File *file = ura.files[i];
+    for (int i = 0; i < ura.files_count + ura.configs_count; i++) {
+        bool is_source = i < ura.files_count;
+        File *file = is_source ? ura.files[i] : ura.configs[i - ura.files_count];
         if (file->opened && file->start + file->len + 1 > end)
             end = file->start + file->len + 1;
     }
@@ -524,7 +519,7 @@ int parse_format(int s, int space) {
     new_token_at(RPARENT, e, e + 1, space);
     if (buff[e] == '"')
         e++;
-    check_lexeme(buff, s + 1, e);
+    assert_lexeme(buff, s + 1, e);
     return e;
 }
 
@@ -602,7 +597,7 @@ void tokenize_range(int start, int end, int space) {
                 e++;
             }
             //  if (buff[s] == '\n' && buff[e] && buff[e] != '\n') // a line with code
-            //     check_indent(s + 1, e, ura.scope->token->line, space);
+            //     assert_indent(s + 1, e, ura.scope->token->line, space);
             continue;
         }
         while (strncmp2(buff + s, "//", 2) && buff[e] && buff[e] != '\n')
@@ -616,7 +611,7 @@ void tokenize_range(int start, int end, int space) {
                     ura.line++;
                 e++;
             }
-            check_lexeme(buff, s, e);
+            assert_lexeme(buff, s, e);
             if (buff[e] == '\0')
                 break;
             e += 2;
@@ -640,7 +635,7 @@ void tokenize_range(int start, int end, int space) {
             }
             if (buff[e] == c)
                 e++; // skip last ' or "
-            if (!check_lexeme(buff, s, e))
+            if (!assert_lexeme(buff, s, e))
                 continue;
             if (c == '"')
                 parse_string(s, e, space);
@@ -661,7 +656,7 @@ void tokenize_range(int start, int end, int space) {
                 e++;
         }
         if (e != s) {
-            if (check_lexeme(buff, s, e))
+            if (assert_lexeme(buff, s, e))
                 parse_num(s, e, space);
             continue;
         }
@@ -693,18 +688,18 @@ void tokenize_range(int start, int end, int space) {
         if (e != s) {
             continue;
         }
-        check_lexeme(buff, s, s + 1);
+        assert_lexeme(buff, s, s + 1);
         e++;
     }
 }
 
 void use_file(Token *use, Token *name) {
     char *path = find_package(name->chars.value, ura.file);
-    if (!check_package(name, path))
+    if (!assert_package(name, path))
         return;
     File *file = new_file(path);
     open_file(file);
-    if (!check_reuse(name, file))
+    if (!assert_reuse(name, file))
         return;
     file->start = end_of_sources();
     append(ura.files, file);
@@ -1067,7 +1062,7 @@ Node *parse_type(void) {
         if (node == NULL)
             node = new_node(token);
         Node *types = peek(0)->type == LT ? parse_types(token) : NULL;
-        if (check_template_use(token, template, types))
+        if (assert_template_use(token, template, types))
             token->name = init_from_template(template, types);
         while (peek(0)->type == LBRACK && peek(0)->line == token->line) {
             next(); // SKIP [
@@ -1112,7 +1107,7 @@ Node *parse_prime() {
     switch (token->type) { // clang-format off
     case INT: case FLOAT: case CHARS: { // clang-format on
         if (token->is_type)
-            check_type_first(token);
+            assert_type_first(token);
         return new_node(token);
     }
     case ZERO: {
@@ -1152,11 +1147,11 @@ Node *parse_prime() {
         Node *template = find_template(token->name);
         bool is_template_use = template && peek(0)->type == LT;
         if (template_type || is_template_use || find_struct(token->name))
-            check_type_first(token);
+            assert_type_first(token);
         if (template_type)
             return template_type;
         Node *types = is_template_use ? parse_types(token) : NULL;
-        if (types && check_template_use(token, template, types))
+        if (types && assert_template_use(token, template, types))
             token->name = init_from_template(template, types);
         Node *type = builtin ? NULL : parse_type();
         if (type != NULL) {
@@ -1173,11 +1168,11 @@ Node *parse_prime() {
             next(); // SKIP (
             while (!includes(peek(0)->type, RPARENT, LAST, 0)) {
                 append(node->children, parse_expr(0));
-                if (check_comma(token, peek(0), "arguments"))
+                if (assert_comma(token, peek(0), "arguments"))
                     continue;
                 if (peek(0)->type != COMA)
                     break;
-                check_comma(next(), peek(0), "arguments");
+                assert_comma(next(), peek(0), "arguments");
             }
             expect(
                 RPARENT,
@@ -1254,14 +1249,14 @@ Node *parse_prime() {
                     Node *param = new_node(token);
                     next(); // skip ID
                     param->data_type = parse_type();
-                    check_param_type(token, param);
+                    assert_param_type(token, param);
                     append(node->right->children, param);
                 } else if (token->type == VARIADIC) {
                     append(node->right->children, new_node(token));
                     next(); // skip ...
                 } else
                     break;
-                if (check_comma(token, peek(0), "parameters"))
+                if (assert_comma(token, peek(0), "parameters"))
                     continue;
                 if (peek(0)->type != COMA)
                     break;
@@ -1333,7 +1328,7 @@ Node *parse_prime() {
         while (inside(token->space)) {
             Token *head = next();
             if (!includes(head->type, CASE, DEFAULT, 0)) {
-                check_unexpected(head);
+                assert_unexpected(head);
                 continue;
             }
             Node *branch = new_node(head);
@@ -1402,13 +1397,13 @@ Node *parse_prime() {
         return node;
     } // clang-format off
     case CATCH: case CASE: case DEFAULT: { // clang-format on
-        check_unexpected(token);
+        assert_unexpected(token);
         while (peek(0)->line == token->line || inside(token->space))
             next();
         return new_node(token);
     } // clang-format off
     case ELIF: case ELSE: { // clang-format on
-        check_unexpected(token);
+        assert_unexpected(token);
         return parse_block(token);
     }
     case PUB: {
@@ -1443,7 +1438,7 @@ Node *parse_prime() {
         node = new_node(token);
         while (!includes(peek(0)->type, RBRACK, LAST, 0)) {
             append(node->children, parse_expr(0));
-            if (check_comma(token, peek(0), "elements"))
+            if (assert_comma(token, peek(0), "elements"))
                 continue;
             if (peek(0)->type != COMA)
                 break;
@@ -1487,7 +1482,7 @@ Node *parse_prime() {
             node->left = new_node(next());
         if (peek(0)->type == CHARS && peek(0)->line == token->line)
             node->right = new_node(next());
-        check_macro(node);
+        assert_macro(node);
         return node;
     } // clang-format off
     case MACRO_NAME: case MACRO_VERSION: case MACRO_ENTRY:
@@ -1495,7 +1490,7 @@ Node *parse_prime() {
         node = new_node(token);
         while (peek(0)->type == CHARS && peek(0)->line == token->line)
             append(node->children, new_node(next()));
-        check_config(node);
+        assert_config(node);
         return node;
     } // clang-format off
     case MACRO_DEPENDENCY: case MACRO_SCRIPT: { // clang-format on
@@ -1506,7 +1501,7 @@ Node *parse_prime() {
         Node *version = NULL;
         while (inside(token->space)) {
             Node *field = parse_expr(0);
-            if (!check_config_field(node, field))
+            if (!assert_config_field(node, field))
                 continue;
             if (field->token->type == MACRO_VERSION)
                 version = field;
@@ -1517,8 +1512,8 @@ Node *parse_prime() {
         }
         if (node->url && token->type == MACRO_DEPENDENCY)
             node->url->version = version;
-        check_config(node);
-        check_config_block(node);
+        assert_config(node);
+        assert_config_block(node);
         return node;
     }
     case USE: {
@@ -1529,7 +1524,7 @@ Node *parse_prime() {
         }
         Token *name = next();
         char *path = find_package(name->chars.value, file_at(name->s));
-        if (check_package(name, path))
+        if (assert_package(name, path))
             parse_package(new_file(path));
         return node;
     }
@@ -1593,7 +1588,7 @@ Node *parse_prime() {
         else
             expect(ID, "expected a mod name after 'mod'", " name");
         expect(DOTS, "expected ':' after the mod name", ":");
-        if (!check_module(node))
+        if (!assert_module(node))
             return node;
         append(ura.modules, node->token->name);
         prefix_names(node->token);
@@ -1619,7 +1614,7 @@ Node *parse_prime() {
                 Token *name = peek(0);
                 Node *type = parse_type();
                 Node *parent = type ? find_struct(type->token->name) : NULL;
-                if (check_parent(name, parent))
+                if (assert_parent(name, parent))
                     append(parents->children, parent);
                 if (peek(0)->type != AND_LIT)
                     break;
@@ -1640,7 +1635,7 @@ Node *parse_prime() {
         while (inside(node->token->space)) {
             Node *child = parse_expr(0);
             if (!includes(child->token->type, FN_DEC, TEMPLATE, STRUCT, 0)) {
-                check_attribute(child);
+                assert_attribute(child);
                 continue;
             }
             append(node->children, child);
@@ -1676,7 +1671,7 @@ Node *parse_prime() {
         return node;
     }
     default: {
-        check_unexpected(token);
+        assert_unexpected(token);
         return new_node(token);
     }
     }
@@ -1714,7 +1709,7 @@ Node *parse_expr(int min_op) {
             node->to_type = parse_type();
         else if (!is_missing)
             node->right = parse_expr(op);
-        check_operand(node);
+        assert_operand(node);
         if (is_missing)
             return node;
         left = node;
@@ -2187,7 +2182,7 @@ void analyze(Node *node) {
     if (is_operation(node->token->type)) {
         analyze(node->left);
         analyze(node->right);
-        check_operation(node);
+        assert_operation(node);
         return;
     }
     switch (node->token->type) { // clang-format off
@@ -2199,15 +2194,15 @@ void analyze(Node *node) {
     } // clang-format off
     case FORMAT: case SIZEOF: case TYPEOF: case DROP:
     case IS_ZERO: case ALLOC: case MEMCPY: case FREE: case ARGC: case ARGV: { // clang-format on
-        check_builtin(node);
+        assert_builtin(node);
         break;
     } // clang-format off
     case ID: case SELF: { // clang-format on
-        check_name(node);
+        assert_name(node);
         break;
     }
     case DECLARE: {
-        check_declare(node);
+        assert_declare(node);
         analyze(node->var->data_type);
         break;
     } // clang-format off
@@ -2224,9 +2219,9 @@ void analyze(Node *node) {
             }
         }
         if (includes(node->token->type, FN_DEC, PROTO, 0))
-            check_function(node, ura.scopes[ura.scopes_count - 2]);
+            assert_function(node, ura.scopes[ura.scopes_count - 2]);
         else if (node->token->type == STRUCT)
-            check_struct(node, ura.scopes[ura.scopes_count - 2]);
+            assert_struct(node, ura.scopes[ura.scopes_count - 2]);
 
         for (int i = 0; i < node->children_count; i++)
             analyze(node->children[i]);
@@ -2236,13 +2231,13 @@ void analyze(Node *node) {
     case RETURN: {
         if (node->left)
             analyze(node->left);
-        check_return(node);
+        assert_return(node);
         break;
     } // clang-format off
     case MATCH: {
         enter_scope(node);
         analyze(node->left->right);
-        check_match(node);
+        assert_match(node);
         for (int i = 0; i < node->children_count; i++)
             analyze(node->children[i]);
         exit_scope();
@@ -2250,51 +2245,51 @@ void analyze(Node *node) {
     } // clang-format off
     case THROW: {
         analyze(node->left);
-        check_throw(node);
+        assert_throw(node);
         break;
     } // clang-format off
     case TRY: case CATCH: { // clang-format on
-        check_try(node);
+        assert_try(node);
         analyze_block(node);
         if (node->next)
             analyze(node->next);
         break;
     } // clang-format off
     case IF: case ELIF: case ELSE: case LOOP: case CASE: case DEFAULT: { // clang-format on
-        check_cond(node);
+        assert_cond(node);
         analyze_block(node);
         if (node->next)
             analyze(node->next);
         break;
     } // clang-format off
     case BRK: case CNT: { // clang-format on
-        check_jump(node);
+        assert_jump(node);
         break;
     }
     case DOUBLE_DOTS: {
-        check_static_call(node);
+        assert_static_call(node);
         break;
     }
     case ENUM: {
-        check_enum(node);
+        assert_enum(node);
         break;
     }
     case TEMPLATE: {
-        check_template(node);
+        assert_template(node);
         break;
     }
     case LINK: {
-        check_link(node);
+        assert_link(node);
         break;
     } // clang-format off
     case NEG: case BNOT: { // clang-format on
         analyze(node->operand);
-        check_unary(node);
+        assert_unary(node);
         break;
     }
     case NOT: {
         analyze(node->operand);
-        check_type(node->operand, bool_type(), NULL);
+        assert_type(node->operand, bool_type(), NULL);
         break;
     } // clang-format off
     case REF: case ARRAY: { // clang-format on
@@ -2303,16 +2298,16 @@ void analyze(Node *node) {
         else if (!node->token->is_type)
             analyze(node->operand);
         if (node->token->type == REF)
-            check_ref(node);
+            assert_ref(node);
         else
-            check_array(node);
+            assert_array(node);
         break;
     }
     case AS: {
         analyze(node->left);
         if (node->to_type)
             analyze(node->to_type);
-        check_cast(node);
+        assert_cast(node);
         break;
     }
     case LCBRACK: {
@@ -2323,28 +2318,28 @@ void analyze(Node *node) {
     case LBRACK: {
         for (int i = 0; i < node->children_count; i++)
             analyze(node->children[i]);
-        check_array_literal(node, NULL);
+        assert_array_literal(node, NULL);
         break;
     }
     case FOR: {
         analyze(node->right);
-        check_for(node);
+        assert_for(node);
         analyze_block(node);
         break;
     }
     case ACCESS: {
         analyze(node->left);
         analyze(node->index);
-        check_access(node);
+        assert_access(node);
         break;
     }
     case DOT: {
         analyze(node->left);
-        check_member(node);
+        assert_member(node);
         break;
     }
     case FN_CALL: {
-        check_call(node);
+        assert_call(node);
         break;
     }
     default: {
@@ -3289,18 +3284,6 @@ int _print_node(ioFile fp, Node *node) {
     return 0;
 }
 
-int _print(ioFile fp, char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    int r = 0;
-	if(fp == stderr)
-		r += fprintf(stderr, RED("error: "));
-	r += _fprint(fp, fmt, args);
-    va_end(args);
-    return r;
-}
-
-// TODO: replace all of this with format function
 int _fprint(ioFile fp, const char *fmt, va_list ap) {
     int r = 0;
     for (int i = 0; fmt[i]; i++) {
@@ -3308,36 +3291,44 @@ int _fprint(ioFile fp, const char *fmt, va_list ap) {
             r += fprintf(fp, "%c", fmt[i]);
             continue;
         }
-        if (fmt[++i] == '\0')
+
+        char *spec = "%";
+        for (i++; fmt[i] && strchr("-+ #0123456789.*hlz", fmt[i]); i++) {
+            if (fmt[i] == '*')
+                spec = format("%s%d", spec, va_arg(ap, int));
+            else
+                spec = format("%s%c", spec, fmt[i]);
+        }
+        char conversion = fmt[i];
+        if (conversion == '\0')
             break;
-        Token *token = NULL;
-        switch (fmt[i]) { // clang-format off
-        case 's': r += fprintf(fp, "%s", va_arg(ap, char *)); break;
-        case 'd': r += fprintf(fp, "%d", va_arg(ap, int)); break;
-        case 'c': r += fprintf(fp, "%c", va_arg(ap, int)); break;
-        case 'f': r += fprintf(fp, "%f", va_arg(ap, double)); break;
-        case 'i': r += fprintf(fp, "%*s", va_arg(ap, int), ""); break;
-        case '%': r += fprintf(fp, "%%"); break;
+        spec = format("%s%c", spec, conversion);
+
+        bool is_long_long = strstr(spec, "ll") != NULL;
+        bool is_long = strchr(spec, 'l') != NULL;
+        bool is_size = strchr(spec, 'z') != NULL;
+        switch (conversion) { // clang-format off
         case 't': r += fprintf(fp, "%s", to_string(va_arg(ap, Type))); break;
         case 'k': r += _print_token(fp, va_arg(ap, Token *)); break;
         case 'n': r += _print_node(fp, va_arg(ap, Node *)); break;
         case 'N': r += _print_type(fp, va_arg(ap, Node *)); break;
-        case 'z': {
-            r += fprintf(fp, "%zu", va_arg(ap, size_t));
-            i++;
+        case 'i': r += fprintf(fp, "%*s", va_arg(ap, int), ""); break;
+        case '%': r += fprintf(fp, "%%"); break;
+        case 's': r += fprintf(fp, spec, va_arg(ap, char *)); break;
+        case 'p': r += fprintf(fp, spec, va_arg(ap, void *)); break;
+        case 'c': r += fprintf(fp, spec, va_arg(ap, int)); break;
+        case 'f': r += fprintf(fp, spec, va_arg(ap, double)); break;
+        default:  r += fprintf(fp, "%s", spec); break;
+        case 'd': case 'u': case 'x': // clang-format on
+            if (is_long_long)
+                r += fprintf(fp, spec, va_arg(ap, long long));
+            else if (is_size)
+                r += fprintf(fp, spec, va_arg(ap, size_t));
+            else if (is_long)
+                r += fprintf(fp, spec, va_arg(ap, long));
+            else
+                r += fprintf(fp, spec, va_arg(ap, int));
             break;
-        }
-        case '.': {
-            int n = va_arg(ap, int);
-            char *str = va_arg(ap, char *);
-            r += fprintf(fp, "%.*s", n, str);
-            i += 2; // skip *s
-            break;
-        } 
-        default: {
-			eprint("%s:%d handle this case <%%%c>\n", FILE, LINE, fmt[i]);
-			break; // clang-format on
-        }
         }
     }
     return r;
@@ -3384,7 +3375,7 @@ void print_help(void) {
 void parse_compile_args(int ac, char **av) {
     char *project = find_folder_with(getcwd2(), "ura.conf");
     if (project)
-        load_project(project);
+        load_project(load_config(project));
     bool has_exe = false;
     bool no_link = false;
     for (int i = 2; i < ac && !ucg_has_errors(); i++) {
@@ -3463,13 +3454,13 @@ void parse_args(int ac, char **av) {
         char *command = ac > 2 ? av[2] : "";
         char *name = ac > 3 ? av[3] : NULL;
         if (strcmp2(command, "install") && ac == 3)
-            install_project(find_project(), NULL, false, 0);
+            install_project(load_config(find_project()), NULL, false, 0);
         else if (strcmp2(command, "add") && (ac == 4 || ac == 5))
             add_dependency(find_project(), name, ac == 5 ? av[4] : NULL);
         else if (strcmp2(command, "update") && ac <= 4)
-            install_project(find_project(), name, true, 0);
+            install_project(load_config(find_project()), name, true, 0);
         else if (strcmp2(command, "list") && ac == 3)
-            list_project(find_project(), "", 0);
+            list_project(load_config(find_project()), "", 0);
         else if (!strcmp2(command, "remove") || ac < 4) {
             eprint("expected: ura deps install | add | update | remove | list\n");
             help("see them with: ura -help\n");

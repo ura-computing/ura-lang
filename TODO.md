@@ -191,7 +191,6 @@ later: http lib + FastAPI-like framework, ura init SDL2, other architectures (em
 - fix the TODOs in the code
 - review try / catch / thrown (ucg_find_throwing, checks after calls)
 - remove every implicit part
-- check_* -> assert_*
 - every C print goes through format
 - rename place
 - ucg: line numbers as unsigned long

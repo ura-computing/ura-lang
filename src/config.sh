@@ -244,7 +244,7 @@ _ura_build() {
                 _ura_protos ucg.c
                 echo '#if !UCG'
                 _ura_protos main.c
-                _ura_protos check.c
+                _ura_protos assert.c
                 _ura_protos project.c
                 echo '#endif'
             } > proto.h.tmp
