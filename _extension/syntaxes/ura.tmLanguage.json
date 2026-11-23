@@ -70,7 +70,7 @@
     },
     "directives": {
       "patterns": [
-        { "name": "keyword.control.directive.ura", "match": "@(if|elif|else|error|name|version|main|script|dependency)\\b" },
+        { "name": "keyword.control.directive.ura", "match": "@(if|elif|else|error|name|version|main|entry|script|cmd|dep|url|path)\\b" },
         { "name": "support.function.directive.ura", "match": "\\binstalled(?=\\s*\\()" }
       ]
     },

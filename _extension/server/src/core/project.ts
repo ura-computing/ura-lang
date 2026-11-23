@@ -2,8 +2,13 @@
 //
 //     @name "raytracer"
 //     @main "src/main.ura"
-//     @dependency "ura-core" "0.1.0" "https://github.com/ura-computing/ura-core"
-//     @dependency "geo" "0.2.0" "../geometry"
+//     @script "run":
+//         @cmd "ura compile src/main.ura -o build/raytracer && ./build/raytracer"
+//     @dep "core":
+//         @url "https://github.com/ura-computing/ura-core"
+//         @version "0.0.1"
+//     @dep "geo":
+//         @path "../geometry"
 //
 // Same rules as the compiler's src/project.c. Pure: file access is injected.
 
@@ -13,8 +18,9 @@ export const CONFIG = "ura.conf";
 
 export interface Dependency {
     name: string;
-    version: string;
-    where: string; // a git repo url, or a folder (starts with . or /)
+    version?: string; // missing until `ura deps install` writes the latest one
+    where: string; // the @url repo, or the @path folder
+    isLocal: boolean; // @path
 }
 
 export interface Project {
@@ -26,26 +32,43 @@ export interface Project {
     dependencies: Dependency[];
 }
 
-// Every `@macro "a" "b" "c"` line; lines inside `@if` blocks count too.
+// Top level `@macro "value"` lines, and the indented fields of `@dep "name":`
+// and `@script "name":` blocks; lines inside `@if` blocks count too.
 export function parseConfig(dir: string, text: string): Project {
     const project: Project = { dir, main: "main.ura", scripts: new Map(), dependencies: [] };
+    let dependency: Dependency | undefined;
+    let script: string | undefined;
     for (const line of text.split(/\r?\n/)) {
         const macro = /^\s*@(\w+)/.exec(line)?.[1];
-        const strings = [...line.matchAll(/"([^"]*)"/g)].map((m) => m[1] ?? "");
-        const [first, second, third] = strings;
-        if (macro === undefined || first === undefined) {
+        const value = /"([^"]*)"/.exec(line)?.[1];
+        const isField = /^\s/.test(line);
+        if (!isField) {
+            dependency = undefined;
+            script = undefined;
+        }
+        if (macro === undefined || value === undefined) {
             continue;
         }
-        if (macro === "name") {
-            project.name = first;
+        if (isField && dependency && macro === "url") {
+            dependency.where = value;
+        } else if (isField && dependency && macro === "path") {
+            dependency.where = value;
+            dependency.isLocal = true;
+        } else if (isField && dependency && macro === "version") {
+            dependency.version = value;
+        } else if (isField && script !== undefined && macro === "cmd") {
+            project.scripts.set(script, value);
+        } else if (macro === "dep") {
+            dependency = { name: value, where: "", isLocal: false };
+            project.dependencies.push(dependency);
+        } else if (macro === "script") {
+            script = value;
+        } else if (macro === "name") {
+            project.name = value;
         } else if (macro === "version") {
-            project.version = first;
+            project.version = value;
         } else if (macro === "main") {
-            project.main = first;
-        } else if (macro === "script" && second !== undefined) {
-            project.scripts.set(first, second);
-        } else if (macro === "dependency" && second !== undefined && third !== undefined) {
-            project.dependencies.push({ name: first, version: second, where: third });
+            project.main = value;
         }
     }
     return project;
@@ -63,14 +86,14 @@ export function findProject(file: string, exists: (file: string) => boolean): st
     }
 }
 
-// Where a dependency is on disk: a folder is relative to the project; a repo
-// is cloned into the project, in dependencies/<name>@<version>.
+// Where a dependency is on disk: a @path folder is relative to the project; a
+// repo is linked into the project as deps/<name>@<version>.
 export function dependencyDir(project: string, dependency: Dependency): string {
-    const { name, version, where } = dependency;
-    if (where.startsWith(".") || where.startsWith("/")) {
+    const { name, version, where, isLocal } = dependency;
+    if (isLocal) {
         return path.resolve(project, where);
     }
-    return path.join(project, "dependencies", `${name}@${version}`);
+    return path.join(project, "deps", `${name}@${version ?? "latest"}`);
 }
 
 // The folders where `use "@/name"` looks for name.ura: the project's own
@@ -80,12 +103,28 @@ export function packageDirs(project: Project): string[] {
 }
 
 // The ura.conf for a copy of the project in another folder: the real text,
-// line for line (so errors keep their positions), with each valid dependency
-// pointing at its real folder, so the copy compiles against the same ones.
+// line for line (so errors keep their positions). An installed @url
+// dependency becomes `@path "<its real folder>"` and its @version line goes
+// blank, so the copy compiles against the same folders.
 export function stagedConfig(project: Project, text: string): string {
-    const line = /^(\s*@dependency\s+"([^"]*)"\s+"([^"]*)"\s+)"[^"]*"/gm;
-    return text.replace(line, (whole: string, head: string, name: string, version: string) => {
-        const dependency = project.dependencies.find((d) => d.name === name && d.version === version);
-        return dependency ? `${head}"${dependencyDir(project.dir, dependency)}"` : whole;
+    let dependency: Dependency | undefined;
+    const lines = text.split(/\r?\n/).map((line) => {
+        const macro = /^\s*@(\w+)/.exec(line)?.[1];
+        const value = /"([^"]*)"/.exec(line)?.[1];
+        if (!/^\s/.test(line)) {
+            dependency = macro === "dep" ? project.dependencies.find((d) => d.name === value) : undefined;
+        }
+        const isInstalled = dependency !== undefined && !dependency.isLocal && dependency.version !== undefined;
+        if (isInstalled && macro === "url") {
+            return `    @path "${dependencyDir(project.dir, dependency!)}"`;
+        }
+        if (isInstalled && macro === "version") {
+            return "";
+        }
+        if (dependency?.isLocal && macro === "path") {
+            return `    @path "${dependencyDir(project.dir, dependency)}"`;
+        }
+        return line;
     });
+    return lines.join("\n");
 }
