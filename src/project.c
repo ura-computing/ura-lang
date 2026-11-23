@@ -31,10 +31,8 @@ Config *parse_config(char *dir, bool is_fresh_clone) {
     while (peek(0)->type != LAST)
         append(config->tree->children, parse_expr(0));
     exit_scope();
-    if (is_fresh_clone && ucg_has_errors()) {
-        char *rm[] = { "rm", "-rf", dir, NULL };
-        run_command(rm, NULL);
-    }
+    if (is_fresh_clone && ucg_has_errors())
+        remove2(dir);
     ucg_check_errors();
     ura.tokens_count = first;
     ura.exe_pos = 0;
@@ -48,9 +46,6 @@ Config *load_config(char *dir) {
     return parse_config(dir, false);
 }
 
-bool is_dependency(Node *node) {
-    return node->token->type == MACRO_DEPENDENCY && node->children_count == 3;
-}
 
 char *entry_value(Node *node, int index) {
     return node->children[index]->token->chars.value;
@@ -59,48 +54,34 @@ char *entry_value(Node *node, int index) {
 char *config_value(Config *config, Type macro, char *name) {
     for (int i = 0; i < config->tree->children_count; i++) {
         Node *node = config->tree->children[i];
-        if (node->token->type != macro || node->children_count == 0)
+        if (node->token->type != macro)
             continue;
-        if (name == NULL)
+        if (name == NULL && node->children_count)
             return entry_value(node, 0);
-        if (node->children_count == 2 && strcmp2(entry_value(node, 0), name))
-            return entry_value(node, 1);
+        if (name && strcmp2(node->token->name, name))
+            return entry_value(node->cmd, 0);
     }
     return NULL;
 }
 
-bool is_folder(char *where) {
-    return where[0] == '.' || where[0] == '/';
-}
 
-char *dependency_folder(char *project, char *name, char *version, char *where) {
-    if (is_folder(where))
+char *dependency_dir(char *project, Node *dependency) {
+    char *where = entry_value(dependency->url, 0);
+    Node *version = dependency->url->version;
+    bool is_local = dependency->url->token->type == MACRO_PATH;
+    if (is_local)
         return where[0] == '/' ? where : format("%s/%s", project, where);
-    return format("%s/dependencies/%s@%s", project, name, version);
+    if (version == NULL)
+        return NULL;
+    char *name = dependency->token->name;
+    return format("%s/deps/%s@%s", project, name, entry_value(version, 0));
 }
-
-char *dependency_dir(char *project, Node *node) {
-    return dependency_folder(
-        project, entry_value(node, 0), entry_value(node, 1), entry_value(node, 2)
-    );
-}
-// TODO: name, version, path should not be stored in array
-// the should be like
-/*
-node:
-	name: dependcy name
-	version: dependcy version
-	url: dependcy url
-
-Config struct must have children Configs
-when importing a conifg it should go recursively or somehting
-and skip the already imported files
-*/
 
 Node *find_dependency_node(Config *config, char *name) {
     for (int i = 0; i < config->tree->children_count; i++) {
         Node *node = config->tree->children[i];
-        if (is_dependency(node) && strcmp2(entry_value(node, 0), name))
+        bool is_dependency = node->token->type == MACRO_DEPENDENCY;
+        if (is_dependency && strcmp2(node->token->name, name))
             return node;
     }
     return NULL;
@@ -110,19 +91,17 @@ void load_project(char *dir) {
     Config *config = load_config(dir);
     for (int i = 0; i < config->tree->children_count; i++) {
         Node *node = config->tree->children[i];
-        if (!is_dependency(node))
+        if (node->token->type != MACRO_DEPENDENCY)
             continue;
-        char *place = dependency_dir(config->dir, node);
-        if (access(place, F_OK) != 0) {
-            eprint(
-                "%s %s is not installed\n", entry_value(node, 0), entry_value(node, 1)
-            );
-            help("run: cd %s && ura install\n", config->dir);
+        char *folder = dependency_dir(config->dir, node);
+        if (folder == NULL || access(folder, F_OK) != 0) {
+            eprint("%s is not installed\n", node->token->name);
+            help("run: cd %s && ura deps install\n", config->dir);
             exit(1);
         }
-        bool has_config = access(format("%s/ura.conf", place), R_OK) == 0;
-        if (has_config && find_config(realpath2(place)) == NULL)
-            load_project(place);
+        bool has_config = access(format("%s/ura.conf", folder), R_OK) == 0;
+        if (has_config && find_config(realpath2(folder)) == NULL)
+            load_project(folder);
     }
 }
 
@@ -132,27 +111,74 @@ bool is_version(char *text) {
     return isdigit(text[0]) && count == 3 && text[end] == '\0';
 }
 
-int install_dependency(
-    char *project, char *name, char *version, char *where, int depth
-) {
-    char *place = dependency_folder(project, name, version, where);
-    bool is_missing = access(place, F_OK) != 0;
-    if (is_missing && is_folder(where)) {
-        eprint("dependency %s: no folder %s\n", name, place);
+char *latest_version(char *url) {
+    char *tags = format("%s/.ura/tags", home2());
+    mkdir2(format("%s/.ura", home2()));
+    char *ls[] = { "git", "ls-remote", "--tags", "--refs", url, NULL };
+    if (run_command(ls, tags) != 0) {
+        eprint("can't read the versions of %s\n", url);
         exit(1);
     }
-    if (!is_folder(where) && !is_version(version)) {
+    File *file = new_file(tags);
+    open_file(file);
+    char *latest = NULL;
+    int best[3] = { 0 };
+    char *tag = file->buff;
+    while ((tag = strstr(tag, "refs/tags/"))) {
+        tag += strlen("refs/tags/");
+        char *name = strndup2(tag, strcspn(tag, "\r\n"));
+        if (!is_version(name))
+            continue;
+        int part[3];
+        sscanf(name, "%d.%d.%d", &part[0], &part[1], &part[2]);
+        int i = 0;
+        while (i < 2 && part[i] == best[i])
+            i++;
+        if (latest && part[i] <= best[i])
+            continue;
+        latest = name;
+        memcpy(best, part, sizeof(best));
+    }
+    if (latest == NULL) {
+        eprint("%s has no version tag like 0.0.1\n", url);
+        exit(1);
+    }
+    return latest;
+}
+
+int install_dependency(char *project, Node *dependency, bool is_update, int depth) {
+    char *name = dependency->token->name;
+    char *where = entry_value(dependency->url, 0);
+    Node *pinned = dependency->url->version;
+    bool is_local = dependency->url->token->type == MACRO_PATH;
+    char *version = pinned && !is_update ? entry_value(pinned, 0) : NULL;
+    if (!is_local && version == NULL) {
+        version = latest_version(where);
+        bool is_same = pinned && strcmp2(entry_value(pinned, 0), version);
+        if (!is_same)
+            set_dependency(project, name, "@url", where, version);
+        if (!is_same)
+            help("%s %s written in %s/ura.conf\n", name, version, project);
+    }
+    if (!is_local && !is_version(version)) {
         eprint(
             "dependency %s: version '%s' is not a number like 0.0.1\n", name, version
         );
         exit(1);
     }
-    bool is_download = is_missing && !is_folder(where);
-    char *repo = basename(strdup2(where));
-    if (ends_with(repo, ".git"))
-        repo = strndup2(repo, strlen(repo) - 4);
-    char *cache = format("%s/.ura/packages/%s@%s", home2(), repo, version);
-    if (is_download && access(cache, F_OK) != 0) {
+    char *folder = dependency_dir(project, dependency);
+    char *cache = NULL;
+    if (!is_local) {
+        folder = format("%s/deps/%s@%s", project, name, version);
+        cache = format("%s/.ura/deps/%s/%s", home2(), name, version);
+    }
+    bool is_missing = access(folder, F_OK) != 0;
+    bool is_new = cache && access(cache, F_OK) != 0;
+    if (is_missing && is_local) {
+        eprint("dependency %s: no folder %s\n", name, folder);
+        exit(1);
+    }
+    if (is_new) {
         char *clone[] = { "git",      "clone", "-q",  "--depth", "1",
                           "--branch", version, where, cache,     NULL };
         if (run_command(clone, NULL) != 0) {
@@ -161,35 +187,35 @@ int install_dependency(
         }
         help("installed %s %s\n", name, version);
     }
-    if (is_download) {
-        mkdir2(format("%s/dependencies", project));
-        symlink2(cache, place);
+    if (is_missing) {
+        mkdir2(format("%s/deps", project));
+        symlink2(cache, folder);
     }
-    bool has_config = access(format("%s/ura.conf", place), R_OK) == 0;
+    bool has_config = access(format("%s/ura.conf", folder), R_OK) == 0;
     if (has_config)
-        parse_config(place, is_download);
+        parse_config(folder, is_new);
     int installed = is_missing;
     if (has_config && depth < 16)
-        installed += install_project(place, depth + 1);
+        installed += install_project(folder, NULL, false, depth + 1);
     return installed;
 }
 
-int install_project(char *dir, int depth) {
+int install_project(char *dir, char *name, bool is_update, int depth) {
     Config *config = load_config(dir);
     int count = 0;
     int installed = 0;
     for (int i = 0; i < config->tree->children_count; i++) {
         Node *node = config->tree->children[i];
-        if (!is_dependency(node))
+        if (node->token->type != MACRO_DEPENDENCY)
             continue;
-        installed += install_dependency(
-            config->dir,
-            entry_value(node, 0),
-            entry_value(node, 1),
-            entry_value(node, 2),
-            depth
-        );
+        if (name && !strcmp2(node->token->name, name))
+            continue;
+        installed += install_dependency(config->dir, node, is_update, depth);
         count++;
+    }
+    if (name && count == 0) {
+        eprint("'%s' is not a dependency in ura.conf\n", name);
+        exit(1);
     }
     if (depth == 0 && count == 0)
         help("no dependencies in ura.conf\n");
@@ -198,77 +224,82 @@ int install_project(char *dir, int depth) {
     return installed;
 }
 
-void set_dependency(char *project, char *name, char *version, char *where) {
+void set_dependency(char *project, char *name, char *field, char *where, char *version) {
     File *file = new_file(format("%s/ura.conf", project));
     open_file(file);
-    char *entry = format("@dependency \"%s\"", name);
+    char *entry = format("@dep \"%s\"", name);
+    char *block = "";
+    if (field)
+        block = format("%s:\n    %s \"%s\"\n", entry, field, where);
+    if (field && version)
+        block = format("%s    @version \"%s\"\n", block, version);
     char *out = "";
+    bool is_inside = false;
+    bool is_found = false;
     char *line = file->buff;
     while (*line) {
         char *newline = strchr(line, '\n');
         size_t len = newline ? (size_t)(newline - line + 1) : strlen(line);
         char *row = strndup2(line, len);
         line += len;
-        char *code = row + strspn(row, " \t");
-        if (!strncmp2(code, entry, strlen(entry)))
-            out = format("%s%s", out, row);
+        bool is_indented = row[0] == ' ' || row[0] == '\t';
+        if (is_inside && is_indented)
+            continue;
+        is_inside = strncmp2(row, entry, strlen(entry));
+        is_found = is_found || is_inside;
+        out = format("%s%s", out, is_inside ? block : row);
     }
     bool needs_newline = out[0] && !ends_with(out, "\n");
-    if (version)
-        out = format(
-            "%s%s%s \"%s\" \"%s\"\n",
-            out,
-            needs_newline ? "\n" : "",
-            entry,
-            version,
-            where
-        );
+    if (!is_found)
+        out = format("%s%s%s", out, needs_newline ? "\n" : "", block);
     write_file(file->path, out);
 }
 
-void delete_dependency_folder(char *project, Node *node) {
-    if (is_folder(entry_value(node, 2)))
-        return;
-    char *rm[] = { "rm", "-rf", dependency_dir(project, node), NULL };
-    run_command(rm, NULL);
-}
-
-void add_package(char *project, char *name, char *version, char *where) {
+void add_dependency(char *project, char *spec, char *where) {
+    char *at = strchr(spec, '@');
+    char *name = at ? strndup2(spec, at - spec) : spec;
+    char *version = at ? at + 1 : NULL;
+    bool is_local = where && (where[0] == '.' || where[0] == '/');
     if (!is_package_name(name)) {
         eprint("'%s' is not a package name\n", name);
         exit(1);
     }
-    Config *config = load_config(project);
-    Node *old = find_dependency_node(config, name);
-    char *place = dependency_folder(config->dir, name, version, where);
-    bool is_same = old && strcmp2(entry_value(old, 1), version) &&
-                   strcmp2(entry_value(old, 2), where);
-    if (is_same && access(place, F_OK) == 0) {
-        help("%s %s is already installed\n", name, version);
-        return;
+    if (is_local && version) {
+        eprint("%s is a folder, it has no version\n", where);
+        help("ura deps add %s %s\n", name, where);
+        exit(1);
     }
-    install_dependency(config->dir, name, version, where, 0);
-    if (is_same)
-        return;
-    if (old && !strcmp2(dependency_dir(config->dir, old), place))
-        delete_dependency_folder(config->dir, old);
-    set_dependency(config->dir, name, version, where);
-    if (old)
-        help("updated %s %s -> %s in ura.conf\n", name, entry_value(old, 1), version);
-    else
-        help("added %s %s to ura.conf\n", name, version);
+    if (where == NULL)
+        where = format("https://github.com/ura-computing/ura-%s", name);
+    set_dependency(project, name, is_local ? "@path" : "@url", where, version);
+    help("added %s to ura.conf\n", spec);
+    install_project(project, NULL, false, 0);
 }
 
-void remove_dependency(char *project, char *name) {
+void remove_dependency(char *project, char *spec) {
+    char *at = strchr(spec, '@');
+    char *name = at ? strndup2(spec, at - spec) : spec;
+    char *version = at ? at + 1 : NULL;
     Config *config = load_config(project);
-    Node *old = find_dependency_node(config, name);
-    if (old == NULL) {
+    Node *node = find_dependency_node(config, name);
+    char *cache = format("%s/.ura/deps/%s", home2(), name);
+    if (node == NULL && access(cache, F_OK) != 0) {
         eprint("'%s' is not a dependency in ura.conf\n", name);
         exit(1);
     }
-    delete_dependency_folder(config->dir, old);
-    set_dependency(config->dir, name, NULL, NULL);
-    help("removed %s\n", name);
+    char **versions = version ? (char *[]){ version, NULL } : readdir2(cache);
+    for (int i = 0; versions[i]; i++) {
+        remove2(format("%s/%s", cache, versions[i]));
+        remove2(format("%s/deps/%s@%s", config->dir, name, versions[i]));
+    }
+    if (version == NULL)
+        remove2(cache);
+    Node *pinned = node ? node->url->version : NULL;
+    bool is_pinned = version && pinned && strcmp2(entry_value(pinned, 0), version);
+    bool is_listed = node && (version == NULL || is_pinned);
+    if (is_listed)
+        set_dependency(config->dir, name, NULL, NULL, NULL);
+    help("removed %s\n", spec);
 }
 
 void list_project(char *dir, char *indent, int depth) {
@@ -280,35 +311,32 @@ void list_project(char *dir, char *indent, int depth) {
     }
     Node *last = NULL;
     for (int i = 0; i < config->tree->children_count; i++) {
-        if (is_dependency(config->tree->children[i]))
+        if (config->tree->children[i]->token->type == MACRO_DEPENDENCY)
             last = config->tree->children[i];
     }
     for (int i = 0; i < config->tree->children_count; i++) {
         Node *node = config->tree->children[i];
-        if (!is_dependency(node))
+        if (node->token->type != MACRO_DEPENDENCY)
             continue;
-        char *name = entry_value(node, 0);
-        char *version = entry_value(node, 1);
-        char *where = entry_value(node, 2);
-        char *place = dependency_dir(config->dir, node);
-        bool is_missing = access(place, F_OK) != 0;
-        bool has_config =
-            !is_missing && access(format("%s/ura.conf", place), R_OK) == 0;
-        char *kind = is_folder(where) ? "folder" : where;
+        Node *version = node->url->version;
+        bool is_local = node->url->token->type == MACRO_PATH;
+        char *folder = dependency_dir(config->dir, node);
+        bool is_missing = folder == NULL || access(folder, F_OK) != 0;
+        bool has_config = !is_missing && access(format("%s/ura.conf", folder), R_OK) == 0;
         bool is_last = node == last;
         help(
             "%s%s%s %s  %s  %s%s\n",
             indent,
             is_last ? "└── " : "├── ",
-            name,
-            version ? version : "",
-            kind,
-            place,
+            node->token->name,
+            version ? entry_value(version, 0) : "",
+            is_local ? "folder" : entry_value(node->url, 0),
+            folder ? folder : "",
             is_missing ? "  missing" : ""
         );
         if (has_config && depth < 16)
             list_project(
-                place, format("%s%s", indent, is_last ? "    " : "│   "), depth + 1
+                folder, format("%s%s", indent, is_last ? "    " : "│   "), depth + 1
             );
     }
 }
@@ -318,7 +346,8 @@ void run_script(char *name) {
     char *script = config_value(load_config(project), MACRO_SCRIPT, name);
     if (script == NULL) {
         eprint("no @script \"%s\" in ura.conf\n", name);
-        help("add a line: @script \"%s\" \"<command>\"\n", name);
+        help("add: @script \"%s\":\n"
+			"         @cmd \"<command>\"\n", name);
         exit(1);
     }
     if (chdir(project) != 0) {
@@ -345,13 +374,13 @@ char *find_package(char *name, File *from) {
     Node *node = find_dependency_node(config, dependency);
     if (node == NULL)
         return NULL;
-    char *place = dependency_dir(config->dir, node);
-    Config *own = find_config(realpath2(place));
+    char *folder = dependency_dir(config->dir, node);
+    Config *own = find_config(realpath2(folder));
     char *entry = own ? config_value(own, MACRO_ENTRY, NULL) : NULL;
     char *file = slash ? format("%s.ura", slash + 1) : entry;
     if (file == NULL)
         return NULL;
-    char *path = format("%s/%s", place, file);
+    char *path = format("%s/%s", folder, file);
     return access(path, R_OK) == 0 ? path : NULL;
 }
 
@@ -407,15 +436,20 @@ void init_project(char *name) {
     char *config = format(
         "@name \"%s\"\n"
         "@version \"0.0.1\"\n"
-        "@dependency \"core\" \"0.0.1\" "
-        "\"https://github.com/ura-computing/ura-core\"\n"
-        "@dependency \"posix\" \"0.0.1\" "
-        "\"https://github.com/ura-computing/ura-posix\"\n"
+        "\n"
+        "@dep \"core\":\n"
+        "    @url \"https://github.com/ura-computing/ura-core\"\n"
+        "    @version \"0.0.1\"\n"
+        "@dep \"posix\":\n"
+        "    @url \"https://github.com/ura-computing/ura-posix\"\n"
+        "    @version \"0.0.1\"\n"
         "\n"
         "// ura run: compile and run\n"
-        "@script \"run\"\"ura compile main.ura -o build/%s && ./build/%s\"\n"
+        "@script \"run\":\n"
+        "    @cmd \"ura compile main.ura -o build/%s && ./build/%s\"\n"
         "// ura build: compile into build/%s\n"
-        "@script \"build\" \"ura compile main.ura -o build/%s\"\n"
+        "@script \"build\":\n"
+        "    @cmd \"ura compile main.ura -o build/%s\"\n"
         "\n"
         "// ura compile flags, add them to a script:\n",
         name,
@@ -438,24 +472,26 @@ void init_project(char *name) {
         "```\n\n"
         "| command | what it does |\n"
         "|---|---|\n"
-        "| `ura install` | clone the dependencies (run it first) |\n"
+        "| `ura deps install` | clone the dependencies (run it first) |\n"
         "| `ura run` | build `main.ura` and run it |\n"
         "| `ura build` | build it into `build/%s` |\n"
-        "| `ura install <name> <version> <repo url>` | add a dependency |\n"
-        "| `ura list` | show the dependencies |\n",
+        "| `ura deps add <name>[@version] [repo url]` | add a dependency |\n"
+        "| `ura deps update [name]` | move to the latest versions |\n"
+        "| `ura deps remove <name>[@version]` | remove a dependency |\n"
+        "| `ura deps list` | show the dependencies |\n",
         name,
         name
     );
     char *files[][2] = {
         { "ura.conf", config },
         { "README.md", readme },
-        { ".gitignore", "build/\ndependencies/\n" },
+        { ".gitignore", "build/\ndeps/\n" },
     };
     for (size_t i = 0; i < sizeof(files) / sizeof(*files); i++)
         write_file(format("%s/%s", name, files[i][0]), files[i][1]);
     for (int i = 0; template_files[i][0]; i++)
         write_file(format("%s/%s", name, template_files[i][0]), template_files[i][1]);
-    help("created %s/, run it with: cd %s && ura install && ura run\n", name, name);
+    help("created %s/, run it with: cd %s && ura deps install && ura run\n", name, name);
 }
 
 char *find_project(void) {

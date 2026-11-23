@@ -231,13 +231,6 @@ void check_config(Node *node) {
     Token *token = node->token;
     char *text = token_text(token);
     bool is_config = strcmp2(basename(strdup2(file_at(token->s)->path)), "ura.conf");
-    int count = token->type == MACRO_DEPENDENCY ? 3 : token->type == MACRO_SCRIPT ? 2 : 1;
-    char *like[] = {
-        [1] = "like: %s \"value\"",
-        [2] = "like: %s \"name\" \"command\"",
-        [3] = "like: %s \"name\" \"version\" \"https://github.com/<user>/<repo>\" (or a folder)",
-    };
-    char *strings[] = { [1] = "one string", [2] = "two strings", [3] = "three strings" };
     if (!is_config) {
         add_error(
             token->s,
@@ -247,14 +240,69 @@ void check_config(Node *node) {
         );
         return;
     }
-    if (node->children_count == count)
+    bool is_block = includes(token->type, MACRO_DEPENDENCY, MACRO_SCRIPT, 0);
+    if (is_block || node->children_count == 1)
         return;
     add_error(
         token->s,
         token->e,
-        format("'%s' takes %s", text, strings[count]),
-        format(like[count], text)
+        format("'%s' takes one string", text),
+        format("like: %s \"value\"", text)
     );
+}
+
+bool check_config_field(Node *node, Node *field) {
+    Token *token = field->token;
+    bool is_script = node->token->type == MACRO_SCRIPT;
+    bool is_cmd = token->type == MACRO_CMD;
+    bool is_source = includes(token->type, MACRO_VERSION, MACRO_URL, MACRO_PATH, 0);
+    if (is_script ? is_cmd : is_source)
+        return true;
+    char *block = token_text(node->token);
+    add_error(
+        token->s,
+        token->e,
+        format("'%s' doesn't belong in %s", token_text(token), block),
+        is_script ? "use @cmd" : "use @url, @path or @version"
+    );
+    return false;
+}
+
+void check_config_block(Node *node) {
+    Token *token = node->token;
+    char *text = token_text(token);
+    bool is_script = token->type == MACRO_SCRIPT;
+    Node *url = is_script ? NULL : node->url;
+    if (token->name == NULL)
+        add_error(
+            token->s,
+            token->e,
+            format("'%s' needs a name", text),
+            format("like: %s \"%s\":", text, is_script ? "run" : "core")
+        );
+    else if (is_script && node->cmd == NULL)
+        add_error(
+            token->s,
+            token->e,
+            format("script %s needs @cmd", token->name),
+            "add: @cmd \"ura compile main.ura -o build/main\""
+        );
+    else if (is_script)
+        return;
+    else if (url == NULL)
+        add_error(
+            token->s,
+            token->e,
+            format("dependency %s needs @url or @path", token->name),
+            "add: @url \"https://github.com/<user>/<repo>\" (or @path \"./folder\")"
+        );
+    else if (url->token->type == MACRO_PATH && url->version)
+        add_error(
+            url->version->token->s,
+            url->version->token->e,
+            format("dependency %s is a folder, it has no @version", token->name),
+            "remove the @version line"
+        );
 }
 
 bool check_module(Node *node) {
@@ -278,7 +326,7 @@ bool check_package(Token *name, char *path) {
         name->s,
         name->e,
         format("package '%s' not found", package),
-        strncmp2(package, "@/", 2) ? "add a dependency that has it: ura install <name> <version> <repo url>" : NULL
+        strncmp2(package, "@/", 2) ? "add a dependency that has it: ura deps add <name>" : NULL
     );
     return false;
 }

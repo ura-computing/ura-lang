@@ -61,18 +61,26 @@ URA_LLVM_FILE="$URA_ROOT/llvm-version.txt" # written by set-llvm, read by build
 # test compiles in its own temporary folder, next to a ura.conf that points
 # at these folders.
 URA_PROJECTS_DIR="$(cd "$URA_ROOT/.." && pwd)/projects"
-URA_TEST_CONFIG="$(sed -n 's|^@dependency "\([^"]*\)" "\([^"]*\)" "[^"]*/\([^"/]*\)".*|@dependency "\1" "\2" "'"$URA_PROJECTS_DIR"'/\3"|p' "$URA_TESTS_DIR/ura.conf")"
+URA_TEST_CONFIG="$(awk -v projects="$URA_PROJECTS_DIR" '
+    /^@dep "/ { print }
+    /^ *@url "/ { n = split($2, part, "/"); print "    @path \"" projects "/" part[n] }
+' "$URA_TESTS_DIR/ura.conf")"
 
 # each library in projects/ gets its own dependencies (like ura-posix's math)
-# as links to the other clones in projects/: nothing is cloned or installed
+# as links deps/<name>@<version> to the other clones in projects/: nothing is
+# cloned or installed
 _ura_link_projects() {
     local conf dir dep repo
     for conf in "$URA_PROJECTS_DIR"/*/ura.conf; do
         dir="$(dirname "$conf")"
-        sed -n 's|^@dependency "\([^"]*\)" "\([^"]*\)" "[^"]*/\([^"/]*\)".*|\1@\2 \3|p' "$conf" |
+        awk '
+            /^@dep "/ { split($0, quote, "\""); name = quote[2] }
+            /^ *@url "/ { n = split($2, part, "/"); repo = substr(part[n], 1, length(part[n]) - 1) }
+            /^ *@version "/ { split($0, quote, "\""); print name "@" quote[2], repo }
+        ' "$conf" |
             while read -r dep repo; do
-                mkdir -p "$dir/dependencies"
-                ln -sfn "$URA_PROJECTS_DIR/$repo" "$dir/dependencies/$dep"
+                mkdir -p "$dir/deps"
+                ln -sfn "$URA_PROJECTS_DIR/$repo" "$dir/deps/$dep"
             done
     done
 }

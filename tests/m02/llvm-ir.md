@@ -13312,7 +13312,7 @@ error: test.ura:2:5 package '@/nothing' not found
   |
 2 | use "@/nothing"
   |     ^^^^^^^^^^^
-help: add a dependency that has it: ura install <name> <version> <repo url>
+help: add a dependency that has it: ura deps add <name>
 error: aborting due to 1 error
 1
 ```

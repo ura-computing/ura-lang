@@ -8,7 +8,7 @@ A demo, a spinning ASCII donut, lives in its own repo: [ura-donut](https://githu
 
 ```
 ura init hello && cd hello
-ura install
+ura deps install
 ura run
 ```
 

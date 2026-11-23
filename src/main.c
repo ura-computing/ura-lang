@@ -84,6 +84,9 @@ struct Node {
         Node *operand;
         Node *scope;
         Node *symbol;
+        Node *url;
+        Node *version;
+        Node *cmd;
     };
     union {
         Node *right;
@@ -174,7 +177,10 @@ Keyword keywords[] = { // clang-format off
     { "@version", { .type = MACRO_VERSION } },
     { "@entry",   { .type = MACRO_ENTRY } },
     { "@script",  { .type = MACRO_SCRIPT } },
-    { "@dependency", { .type = MACRO_DEPENDENCY } },
+    { "@dep", 	  { .type = MACRO_DEPENDENCY } },
+    { "@url",     { .type = MACRO_URL } },
+    { "@cmd",     { .type = MACRO_CMD } },
+    { "@path",    { .type = MACRO_PATH } },
     { "operator", { .type = OPERATOR } },
     { "pub",      { .type = PUB } },
     { "fn",       { .type = FN_DEC } },
@@ -1485,11 +1491,34 @@ Node *parse_prime() {
         return node;
     } // clang-format off
     case MACRO_NAME: case MACRO_VERSION: case MACRO_ENTRY:
-    case MACRO_SCRIPT: case MACRO_DEPENDENCY: { // clang-format on
+    case MACRO_URL: case MACRO_PATH: case MACRO_CMD: { // clang-format on
         node = new_node(token);
         while (peek(0)->type == CHARS && peek(0)->line == token->line)
             append(node->children, new_node(next()));
         check_config(node);
+        return node;
+    } // clang-format off
+    case MACRO_DEPENDENCY: case MACRO_SCRIPT: { // clang-format on
+        node = new_node(token);
+        if (peek(0)->type == CHARS && peek(0)->line == token->line)
+            token->name = next()->chars.value;
+        expect(DOTS, "expected ':' after the name", ":");
+        Node *version = NULL;
+        while (inside(token->space)) {
+            Node *field = parse_expr(0);
+            if (!check_config_field(node, field))
+                continue;
+            if (field->token->type == MACRO_VERSION)
+                version = field;
+            else if (field->token->type == MACRO_CMD)
+                node->cmd = field;
+            else
+                node->url = field;
+        }
+        if (node->url && token->type == MACRO_DEPENDENCY)
+            node->url->version = version;
+        check_config(node);
+        check_config_block(node);
         return node;
     }
     case USE: {
@@ -3339,11 +3368,13 @@ void print_help(void) {
     help("\n");
     help("projects (ura.conf):\n");
     help("  ura init <name>         create a project\n");
-    help("  ura install             get the dependencies\n");
-    help("  ura install <name> <version> <repo url | ./folder>\n");
-    help("                          add or update a dependency\n");
-    help("  ura remove <name>       remove a dependency\n");
-    help("  ura list                show the dependencies\n");
+    help("  ura deps install        get the dependencies\n");
+    help("  ura deps add <name>[@version] [repo url | ./folder]\n");
+    help("                          add a dependency (no url: ura-computing/ura-<name>)\n");
+    help("  ura deps update [name]  move dependencies to their latest version\n");
+    help("  ura deps remove <name>[@version] ...\n");
+    help("                          remove dependencies (no version: every version)\n");
+    help("  ura deps list           show the dependencies\n");
     help("  ura <script>            run a @script (run, build, ...)\n");
     help("\n");
     help("  ura -version / -v       print the ura and LLVM versions\n");
@@ -3428,32 +3459,24 @@ void parse_args(int ac, char **av) {
         return;
     }
     // with ura.conf
-    bool install = strcmp2(av[1], "install");
-    if (install && ac == 2) { // install all packages from ura.conf
-        install_project(find_project(), 0);
-        exit(0);
-    }
-    if (install && ac != 2) { // install and add apckage to ura.conf
-        if (ac != 5) {
-            eprint("expected a name, a version and where to get it:\n");
-            help("ura install <name> <version> <https://github.com/user/repo | ./folder>\n");
+    if (strcmp2(av[1], "deps")) {
+        char *command = ac > 2 ? av[2] : "";
+        char *name = ac > 3 ? av[3] : NULL;
+        if (strcmp2(command, "install") && ac == 3)
+            install_project(find_project(), NULL, false, 0);
+        else if (strcmp2(command, "add") && (ac == 4 || ac == 5))
+            add_dependency(find_project(), name, ac == 5 ? av[4] : NULL);
+        else if (strcmp2(command, "update") && ac <= 4)
+            install_project(find_project(), name, true, 0);
+        else if (strcmp2(command, "list") && ac == 3)
+            list_project(find_project(), "", 0);
+        else if (!strcmp2(command, "remove") || ac < 4) {
+            eprint("expected: ura deps install | add | update | remove | list\n");
+            help("see them with: ura -help\n");
             exit(1);
         }
-        add_package(find_project(), av[2], av[3], av[4]);
-        exit(0);
-    }
-    if (strcmp2(av[1], "remove")) {
-        if (ac < 3) {
-            eprint("expected a dependency name:\n");
-            help("ura remove <name>\n");
-            exit(1);
-        }
-        for (int i = 2; i < ac; i++)
+        for (int i = 3; strcmp2(command, "remove") && i < ac; i++)
             remove_dependency(find_project(), av[i]);
-        exit(0);
-    }
-    if (strcmp2(av[1], "list")) {
-        list_project(find_project(), "", 0);
         exit(0);
     }
     bool is_compile = av[1][0] == '-' || ends_with(av[1], ".ura");

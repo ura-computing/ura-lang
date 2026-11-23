@@ -1,7 +1,7 @@
 # compiler output, at any depth
 build/
-# dependencies cloned by `ura install`, at any depth
-dependencies/
+# dependencies linked by `ura deps install`, at any depth
+deps/
 # ura-computing repos, each its own git clone (see src/config.sh)
 projects/
 # the project `ura init` makes for trying things by hand

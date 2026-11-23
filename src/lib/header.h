@@ -22,6 +22,7 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <dirent.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -291,6 +292,29 @@ void symlink2(const char *target, const char *path) {
         fprintf(stderr, "can't link %s to %s\n", path, target);
         exit(1);
     }
+}
+
+void remove2(char *path) {
+    char *rm[] = { "rm", "-rf", path, NULL };
+    run_command(rm, NULL);
+}
+
+char **readdir2(char *path) {
+    DIR *dir = opendir(path);
+    int count = 0;
+    while (dir && readdir(dir))
+        count++;
+    char **names = arena_alloc(count + 1, sizeof(char *));
+    if (dir == NULL)
+        return names;
+    rewinddir(dir);
+    count = 0;
+    for (struct dirent *entry = readdir(dir); entry; entry = readdir(dir)) {
+        if (entry->d_name[0] != '.')
+            names[count++] = strdup2(entry->d_name);
+    }
+    closedir(dir);
+    return names;
 }
 
 char *format(const char *fmt, ...) {
