@@ -319,7 +319,15 @@ char **readdir2(char *path) {
     return names;
 }
 
+// int tmp = 0;
 char *format(const char *fmt, ...) {
+	// tmp++;
+
+	// printf("log <%s>\n", fmt);
+	// if(tmp == 500) {
+	// 	printf("stack over flow\n");
+	// 	exit(1);
+	// }
     char *buf = NULL;
     size_t size = 0;
     ioFile out = open_memstream(&buf, &size);
@@ -373,6 +381,7 @@ void open_file(File *file) {
     char *path = realpath(file->path, NULL);
     if (path == NULL) {
         fprintf(stderr, "realpath failed (%s)\n", file->path);
+		// raise(SIGSEGV);
         exit(1);
     }
     file->path = strdup2(path);

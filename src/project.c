@@ -22,9 +22,9 @@ Node *parse_config(char *dir, bool is_fresh_clone) {
     int first = ura.tokens_count;
     int line = ura.line;
     tokenize(file);
-    new_token(LAST, NULL)->space = -TAB;
+    new_token(LAST, (Token){})->space = -TAB;
 
-    Node *config = new_node(new_token(SCOPE, NULL));
+    Node *config = new_node(new_token(SCOPE, (Token){}));
     config->token->name = dir;
     ura.exe_pos = first;
     enter_scope(config);

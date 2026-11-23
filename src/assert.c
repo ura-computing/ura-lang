@@ -587,7 +587,7 @@ bool is_numeric(Node *type) {
     bool is_number_type = type && includes(type->token->type, INT, FLOAT, 0);
     return is_number_type && type->token->shift != 1;
 }
-
+// TODO: this is the ugliest code ever written
 void assert_type(Node *value, Node *expected, char *help) {
     if (expected && value->token->type == LCBRACK) {
         assert_struct_value(value, expected);
@@ -601,8 +601,16 @@ void assert_type(Node *value, Node *expected, char *help) {
         assert_null(value, expected);
         return;
     }
-    bool is_numeric_left = is_numeric(type_of(value->left));
-    bool is_numeric_right = is_numeric(type_of(value->right));
+	// if(value->left == NULL) {
+	// 	raise(SIGSEGV);
+	// 	print(">>%n\n", value);
+	// 	print(">>%n\n", value->left);
+	// 	print(">>%n\n", value->right);
+	// 	exit(1);
+	// }
+	// assert(value->left);
+    bool is_numeric_left = is_numeric(type_of(value));
+    bool is_numeric_right = is_numeric(type_of(value));
     bool is_numeric_sides = is_numeric_left && is_numeric_right;
     bool is_numeric_math = is_math(value) && is_numeric(expected) && is_numeric_sides;
     if (is_numeric_math) {
@@ -781,7 +789,7 @@ Node *assert_copy(Node *value, Node *type) {
         return value;
     Node *assign = find_operator(ASSIGN, type, &value, 1);
     if (assign) {
-        Node *copy = new_node(new_token(COPY, value->token));
+        Node *copy = new_node(new_token(COPY, *value->token));
         copy->to_call = assign;
         copy->to_copy = value;
         return copy;
@@ -825,7 +833,7 @@ void assert_args(Node *fn, Node **args, int count, int self) {
             continue;
         if (is_address)
             continue;
-        Node *ref = new_node(new_token(REF, args[i]->token));
+        Node *ref = new_node(new_token(REF, *args[i]->token));
         ref->operand = args[i];
         args[i] = ref;
     }
@@ -1821,7 +1829,7 @@ void assert_call(Node *node) {
         Node *call = is_member ? arg->right : arg;
         bool is_ref_call = call->token->type == FN_CALL && lives_in_variable(arg);
         if (takes_ref && is_ref_call) {
-            Node *ref = new_node(new_token(REF, arg->token));
+            Node *ref = new_node(new_token(REF, *arg->token));
             ref->operand = arg;
             node->children[i] = arg = ref;
         }
@@ -1863,7 +1871,8 @@ void assert_builtin(Node *node) {
             );
         Node *type = type_of(arg);
         if (is_text && is_struct_value(type)) {
-            Node *op = new_node(new_token(FORMAT, arg->token));
+			// TODO: FORMAT should have children instead of left
+            Node *op = new_node(new_token(FORMAT, *arg->token));
             op->left = arg;
             analyze_operator(op, FORMAT);
             node->children[i] = op;
@@ -1879,150 +1888,209 @@ void assert_builtin(Node *node) {
         );
 }
 
-void assert_operation(Node *node) {
-    bool is_assign = includes(
+// TODO: this code is full of shit
+bool assert_assign_operation(Node *var) {
+    bool is_undeclared = var->token->type == ID;
+
+    if (!is_undeclared && !lives_in_variable(var)) {
+        Token *left = var->token;
+        add_error(left->s, left->e, "can't assign to a value", NULL);
+        return false;
+    }
+
+    return true;
+}
+
+bool is_assign_operation(Node *node) {
+    return includes(
         node->token->type,
-        ASSIGN,
-        ADD_ASSIGN,
-        SUB_ASSIGN,
-        MUL_ASSIGN,
-        DIV_ASSIGN,
-        MOD_ASSIGN,
-        BAND_ASSIGN,
-        BOR_ASSIGN,
-        BXOR_ASSIGN,
-        LSHIFT_ASSIGN,
-        RSHIFT_ASSIGN,
+        ASSIGN, ADD_ASSIGN, SUB_ASSIGN,
+        MUL_ASSIGN, DIV_ASSIGN, MOD_ASSIGN,
+        BAND_ASSIGN, BOR_ASSIGN, BXOR_ASSIGN,
+        LSHIFT_ASSIGN, RSHIFT_ASSIGN,
         0
     );
-    bool is_undeclared = node->left->token->type == ID;
-    if (is_assign && !is_undeclared && !lives_in_variable(node->left)) {
-        Token *left = node->left->token;
-        add_error(
-            left->s,
-            left->e,
-            "can't assign to a value",
-            NULL
-        );
-        return;
-    }
+}
+
+bool is_compare_operation(Node *node) {
+    return includes(node->token->type, EQ, NQ, 0);
+}
+
+bool assert_ref_initialization(Node *node) {
     Node *left = node->left;
     Node *right = node->right;
-    bool is_compare = includes(node->token->type, EQ, NQ, 0);
-    bool has_null = left->token->type == ZERO || right->token->type == ZERO;
-    if (is_compare && has_null) {
+
+    bool is_ref_declaration = is_ref_variable(left) && left->declared == NULL;
+
+    if (node->token->type != ASSIGN || !is_ref_declaration || is_ref_binding(node))
+        return true;
+
+    int end = line_end(right->token->s);
+    char *help = NULL;
+
+    if (lives_in_variable(right)) {
+        help = format(
+            "write '%.*s&%.*s'",
+            right->token->s - left->token->s,
+            text_at(left->token->s),
+            end - right->token->s,
+            text_at(right->token->s)
+        );
+    }
+
+    add_error(
+        right->token->s,
+        right->token->e,
+        format("'%s' is a ref, initialize it with an address", left->token->name),
+        help
+    );
+
+    return false;
+}
+
+bool assert_struct_operation(Node *node, Node *left_type, Node *right_type) {
+    bool is_left_id = left_type && left_type->token->type == ID;
+    bool is_right_ref = right_type && right_type->token->type == REF;
+
+    Node *right_value = right_type;
+
+    if (is_right_ref && (!left_type || left_type->token->type != REF))
+        right_value = right_type->data_type;
+
+    bool is_right_id = right_value && right_value->token->type == ID;
+
+    if (is_left_id && !left_type->declared)
+        left_type->declared = find_struct(left_type->token->name);
+
+    if (is_right_id && !right_value->declared)
+        right_value->declared = find_struct(right_value->token->name);
+
+    bool is_left_struct = is_left_id && left_type->declared;
+    bool is_right_struct = is_right_id && right_value->declared &&
+        node->right->token->type != CHARS;
+
+    if (!is_left_struct && !is_right_struct)
+        return true;
+
+    bool is_known = left_type && right_type;
+    bool is_conversion = is_known && !same_type(right_type, left_type);
+    bool has_assign = find_operator(ASSIGN, left_type, &node->right, 1) != NULL;
+
+    if (node->token->type != ASSIGN || (is_conversion && has_assign)) {
+        analyze_operator(node, node->token->type);
+        return false;
+    }
+
+    if (is_left_struct)
+        node->right = assert_copy(node->right, left_type);
+
+    return true;
+}
+
+bool assert_math_operation(Node *node, Node *left_type, Node *right_type) {
+    bool is_both_numeric = is_numeric(left_type) && is_numeric(right_type);
+    bool is_known = left_type && right_type;
+    bool is_different = is_known && !same_type(left_type, right_type);
+
+    if (!is_math(node) || !is_different || is_both_numeric)
+        return true;
+
+    add_error(
+        node->token->s,
+        node->token->e,
+        format(
+            "can't apply '%s' to '%s' and '%s'",
+            binary_ops[node->token->type],
+            type_name(left_type),
+            type_name(right_type)
+        ),
+        NULL
+    );
+
+    return false;
+}
+
+bool assert_bitwise_operation(Node *node, Node *left_type, Node *right_type) {
+    bool is_bitwise = includes(
+        node->token->type,
+        BAND, BOR, BXOR,
+        LSHIFT, RSHIFT,
+        BAND_ASSIGN, BOR_ASSIGN, BXOR_ASSIGN,
+        LSHIFT_ASSIGN, RSHIFT_ASSIGN,
+        0
+    );
+
+    bool is_left_real = left_type && left_type->token->type == FLOAT;
+    bool is_right_real = right_type && right_type->token->type == FLOAT;
+
+    if (!is_bitwise || (!is_left_real && !is_right_real))
+        return true;
+
+    Node *real = is_left_real ? left_type : right_type;
+
+    add_error(
+        node->token->s,
+        node->token->e,
+        format(
+            "can't apply '%s' to '%s'",
+            binary_ops[node->token->type],
+            type_name(real)
+        ),
+        "bitwise operators work on integers"
+    );
+
+    return false;
+}
+
+void assert_operation(Node *node) {
+    Node *left = node->left;
+    Node *right = node->right;
+    Type op = node->token->type;
+
+    if (is_assign_operation(node) && !assert_assign_operation(left))
+        return;
+
+    if (is_compare_operation(node) &&
+        (left->token->type == ZERO || right->token->type == ZERO)) {
         assert_null_compare(node);
         return;
     }
-    bool is_ref_declaration = is_ref_variable(left) && left->declared == NULL;
-    if (node->token->type == ASSIGN && is_ref_declaration && !is_ref_binding(node)) {
-        int end = line_end(right->token->s);
-        char *help = NULL;
-        if (lives_in_variable(right))
-            help = format(
-                "write '%.*s&%.*s'",
-                right->token->s - left->token->s,
-                text_at(left->token->s),
-                end - right->token->s,
-                text_at(right->token->s)
-            );
-        add_error(
-            right->token->s,
-            right->token->e,
-            format("'%s' is a ref, initialize it with an address", left->token->name),
-            help
-        );
+
+    if (!assert_ref_initialization(node))
         return;
-    }
-    Node *left_type = type_of(node->left);
-    Node *right_type = type_of(node->right);
-    bool is_text = node->right->token->type == CHARS;
-    bool is_left_ref = left_type && left_type->token->type == REF;
-    bool is_right_ref = right_type && right_type->token->type == REF && !is_left_ref;
-    Node *right_value = is_right_ref ? right_type->data_type : right_type;
-    bool is_left_id = left_type && left_type->token->type == ID;
-    bool is_right_id = right_value && right_value->token->type == ID;
-    if (is_left_id && left_type->declared == NULL)
-        left_type->declared = find_struct(left_type->token->name);
-    if (is_right_id && right_value->declared == NULL)
-        right_value->declared = find_struct(right_value->token->name);
-    bool is_left_struct = is_left_id && left_type->declared;
-    bool is_right_struct = is_right_id && right_value->declared && !is_text;
-    bool is_known = left_type && right_type;
-    if (is_left_struct || is_right_struct) {
-        bool is_conversion = is_known && !same_type(right_type, left_type);
-        bool has_assign = find_operator(ASSIGN, left_type, &node->right, 1) != NULL;
-        if (node->token->type != ASSIGN || (is_conversion && has_assign)) {
-            analyze_operator(node, node->token->type);
-            return;
-        }
-        if (is_left_struct)
-            node->right = assert_copy(node->right, left_type);
-        right_type = type_of(node->right);
-    }
-    bool is_both_numeric = is_numeric(left_type) && is_numeric(right_type);
-    bool is_different = is_known && !same_type(left_type, right_type);
-    bool is_mismatch = is_different && !is_both_numeric;
-    if (is_math(node) && is_mismatch) {
-        add_error(
-            node->token->s,
-            node->token->e,
-            format(
-                "can't apply '%s' to '%s' and '%s'",
-                binary_ops[node->token->type],
-                type_name(left_type),
-                type_name(right_type)
-            ),
-            NULL
-        );
+
+    Node *left_type = type_of(left);
+    Node *right_type = type_of(right);
+
+    if (!assert_struct_operation(node, left_type, right_type))
         return;
-    }
-    bool is_bitwise = includes(
-        node->token->type,
-        BAND,
-        BOR,
-        BXOR,
-        LSHIFT,
-        RSHIFT,
-        BAND_ASSIGN,
-        BOR_ASSIGN,
-        BXOR_ASSIGN,
-        LSHIFT_ASSIGN,
-        RSHIFT_ASSIGN,
-        0
-    );
-    bool is_left_real = left_type && left_type->token->type == FLOAT;
-    bool is_right_real = right_type && right_type->token->type == FLOAT;
-    if (is_bitwise && (is_left_real || is_right_real)) {
-        Node *real = is_left_real ? left_type : right_type;
-        add_error(
-            node->token->s,
-            node->token->e,
-            format(
-                "can't apply '%s' to '%s'",
-                binary_ops[node->token->type],
-                type_name(real)
-            ),
-            "bitwise operators work on integers"
-        );
+
+    // assert_copy() may have replaced the right operand.
+    right_type = type_of(node->right);
+
+    if (!assert_math_operation(node, left_type, right_type))
         return;
-    }
-    bool is_logic = includes(node->token->type, AND, OR, 0);
-    Node *left_bool = type_of(node->left);
-    bool is_left_bool = !left_bool || same_type(left_bool, bool_type());
-    bool is_address = includes(node->right->token->type, REF, ZERO, 0);
-    Node *ref_type = node->left->data_type;
-    bool is_both_numbers = is_number(node->left) && is_number(node->right);
-    bool is_wider = node->left->token->shift > node->right->token->shift;
-    bool is_left_wider = is_both_numbers && is_wider;
+
+    if (!assert_bitwise_operation(node, left_type, right_type))
+        return;
+
+    bool is_logic = includes(op, AND, OR, 0);
+    bool is_left_bool = !left_type || same_type(left_type, bool_type());
+
+    bool is_address = includes(right->token->type, REF, ZERO, 0);
+    Node *ref_type = left->data_type;
+
+    bool is_both_numbers = is_number(left) && is_number(right);
+    bool is_left_wider = is_both_numbers && left->token->shift > right->token->shift;
+
     if (is_ref_binding(node))
-        assert_type(node->right, is_address ? ref_type : ref_type->data_type, NULL);
-    else if (!is_logic && is_number(node->left) && !is_left_wider)
-        assert_type(node->left, type_of(node->right), NULL);
+        assert_type(right, is_address ? ref_type : ref_type->data_type, NULL);
+    else if (!is_logic && is_number(left) && !is_left_wider)
+        assert_type(left, right_type, NULL);
     else if (!is_logic)
-        assert_type(node->right, type_of(node->left), NULL);
+        assert_type(right, left_type, NULL);
     else if (is_left_bool)
-        assert_type(node->right, bool_type(), NULL);
+        assert_type(right, bool_type(), NULL);
     else
-        assert_type(node->left, bool_type(), NULL);
+        assert_type(left, bool_type(), NULL);
 }
