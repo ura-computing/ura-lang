@@ -199,9 +199,10 @@ bool assert_template_use(Token *token, Node *template, Node *types) {
     if (types->children_count == params->children_count)
         return true;
     char *declared = "";
-    for (int i = 0; i < params->children_count; i++)
-        declared =
-            format("%s%s%s", declared, i ? ", " : "", params->children[i]->token->name);
+    for (int i = 0; i < params->children_count; i++) {
+        char *name = params->children[i]->token->name;
+        declared = format("%s%s%s", declared, i ? ", " : "", name);
+    }
     add_error(
         token->s,
         token->e,
@@ -363,11 +364,12 @@ bool assert_module(bool ok, Node *node) {
 bool assert_package(bool ok, Token *name) {
     if (ok) return true;
     char *package = name->chars.value;
+    bool is_package = strncmp2(package, "@/", 2);
     add_error(
         name->s,
         name->e,
         format("package '%s' not found", package),
-        strncmp2(package, "@/", 2) ? "add a dependency that has it: ura deps add <name>" : NULL
+        is_package ? "add a dependency that has it: ura deps add <name>" : NULL
     );
     return false;
 }
@@ -417,15 +419,13 @@ void assert_operand(Node *node) {
 
 void assert_type_first(Token *token) {
     int end = 0;
-    int depth = 0;
-    while (peek(end)->type == LT || depth > 0) {
+    for (int depth = 0; peek(end)->type == LT || depth > 0; end++) {
         if (peek(end)->type == LAST)
             break;
         if (peek(end)->type == LT)
             depth++;
         if (peek(end)->type == GT)
             depth--;
-        end++;
     }
     if (peek(end)->type == LBRACK && peek(end + 1)->type == RBRACK)
         end += 2;
@@ -584,7 +584,8 @@ bool is_math(Node *node) {
 }
 
 bool is_numeric(Node *type) {
-    return type && includes(type->token->type, INT, FLOAT, 0) && type->token->shift != 1;
+    bool is_number_type = type && includes(type->token->type, INT, FLOAT, 0);
+    return is_number_type && type->token->shift != 1;
 }
 
 void assert_type(Node *value, Node *expected, char *help) {
@@ -600,9 +601,10 @@ void assert_type(Node *value, Node *expected, char *help) {
         assert_null(value, expected);
         return;
     }
-    bool is_numeric_math = is_math(value) && is_numeric(expected) &&
-                           is_numeric(type_of(value->left)) &&
-                           is_numeric(type_of(value->right));
+    bool is_numeric_left = is_numeric(type_of(value->left));
+    bool is_numeric_right = is_numeric(type_of(value->right));
+    bool is_numeric_sides = is_numeric_left && is_numeric_right;
+    bool is_numeric_math = is_math(value) && is_numeric(expected) && is_numeric_sides;
     if (is_numeric_math) {
         assert_type(value->left, expected, help);
         assert_type(value->right, expected, help);
@@ -642,7 +644,8 @@ void assert_type(Node *value, Node *expected, char *help) {
         return;
     }
     Node *literal = token->type == NEG ? value->operand : NULL;
-    bool is_real_literal = literal && literal->token->type == FLOAT && !literal->token->is_type;
+    bool is_float_literal = literal && literal->token->type == FLOAT;
+    bool is_real_literal = is_float_literal && !literal->token->is_type;
     if (is_real_literal && expected->token->type == FLOAT && help == NULL)
         help = format("write -%sf for an f32", token_text(literal->token));
     bool is_pointer = includes(found->token->type, REF, ARRAY, 0);
@@ -675,7 +678,10 @@ void assert_null_compare(Node *node) {
     add_error(
         token->s,
         token->e,
-        format("'%s' is never null, so this comparison is always the same", token_text(token)),
+        format(
+            "'%s' is never null, so this comparison is always the same",
+            token_text(token)
+        ),
         NULL
     );
 }
@@ -687,10 +693,13 @@ void assert_null(Node *node, Node *expected) {
         return;
     }
     Token *token = node->token;
+    char *msg = "null needs a type here";
+    if (expected)
+        msg = format("'%s' can't be null", type_name(expected));
     add_error(
         token->s,
         token->e,
-        expected ? format("'%s' can't be null", type_name(expected)) : "null needs a type here",
+        msg,
         "null fits a ref (&T) or an array (T[])"
     );
 }
@@ -801,7 +810,9 @@ void assert_args(Node *fn, Node **args, int count, int self) {
         Node *found = type_of(args[i]);
         bool is_child = is_child_ref(found, type);
         bool is_address = args[i]->token->type == REF;
-        if (type == NULL || (is_address && !is_child))
+        if (type == NULL)
+            continue;
+        if (is_address && !is_child)
             continue;
         bool takes_ref = type->token->type == REF;
         Node *param = takes_ref ? type->data_type : type;
@@ -810,7 +821,9 @@ void assert_args(Node *fn, Node **args, int count, int self) {
             args[i] = assert_copy(args[i], param);
         if (!is_child)
             assert_type(args[i], param, NULL);
-        if (!takes_ref || is_address)
+        if (!takes_ref)
+            continue;
+        if (is_address)
             continue;
         Node *ref = new_node(new_token(REF, args[i]->token));
         ref->operand = args[i];
@@ -1039,13 +1052,20 @@ void assert_struct(Node *node, Node *scope) {
     int name_e = name_s + strlen(token->name);
     for (int i = 0; i < scope->children_count; i++) {
         Token *other = scope->children[i]->token;
-        bool is_earlier = other->type == STRUCT && other->s < token->s;
-        if (!is_earlier || !strcmp2(other->name, token->name))
+        if (other->type != STRUCT)
+            continue;
+        if (other->s >= token->s)
+            continue;
+        if (!strcmp2(other->name, token->name))
             continue;
         add_error(
             name_s,
             name_e,
-            format("struct '%s' is already declared, on line %d", token->name, line_at(other->s)),
+            format(
+                "struct '%s' is already declared, on line %d",
+                token->name,
+                line_at(other->s)
+            ),
             NULL
         );
         return;
@@ -1124,8 +1144,11 @@ void assert_function(Node *node, Node *scope) {
     }
     for (int i = 0; token->type == PROTO && i < scope->children_count; i++) {
         Node *other = scope->children[i];
-        bool is_earlier = other->token->type == PROTO && other->token->s < token->s;
-        if (!is_earlier || !strcmp2(other->token->name, token->name))
+        if (other->token->type != PROTO)
+            continue;
+        if (other->token->s >= token->s)
+            continue;
+        if (!strcmp2(other->token->name, token->name))
             continue;
         bool is_same_ret = same_type(ret_type_of(node), ret_type_of(other));
         if (same_params(other, node) && is_same_ret)
@@ -1178,12 +1201,14 @@ void assert_function(Node *node, Node *scope) {
         );
     bool is_drop = symbol && strcmp2(token->name, "drop");
     bool returns_value = ret_type_of(node)->token->type != VOID;
+    char *drop_msg = "operator drop returns nothing";
+    if (count != 1)
+        drop_msg = "operator drop takes one parameter, the value";
     if (is_drop && (count != 1 || returns_value))
         add_error(
             token->s,
             token->e,
-            count != 1 ? "operator drop takes one parameter, the value"
-                       : "operator drop returns nothing",
+            drop_msg,
             "write operator drop(value &T):"
         );
     bool is_in = symbol && strcmp2(token->name, "in");
@@ -1209,27 +1234,31 @@ void assert_function(Node *node, Node *scope) {
         );
     for (int i = 0; i < scope->children_count; i++) {
         Node *other = scope->children[i];
-        bool is_function = includes(other->token->type, FN_DEC, PROTO, 0) && other != node;
-        bool is_same_name = is_function && strcmp2(other->token->name, node->token->name);
-        if (!is_same_name)
+        if (!includes(other->token->type, FN_DEC, PROTO, 0))
+            continue;
+        if (other == node)
+            continue;
+        if (!strcmp2(other->token->name, node->token->name))
             continue;
         bool is_same = same_params(other, node);
-        bool is_earlier_fn = other->token->type == FN_DEC && other->token->s < node->token->s;
+        bool is_earlier = other->token->s < node->token->s;
+        bool is_earlier_fn = other->token->type == FN_DEC && is_earlier;
         bool is_proto = other->token->type == PROTO;
         Node *ret = ret_type_of(node);
         bool is_same_ret = same_type(ret, ret_type_of(other));
+        char *fn_name = node->token->name;
         if (is_same && is_earlier_fn && is_same_ret)
             add_error(
                 name_s,
                 name_e,
-                format("'%s' is already defined with these parameters", node->token->name),
+                format("'%s' is already defined with these parameters", fn_name),
                 NULL
             );
         else if (is_same && is_earlier_fn)
             add_error(
                 name_s,
                 name_e,
-                format("'%s' can't be overloaded on its return type", node->token->name),
+                format("'%s' can't be overloaded on its return type", fn_name),
                 NULL
             );
         else if (is_same && is_proto && !is_same_ret)
@@ -1238,11 +1267,12 @@ void assert_function(Node *node, Node *scope) {
                 name_e,
                 format(
                     "'%s' returns '%s', but its proto returns '%s'",
-                    node->token->name,
+                    fn_name,
                     type_name(ret),
                     type_name(ret_type_of(other))
                 ),
-                "a fn replaces a proto only when both have the same parameters and return type"
+                "a fn replaces a proto only when both have the same parameters and "
+                "return type"
             );
     }
 }
@@ -1260,7 +1290,8 @@ void assert_enum(Node *node) {
         Node *variant = node->children[i];
         Token *name = variant->token;
         Node *value = variant->left;
-        bool is_integer = value == NULL || (value->token->type == INT && !value->token->is_type);
+        bool is_int = value && value->token->type == INT;
+        bool is_integer = value == NULL || (is_int && !value->token->is_type);
         if (!is_integer)
             add_error(
                 value->token->s,
@@ -1286,11 +1317,16 @@ void assert_declare(Node *node) {
         return;
     int type_end = node->var->data_type->token->e;
     char *rest = format("%.*s", line_end(type_end) - type_end, text_at(type_end));
+    char *fix = strchr(rest, '=') ? format("use %s%s", token->name, rest) : NULL;
     add_error(
         token->s,
         token->e,
-        format("'%s' is already declared, on line %d", token->name, line_at(first->token->s)),
-        strchr(rest, '=') ? format("use %s%s", token->name, rest) : NULL
+        format(
+            "'%s' is already declared, on line %d",
+            token->name,
+            line_at(first->token->s)
+        ),
+        fix
     );
 }
 
@@ -1314,7 +1350,11 @@ void assert_return(Node *node) {
             add_error(
                 token->s,
                 token->e,
-                format("'%s' must return a value of type '%s'", fn->token->name, type_name(ret)),
+                format(
+                    "'%s' must return a value of type '%s'",
+                    fn->token->name,
+                    type_name(ret)
+                ),
                 NULL
             );
         return;
@@ -1330,13 +1370,17 @@ void assert_ref(Node *node) {
     Node *to = node->operand;
     Token *at = token;
     char *msg = NULL;
+    bool is_value = to && to->token->type != ID && !lives_in_variable(to);
     if (to == NULL) {
         msg = "expected a type after '&'";
         node->data_type = new_type(INT, 32, NULL);
-    } else if (to->token->type == REF) {
-        msg = is_type ? "a ref can't point to a ref" : "can't take the address of an address";
+    } else if (to->token->type == REF && is_type) {
+        msg = "a ref can't point to a ref";
         node->operand = to->operand;
-    } else if (!is_type && to->token->type != ID && !lives_in_variable(to)) {
+    } else if (to->token->type == REF) {
+        msg = "can't take the address of an address";
+        node->operand = to->operand;
+    } else if (!is_type && is_value) {
         at = to->token;
         msg = "'&' expects a variable or a struct attribute";
     }
@@ -1606,7 +1650,9 @@ char *names_in(Node *st, Type type) {
     char *names = NULL;
     for (int i = 0; i < st->children_count; i++) {
         Node *child = st->children[i];
-        if (child->token->type != type || child->token->is_pub)
+        if (child->token->type != type)
+            continue;
+        if (child->token->is_pub)
             continue;
         char *name = type == DECLARE ? child->var->token->name : child->token->name;
         names = names ? format("%s, %s", names, name) : name;
@@ -1640,23 +1686,30 @@ void assert_member(Node *node) {
         for (int i = 0; i < call->children_count; i++)
             analyze(call->children[i]);
         call->to_call = find_method(
-            st, call->token->name, call->children, call->children_count, false
+            st,
+            call->token->name,
+            call->children,
+            call->children_count,
+            false
         );
         if (call->to_call == NULL) {
-            Node *named = find_method_named(st, call->token->name);
-            char *message = format("'%s' has no method '%s'", st->token->name, call->token->name);
+            char *method = call->token->name;
+            Node *named = find_method_named(st, method);
+            char *message = format("'%s' has no method '%s'", st->token->name, method);
             char *names = names_in(st, FN_DEC);
             char *help = names ? format("%s has: %s", st->token->name, names) : NULL;
             if (named) {
                 char *given = "";
                 for (int i = 0; i < call->children_count; i++) {
                     Node *type = type_of(call->children[i]);
-                    given = format("%s%s%s", given, i ? ", " : "", type ? type_name(type) : "?");
+                    char *text = type ? type_name(type) : "?";
+                    given = format("%s%s%s", given, i ? ", " : "", text);
                 }
                 char *takes = "";
                 for (int i = 1; i < named->args->children_count; i++) {
                     Node *type = named->args->children[i]->data_type;
-                    takes = format("%s%s%s", takes, i > 1 ? ", " : "", type ? type_name(type) : "?");
+                    char *text = type ? type_name(type) : "?";
+                    takes = format("%s%s%s", takes, i > 1 ? ", " : "", text);
                 }
                 message = format("%s that takes (%s)", message, given);
                 help = format("'%s' takes (%s)", call->token->name, takes);
@@ -1690,15 +1743,16 @@ void assert_arg_count(Node *node) {
     int count = params->children_count;
     bool is_variadic = count && params->children[count - 1]->token->type == VARIADIC;
     int needed = is_variadic ? count - 1 : count;
-    bool is_wrong = is_variadic ? node->children_count < needed : node->children_count != needed;
+    int given = node->children_count;
+    bool is_wrong = is_variadic ? given < needed : given != needed;
     if (!is_wrong)
         return;
     char *signature = "";
     for (int i = 0; i < count; i++) {
         Node *param = params->children[i];
-        char *text = param->token->type == VARIADIC
-                         ? "..."
-                         : format("%s %s", param->token->name, type_name(param->data_type));
+        char *text = "...";
+        if (param->token->type != VARIADIC)
+            text = format("%s %s", param->token->name, type_name(param->data_type));
         signature = format("%s%s%s", signature, i ? ", " : "", text);
     }
     char *ret = fn->ret_type ? format(" %s", type_name(fn->ret_type)) : "";
@@ -1711,7 +1765,7 @@ void assert_arg_count(Node *node) {
             is_variadic ? "at least " : "",
             needed,
             needed == 1 ? "" : "s",
-            node->children_count
+            given
         ),
         format(
             "%s %s(%s)%s",
@@ -1754,7 +1808,9 @@ void assert_call(Node *node) {
     if (params && includes(node->to_call->token->type, FN_DEC, PROTO, 0))
         assert_arg_count(node);
     for (int i = 0; i < node->children_count; i++) {
-        if (params == NULL || i >= params->children_count)
+        if (params == NULL)
+            continue;
+        if (i >= params->children_count)
             continue;
         Node *param = params->children[i];
         if (param->token->type == VARIADIC)
@@ -1785,7 +1841,11 @@ void assert_builtin(Node *node) {
         add_error(
             token->s,
             token->e,
-            format("'%s' takes one argument, got %d", token->name, node->children_count),
+            format(
+                "'%s' takes one argument, got %d",
+                token->name,
+                node->children_count
+            ),
             format("use %s(x)", token->name)
         );
     for (int i = 0; i < node->children_count; i++) {
@@ -1900,8 +1960,9 @@ void assert_operation(Node *node) {
             node->right = assert_copy(node->right, left_type);
         right_type = type_of(node->right);
     }
-    bool is_mismatch = is_known && !same_type(left_type, right_type) &&
-                       !(is_numeric(left_type) && is_numeric(right_type));
+    bool is_both_numeric = is_numeric(left_type) && is_numeric(right_type);
+    bool is_different = is_known && !same_type(left_type, right_type);
+    bool is_mismatch = is_different && !is_both_numeric;
     if (is_math(node) && is_mismatch) {
         add_error(
             node->token->s,
@@ -1937,7 +1998,11 @@ void assert_operation(Node *node) {
         add_error(
             node->token->s,
             node->token->e,
-            format("can't apply '%s' to '%s'", binary_ops[node->token->type], type_name(real)),
+            format(
+                "can't apply '%s' to '%s'",
+                binary_ops[node->token->type],
+                type_name(real)
+            ),
             "bitwise operators work on integers"
         );
         return;
@@ -1948,7 +2013,8 @@ void assert_operation(Node *node) {
     bool is_address = includes(node->right->token->type, REF, ZERO, 0);
     Node *ref_type = node->left->data_type;
     bool is_both_numbers = is_number(node->left) && is_number(node->right);
-    bool is_left_wider = is_both_numbers && node->left->token->shift > node->right->token->shift;
+    bool is_wider = node->left->token->shift > node->right->token->shift;
+    bool is_left_wider = is_both_numbers && is_wider;
     if (is_ref_binding(node))
         assert_type(node->right, is_address ? ref_type : ref_type->data_type, NULL);
     else if (!is_logic && is_number(node->left) && !is_left_wider)
