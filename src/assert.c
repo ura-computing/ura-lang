@@ -304,23 +304,22 @@ void assert_config_block(Node *node) {
             "remove the @version line"
         );
     else if (url->version && url->version->children_count)
-        assert_version(url->version);
+        assert_version(is_version(entry_value(url->version, 0)), url->version);
 }
 
-void assert_version(Node *version) {
+bool assert_version(bool ok, Node *version) {
+    if (ok) return true;
     Token *token = version->children[0]->token;
-    bool ok = is_version(token->chars.value);
-    if (ok) return;
     add_error(
         token->s,
         token->e,
         format("version '%s' is not like 0.0.1", token->chars.value),
         "use three numbers: @version \"0.0.1\""
     );
+    return false;
 }
 
-bool assert_installed(Node *dependency, char *folder) {
-    bool ok = folder && access(folder, F_OK) == 0;
+bool assert_installed(bool ok, Node *dependency, char *folder) {
     if (ok) return true;
     Token *token = dependency->token;
     Token *url = dependency->url->token;
@@ -341,18 +340,17 @@ bool assert_installed(Node *dependency, char *folder) {
     return false;
 }
 
-void assert_true(bool ok, char *msg, char *help) {
-    if (ok) return;
+bool assert_true(bool ok, char *msg, char *help) {
+    if (ok) return true;
     eprint("%s\n", msg);
     if (help)
-        eprint("help: %s\n", help);
+        fprintf(stderr, "help: %s\n", help);
     exit(1);
 }
 
-bool assert_module(Node *node) {
+bool assert_module(bool ok, Node *node) {
+    if (ok) return true;
     Token *token = node->token;
-    if (ura.scope->token->type == SCOPE)
-        return true;
     add_error(
         token->s,
         token->e,
@@ -362,10 +360,9 @@ bool assert_module(Node *node) {
     return false;
 }
 
-bool assert_package(Token *name, char *path) {
+bool assert_package(bool ok, Token *name) {
+    if (ok) return true;
     char *package = name->chars.value;
-    if (path)
-        return true;
     add_error(
         name->s,
         name->e,
@@ -390,9 +387,8 @@ bool assert_reuse(Token *name, File *file) {
     return true;
 }
 
-bool assert_parent(Token *name, Node *parent) {
-    if (parent)
-        return true;
+bool assert_parent(bool ok, Token *name) {
+    if (ok) return true;
     add_error(
         name->s,
         name->e,
@@ -976,9 +972,9 @@ void assert_match(Node *node) {
     }
 }
 
-void assert_param_type(Token *token, Node *param) {
-    if (param->data_type)
-        return;
+bool assert_param_type(bool ok, Node *param) {
+    if (ok) return true;
+    Token *token = param->token;
     add_error(
         token->s,
         token->e,
@@ -986,6 +982,7 @@ void assert_param_type(Token *token, Node *param) {
         format("like: %s i32", token->name)
     );
     param->data_type = new_type(INT, 32, NULL);
+    return false;
 }
 
 bool assert_comma(Token *item, Token *after, char *list) {
@@ -1018,18 +1015,22 @@ int name_after(Token *keyword) {
     return pos;
 }
 
-void assert_attribute(Node *node) {
+bool assert_attribute(bool ok, Node *node) {
+    if (ok) return true;
     Token *token = node->token;
-    if (includes(token->type, VAR, MACRO_IF, MACRO_ERROR, 0))
-        return;
-    bool is_name = token->type == ID;
+    char *msg = "a struct holds only attributes and methods";
+    char *fix = NULL;
+    if (token->type == ID) {
+        msg = format("attribute '%s' needs a type", token->name);
+        fix = format("like: %s i32", token->name);
+    }
     add_error(
         token->s,
         token->e,
-        is_name ? format("attribute '%s' needs a type", token->name)
-                : "a struct holds only attributes and methods",
-        is_name ? format("like: %s i32", token->name) : NULL
+        msg,
+        fix
     );
+    return false;
 }
 
 void assert_struct(Node *node, Node *scope) {
@@ -1349,9 +1350,8 @@ void assert_ref(Node *node) {
     );
 }
 
-void assert_array(Node *node) {
-    if (!node->token->is_type || node->index == NULL)
-        return;
+bool assert_array(bool ok, Node *node) {
+    if (ok) return true;
     Token *size = node->index->token;
     add_error(
         size->s,
@@ -1359,6 +1359,7 @@ void assert_array(Node *node) {
         "arrays have no size in the type",
         format("use '%s[]'", type_name(node->data_type))
     );
+    return false;
 }
 
 void assert_cast(Node *node) {

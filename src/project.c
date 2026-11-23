@@ -97,7 +97,8 @@ void load_project(Node *config) {
             continue;
 
         char *folder = dependency_dir(dir, node);
-        if (!assert_installed(node, folder))
+        bool ok = folder && access(folder, F_OK) == 0;
+        if (!assert_installed(ok, node, folder))
             continue;
 
         bool has_config = access(format("%s/ura.conf", folder), R_OK) == 0;
@@ -169,14 +170,14 @@ int install_dependency(char *project, Node *dependency, bool is_update, int dept
     }
     bool is_missing = access(folder, F_OK) != 0;
     bool is_new = cache && access(cache, F_OK) != 0;
-    if (is_local)
-        assert_installed(dependency, folder);
+    bool ok = !is_local || !is_missing;
+    assert_installed(ok, dependency, folder);
     ucg_check_errors();
 
     if (is_new) {
         char *clone[] = { "git",      "clone", "-q",  "--depth", "1",
                           "--branch", version, where, cache,     NULL };
-        bool ok = run_command(clone, NULL) == 0;
+        ok = run_command(clone, NULL) == 0;
         assert_true(ok, format("can't get %s %s from %s", name, version, where), NULL);
         help("installed %s %s\n", name, version);
     }

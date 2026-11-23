@@ -695,7 +695,8 @@ void tokenize_range(int start, int end, int space) {
 
 void use_file(Token *use, Token *name) {
     char *path = find_package(name->chars.value, ura.file);
-    if (!assert_package(name, path))
+    bool ok = path != NULL;
+    if (!assert_package(ok, name))
         return;
     File *file = new_file(path);
     open_file(file);
@@ -1249,7 +1250,8 @@ Node *parse_prime() {
                     Node *param = new_node(token);
                     next(); // skip ID
                     param->data_type = parse_type();
-                    assert_param_type(token, param);
+                    bool ok = param->data_type != NULL;
+                    assert_param_type(ok, param);
                     append(node->right->children, param);
                 } else if (token->type == VARIADIC) {
                     append(node->right->children, new_node(token));
@@ -1524,7 +1526,8 @@ Node *parse_prime() {
         }
         Token *name = next();
         char *path = find_package(name->chars.value, file_at(name->s));
-        if (assert_package(name, path))
+        bool ok = path != NULL;
+        if (assert_package(ok, name))
             parse_package(new_file(path));
         return node;
     }
@@ -1588,7 +1591,8 @@ Node *parse_prime() {
         else
             expect(ID, "expected a mod name after 'mod'", " name");
         expect(DOTS, "expected ':' after the mod name", ":");
-        if (!assert_module(node))
+        bool ok = ura.scope->token->type == SCOPE;
+        if (!assert_module(ok, node))
             return node;
         append(ura.modules, node->token->name);
         prefix_names(node->token);
@@ -1614,7 +1618,8 @@ Node *parse_prime() {
                 Token *name = peek(0);
                 Node *type = parse_type();
                 Node *parent = type ? find_struct(type->token->name) : NULL;
-                if (assert_parent(name, parent))
+                bool ok = parent != NULL;
+                if (assert_parent(ok, name))
                     append(parents->children, parent);
                 if (peek(0)->type != AND_LIT)
                     break;
@@ -1635,7 +1640,8 @@ Node *parse_prime() {
         while (inside(node->token->space)) {
             Node *child = parse_expr(0);
             if (!includes(child->token->type, FN_DEC, TEMPLATE, STRUCT, 0)) {
-                assert_attribute(child);
+                bool ok = includes(child->token->type, VAR, MACRO_IF, MACRO_ERROR, 0);
+                assert_attribute(ok, child);
                 continue;
             }
             append(node->children, child);
@@ -2297,10 +2303,11 @@ void analyze(Node *node) {
             analyze(node->data_type);
         else if (!node->token->is_type)
             analyze(node->operand);
+        bool ok = !node->token->is_type || node->index == NULL;
         if (node->token->type == REF)
             assert_ref(node);
         else
-            assert_array(node);
+            assert_array(ok, node);
         break;
     }
     case AS: {
