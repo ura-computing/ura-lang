@@ -341,6 +341,14 @@ char *find_package(char *name, File *from) {
     return access(path, R_OK) == 0 ? path : NULL;
 }
 
+char *compile_flags[][2] = {
+    { "-o <exe>", "name the executable (default build/exe.out)" },
+    { "-ll [path]", "also write the LLVM IR (default build/out.ll)" },
+    { "-S [path]", "write the assembly, no executable (default build/out.s)" },
+    { "-c [path]", "write the object file, no executable (default build/out.o)" },
+    { NULL, NULL },
+};
+
 char *template_files[][2] = {
     { "main.ura",
       "use \"@/core\"\n"
@@ -385,27 +393,35 @@ void init_project(char *name) {
     char *config = format(
         "@name \"%s\"\n"
         "@version \"0.0.1\"\n"
-        "@script \"build\" \"ura main.ura -o build/%s\"\n"
-        "@script \"run\" \"ura build && ./build/%s\"\n"
         "@dependency \"core\" \"0.0.1\" "
         "\"https://github.com/ura-computing/ura-core\"\n"
         "@dependency \"posix\" \"0.0.1\" "
-        "\"https://github.com/ura-computing/ura-posix\"\n",
+        "\"https://github.com/ura-computing/ura-posix\"\n"
+        "\n"
+        "// ura run: compile and run\n"
+        "@script \"run\"\"ura compile main.ura -o build/%s && ./build/%s\"\n"
+        "// ura build: compile into build/%s\n"
+        "@script \"build\" \"ura compile main.ura -o build/%s\"\n"
+        "\n"
+        "// ura compile flags, add them to a script:\n",
+        name,
+        name,
         name,
         name,
         name
     );
+    for (int i = 0; compile_flags[i][0]; i++)
+        config = format(
+            "%s//   %-12s%s\n", config, compile_flags[i][0], compile_flags[i][1]
+        );
     char *readme = format(
-        "# %s\n"
-        "\n"
-        "A [ura](https://github.com/ura-computing/ura-lang) project.\n"
-        "\n"
+        "# %s\n\n"
+        "A [ura](https://github.com/ura-computing/ura-lang) project.\n\n"
         "```\n"
         "main.ura        says hello to the user\n"
         "src/user.ura    finds the user name on every OS, used with: use "
         "\"./src/user\"\n"
-        "```\n"
-        "\n"
+        "```\n\n"
         "| command | what it does |\n"
         "|---|---|\n"
         "| `ura install` | clone the dependencies (run it first) |\n"

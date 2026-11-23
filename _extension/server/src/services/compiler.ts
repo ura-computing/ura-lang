@@ -108,7 +108,7 @@ export function lint(compiler: string, source: string, options: LintOptions = {}
         };
 
         // stdout is ignored: the compiler prints its debug trees there
-        const child = spawn(compiler, [input, "-o", path.join(dir, "exe")], {
+        const child = spawn(compiler, ["compile", input, "-o", path.join(dir, "exe")], {
             cwd,
             stdio: ["ignore", "ignore", "pipe"],
         });

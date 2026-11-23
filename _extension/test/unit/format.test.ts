@@ -190,7 +190,7 @@ describe("formatter: on every recorded program", () => {
         try {
             fs.writeFileSync(path.join(dir, "input.ura"), source);
             const env = { ...process.env, URA_LIB: path.join(REPO, "projects", "ura-lib") };
-            const run = spawnSync(COMPILER, ["input.ura", "-o", "exe"], { cwd: dir, env, timeout: 10_000, stdio: "ignore" });
+            const run = spawnSync(COMPILER, ["compile", "input.ura", "-o", "exe"], { cwd: dir, env, timeout: 10_000, stdio: "ignore" });
             const ir = path.join(dir, "build", "out.ll");
             return run.status === 0 && fs.existsSync(ir) ? fs.readFileSync(ir, "utf8") : undefined;
         } finally {

@@ -70,7 +70,7 @@ Removed during the cleanup: src/random, src/tests, TODO.md, and the build output
 Run these from src after loading the task shell with: source config.sh
 
 + build: compile the compiler into bin/ura.
-+ ura file.ura -o exe: compile a program. The LLVM IR goes to build/out.ll in the current directory.
++ ura compile file.ura -o exe: compile a program. The LLVM IR goes to build/out.ll in the current directory.
 + tests: rebuild, then run every milestone file.
 + tests milestone1: run one milestone. tests milestone1 4 runs only its entry 004.
 + record milestone5: rebuild, then record the IR (or the error output) of every entry of that file. Use it when a milestone starts, and after a change made on purpose.
@@ -137,7 +137,7 @@ The full specification is tests/milestone0.md; it wins where it differs from thi
 
 ### Command line
 
-+ ura file.ura -o name: output name (default: the source's name). [001, 002, 003]
++ ura compile file.ura -o name: output name (default: the source's name). [001, 002, 003]
 + -O0, -O1, -O2, -O3, -Os, -Oz: LLVM optimisation level. [001]
 + -san: sanitizers and debug info. [001]
 + -tree: print the typed tree and stop. [001]

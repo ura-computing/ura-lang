@@ -156,7 +156,7 @@ _ura_build() {
         CC=clang
 
         # Set to 1 to enable AddressSanitizer, 0 to disable it.
-        ENABLE_SAN=0
+        ENABLE_SAN=1
 
         SAN_FLAGS=()
         if (( ENABLE_SAN )); then
@@ -334,7 +334,7 @@ _ura_compile_case() {
 
     # a stale .ll from an earlier run must not pass for this run's IR
     rm -f "$ll"
-    URA_CASE_STDERR=$(cd "$dir" && "${limit[@]}" "$URA_BIN" "$base" -o "$exe" -ll 2>&1 >/dev/null)
+    URA_CASE_STDERR=$(cd "$dir" && "${limit[@]}" "$URA_BIN" compile "$base" -o "$exe" -ll 2>&1 >/dev/null)
     URA_CASE_STATUS=$?
     URA_CASE_STDERR=$(printf '%s\n' "$URA_CASE_STDERR" | _ura_clean_stderr)
     URA_CASE_IR=$(cat "$ll" 2>/dev/null)
@@ -1113,7 +1113,7 @@ run() {
         rm -rf "$tmp_dir"
         return 1
     fi
-    if ! (cd "$tmp_dir" && "$URA_BIN" test.ura -o program >/dev/null </dev/null); then
+    if ! (cd "$tmp_dir" && "$URA_BIN" compile test.ura -o program >/dev/null </dev/null); then
         _ura_red "run: test $number doesn't compile"
         rm -rf "$tmp_dir"
         return 1

@@ -37,7 +37,7 @@
 #endif
 
 #ifndef DEBUG
-#    define DEBUG false
+#    define DEBUG 0
 #endif
 
 #ifndef print

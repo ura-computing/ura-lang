@@ -131,7 +131,7 @@ enum Type {
     }
 
 struct Ucg {
-    int inst_index;
+    unsigned long inst_index;
 
     char *name;
 
@@ -300,7 +300,9 @@ void ucg_check_errors(void) {
         int width = snprintf(NULL, 0, "%d", line);
 
         fprintf(
-            stderr, "%s: %s:%d:%d %s\n", RED("error"), path, line, col + 1, error->msg
+            stderr, 
+            "%s: %s:%d:%d %s\n", RED("error"), 
+            path, line, col + 1, error->msg
         );
         fprintf(stderr, "%*s |\n", width, "");
         fprintf(stderr, "%d | %.*s\n", line, end - start, buff + start);
@@ -2061,6 +2063,38 @@ Ucg *ucg_end_catch(Ucg *catch_stmt) {
     ucg_end(uncaught);
     return end;
 }
+
+// void print_ucg(Ucg *inst, char end) {
+//     char *text = "";
+
+//     text = format("%s%s%s", text, to_string(inst->type), " ");
+//     if (inst->name)
+//         text = format("%s(%s)", text, inst->name ? inst->name : "");
+//     else if (inst->is_val) {
+//         switch (inst->type) { // clang-format off
+//         case INT:   text = format("%s(%lld)", text, inst->num.value); break;
+//         case FLOAT: text = format("%s(%f)", text, inst->num.real); break;
+//         // clang-format on
+//         default: {
+//             eprint(
+//                 "%s: %s:%d handle this case %s\n",
+//                 RED("error"),
+//                 FILE,
+//                 LINE,
+//                 to_string(inst->type)
+//             );
+//             exit(1);
+//         }
+//         }
+//     }
+
+//     text = format("[%03d] %-16s", inst->inst_index, text);
+//     if (inst->left)
+//         text = format("%s [%03d]", text, inst->left->inst_index);
+//     if (inst->right)
+//         text = format("%s [%03d]", text, inst->right->inst_index);
+//     print("%s%c", text, end);
+// }
 
 void print_ucg(Ucg *inst, char end) {
     char *text = "";

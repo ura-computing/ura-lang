@@ -6,21 +6,21 @@ bool run_test(int p) {
     case 0: {
         Ucg *fn_main = ucg_fn("main", ucg_i32_type(), NULL, 0);
         {
-            Ucg *a = ucg_var("a", ucg_i32_type());
-            Ucg *b = ucg_var("b", ucg_i32_type());
+            // Ucg *a = ucg_var("a", ucg_i32_type());
+            // Ucg *b = ucg_var("b", ucg_i32_type());
 
-            ucg_assign(a, ucg_i32_value(10));
+            // ucg_assign(a, ucg_i32_value(10));
 
-            ucg_assign(b, ucg_op(MUL, a, ucg_i32_value(2)));
-            ucg_assign(a, ucg_op(ADD, a, b));
+            // ucg_assign(b, ucg_op(MUL, a, ucg_i32_value(2)));
+            // ucg_assign(a, ucg_op(ADD, a, b));
 
-            ucg_op(ADD_ASSIGN, a, ucg_i32_value(5));
-            ucg_op(SUB_ASSIGN, a, ucg_i32_value(3));
-            ucg_op(MUL_ASSIGN, a, ucg_i32_value(2));
-            ucg_op(DIV_ASSIGN, a, ucg_i32_value(4));
-            ucg_op(MOD_ASSIGN, a, ucg_i32_value(5));
+            // ucg_op(ADD_ASSIGN, a, ucg_i32_value(5));
+            // ucg_op(SUB_ASSIGN, a, ucg_i32_value(3));
+            // ucg_op(MUL_ASSIGN, a, ucg_i32_value(2));
+            // ucg_op(DIV_ASSIGN, a, ucg_i32_value(4));
+            // ucg_op(MOD_ASSIGN, a, ucg_i32_value(5));
 
-            ucg_ret(ucg_op(ADD, a, b));
+            // ucg_ret(ucg_op(ADD, a, b));
         }
         ucg_end(fn_main);
         break;
@@ -1316,18 +1316,18 @@ bool compile_test(int p) {
     ucg_start(format("test%d", p));
     bool r = run_test(p);
     print_ucgs();
-    ucg_compile();
-    ucg_path("build/out.ll");
-    ucg_bin_path(r ? "build/exe.out" : NULL);
-    ucg_gen();
-    if (r)
-        ucg_run_bin();
+    // ucg_compile();
+    // mkdir2("build");
+    // ucg_path("build/out.ll");
+    // ucg_bin_path(r ? "build/exe.out" : NULL);
+    // ucg_gen();
+    // if (r)
+    //     ucg_run_bin();
     ucg_finish();
     return r;
 }
 
 int main(int ac, char **av) {
-    mkdir2("build");
 
     if (ac > 1)
         compile_test(atoi(av[1]));

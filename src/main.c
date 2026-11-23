@@ -1225,8 +1225,10 @@ Node *parse_prime() {
             }
             // TODO: loop onze sizeif binary_ops
             for (int i = 0; i <= LAST; i++) {
-                if (binary_ops[i] && strcmp2(binary_ops[i], node->token->name))
+                if (binary_ops[i] && strcmp2(binary_ops[i], node->token->name)) {
                     token->type = i;
+                    break;
+                }
             }
         } else if (peek(0)->type != ID)
             node->token->name = "";
@@ -3140,16 +3142,17 @@ int main(int ac, char **av) {
     codegen(ura.tree);
     print(GREEN("======================================\n"));
     print(GREEN("[URA IR]:\n"));
-    print_ucgs();
+    // print_ucgs();
     ucg_compile();
     ucg_gen();
-    if (DEBUG)
+    if (DEBUG) // TODO: I think it should be removed
         code = ucg_run_bin();
     ucg_finish();
 #            endif // ASM
 #        endif     // ANALYZE
 #    endif         // AST
 #endif             // TOKENIZE
+    // TODO: I think it should be removed
     print("did allocate %zu\n", arena_size());
     return code;
 }
@@ -3324,69 +3327,117 @@ __attribute__((sentinel)) bool includes(Type to_find, ...) {
     return false;
 }
 
-void print_help(char *ura) {
-    help("usage:\n");
-    help("  %s <file>.ura [flags]    compile files\n", ura);
-    help("  %s init <name>           create a project in a new folder\n", ura);
-    help("  %s install              install the dependencies of ura.conf\n", ura);
-    help("  %s install <name> <version> <where>\n", ura);
-    help("                           add or update one; where: a git repo url or ./folder\n");
-    help("  %s remove <name>         remove a dependency and its folder\n", ura);
-    help("  %s list                  show the dependencies and where they are\n", ura);
-    help("  %s <script>              run a @script of ura.conf\n", ura);
-    help("  %s -version              print the ura and LLVM versions\n", ura);
-    help("  %s -help                 show this help\n", ura);
+void print_help(void) {
+    help("compile one file (it reaches the others with use):\n");
+    help("  ura compile <file>.ura [flags]\n");
+    help("\n");
     help("flags:\n");
-    help("  -o <exe>                 link an executable\n");
-    help("  -ll [path]               write the LLVM IR (build/out.ll)\n");
-    help("  -S [path]                write the assembly (build/out.s)\n");
-    help("  -c [path]                write the object file (build/out.o)\n");
+    for (int i = 0; compile_flags[i][0]; i++) {
+        char *flag = compile_flags[i][0];
+        int pad = 12 - (int)strlen(flag);
+        help("  %s%i%s\n", flag, pad, compile_flags[i][1]);
+    }
+    help("\n");
+    help("projects (ura.conf):\n");
+    help("  ura init <name>         create a project\n");
+    help("  ura install             get the dependencies\n");
+    help("  ura install <name> <version> <repo url | ./folder>\n");
+    help("                          add or update a dependency\n");
+    help("  ura remove <name>       remove a dependency\n");
+    help("  ura list                show the dependencies\n");
+    help("  ura <script>            run a @script (run, build, ...)\n");
+    help("\n");
+    help("  ura -version / -v       print the ura and LLVM versions\n");
+    help("  ura -help / -h          show this help\n");
 }
 
-char *parse_flag_path(int ac, char **av, int *i, char *fallback) {
-    char *next = *i + 1 < ac ? av[*i + 1] : NULL;
-    size_t n = next ? strlen(next) : 0;
-    bool is_path = next && next[0] != '-' && !(n > 4 && strcmp2(next + n - 4, ".ura"));
-    if (!is_path)
-        return fallback;
-    (*i)++;
-    return next;
+void parse_compile_args(int ac, char **av) {
+    char *project = find_folder_with(getcwd2(), "ura.conf");
+    if (project)
+        load_project(project);
+    bool has_exe = false;
+    bool no_link = false;
+    for (int i = 2; i < ac && !ucg_has_errors(); i++) {
+        char *arg = av[i];
+        char *next = i + 1 < ac ? av[i + 1] : NULL;
+        bool has_path = next && next[0] != '-' && !ends_with(next, ".ura");
+        if (strcmp2(arg, "-o")) {
+            if (next == NULL) {
+                eprint("expected an executable name after -o\n");
+                help("ura compile main.ura -o build/main\n");
+                exit(1);
+            }
+            ucg_bin_path(av[++i]);
+            has_exe = true;
+        } else if (strcmp2(arg, "-ll")) {
+            ucg_path(has_path ? av[++i] : "build/out.ll");
+        } else if (strcmp2(arg, "-S")) {
+            ucg_asm_path(has_path ? av[++i] : "build/out.s");
+            no_link = true;
+        } else if (strcmp2(arg, "-c")) {
+            ucg_obj_path(has_path ? av[++i] : "build/out.o");
+            no_link = true;
+        } else if (!ends_with(arg, ".ura")) {
+            eprint("unknown flag or file '%s'\n", arg);
+            help("see the flags with: ura -help\n");
+            exit(1);
+        } else if (ura.files_count > 0) {
+            eprint("ura compile takes one file, '%s' is a second one\n", arg);
+            help("reach the other files with use \"./<file>\" in the main file\n");
+            exit(1);
+        } else {
+            append(ura.files, new_file(arg));
+        }
+    }
+    if (ura.files_count == 0) {
+        eprint("expected a .ura file to compile\n");
+        help("ura compile main.ura\n");
+        exit(1);
+    }
+    if (no_link && !has_exe)
+        ucg_bin_path(NULL);
 }
 
 void parse_args(int ac, char **av) {
     if (ac < 2) {
         eprint("expected an argument:\n");
-        print_help(av[0]);
+        print_help();
         exit(1);
     }
+    // help 
     if (strcmp2(av[1], "-help") || strcmp2(av[1], "-h")) {
-        print_help(av[0]);
+        print_help();
         exit(0);
     }
-    if (strcmp2(av[1], "-version")) {
+    // see version
+    if (strcmp2(av[1], "-version") || strcmp2(av[1], "-v")) {
         help("ura %s (LLVM %s)\n", URA_VERSION, LLVM_VERSION_STRING);
         exit(0);
     }
+    // init a project
     if (strcmp2(av[1], "init")) {
         if (ac < 3) {
             eprint("expected a project name:\n");
-            help("%s init <name>\n", av[0]);
+            help("ura init <name>\n");
             exit(1);
         }
         init_project(av[2]);
         exit(0);
     }
-	// TODO: this is absulutly bullshit
-    char *project = find_folder_with(getcwd2(), "ura.conf");
+    if (strcmp2(av[1], "compile")) {
+        parse_compile_args(ac, av);
+        return;
+    }
+    // with ura.conf
     bool install = strcmp2(av[1], "install");
-    if (install && ac == 2) {
+    if (install && ac == 2) { // install all packages from ura.conf
         install_project(find_project(), 0);
         exit(0);
     }
-    if (install) {
+    if (install && ac != 2) { // install and add apckage to ura.conf
         if (ac != 5) {
             eprint("expected a name, a version and where to get it:\n");
-            help("%s install <name> <version> <https://github.com/user/repo | ./folder>\n", av[0]);
+            help("ura install <name> <version> <https://github.com/user/repo | ./folder>\n");
             exit(1);
         }
         add_package(find_project(), av[2], av[3], av[4]);
@@ -3395,7 +3446,7 @@ void parse_args(int ac, char **av) {
     if (strcmp2(av[1], "remove")) {
         if (ac < 3) {
             eprint("expected a dependency name:\n");
-            help("%s remove <name>\n", av[0]);
+            help("ura remove <name>\n");
             exit(1);
         }
         for (int i = 2; i < ac; i++)
@@ -3407,44 +3458,12 @@ void parse_args(int ac, char **av) {
         exit(0);
     }
     bool is_compile = av[1][0] == '-' || ends_with(av[1], ".ura");
-    if (!is_compile)
-        run_script(av[1]);
-    if (project)
-        load_project(project);
-    bool has_exe = false;
-    bool no_link = false;
-    for (int i = 1; i < ac && !ucg_has_errors(); i++) {
-        char *arg = av[i];
-        if (strcmp2(arg, "-o")) {
-            if (i + 1 >= ac) {
-                eprint("expected argument:\n");
-                help("-o exe.out\n");
-                exit(1);
-            }
-            ucg_bin_path(av[++i]);
-            has_exe = true;
-        } else if (strcmp2(arg, "-ll")) {
-            ucg_path(parse_flag_path(ac, av, &i, "build/out.ll"));
-        } else if (strcmp2(arg, "-S")) {
-            ucg_asm_path(parse_flag_path(ac, av, &i, "build/out.s"));
-            no_link = true;
-        } else if (strcmp2(arg, "-c")) {
-            ucg_obj_path(parse_flag_path(ac, av, &i, "build/out.o"));
-            no_link = true;
-        } else {
-            size_t n = strlen(arg);
-            bool is_ura = n > 4 && strcmp2(arg + n - 4, ".ura");
-            if (!is_ura) {
-                eprint("Invalid file '%s'\n", arg);
-                help("use %s.ura\n", arg);
-                exit(1);
-            }
-            File *file = new_file(arg);
-            append(ura.files, file);
-        }
+    if (is_compile) {
+        eprint("'%s' is not a command\n", av[1]);
+        help("compile a file with: ura compile %s\n", av[1]);
+        exit(1);
     }
-    if (no_link && !has_exe)
-        ucg_bin_path(NULL);
+    run_script(av[1]);
 }
 
 char *parse_escaped(char *input, int s, int e) {
