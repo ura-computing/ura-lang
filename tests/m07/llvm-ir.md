@@ -1373,23 +1373,23 @@ entry:
 define i32 @describe(i32 %0) {
 entry:
   %s = alloca i32, align 4
-  %"match@104" = alloca i32, align 4
+  %"match@788" = alloca i32, align 4
   store i32 %0, i32* %s, align 4
   %"$s" = load i32, i32* %s, align 4
-  store i32 %"$s", i32* %"match@104", align 4
+  store i32 %"$s", i32* %"match@788", align 4
   br label %if6
 
 if6:                                              ; preds = %entry
-  %"$match@104" = load i32, i32* %"match@104", align 4
-  %EQ = icmp eq i32 %"$match@104", 0
+  %"$match@788" = load i32, i32* %"match@788", align 4
+  %EQ = icmp eq i32 %"$match@788", 0
   br i1 %EQ, label %if6.then, label %elif7
 
 if6.then:                                         ; preds = %if6
   ret i32 0
 
 elif7:                                            ; preds = %if6
-  %"$match@1041" = load i32, i32* %"match@104", align 4
-  %EQ2 = icmp eq i32 %"$match@1041", 1
+  %"$match@7881" = load i32, i32* %"match@788", align 4
+  %EQ2 = icmp eq i32 %"$match@7881", 1
   br i1 %EQ2, label %elif7.then, label %else8
 
 elif7.then:                                       ; preds = %elif7
@@ -2019,7 +2019,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 008 — enum: an enum must declare at least one variant
 
 ```stderr
-error: test.ura:3:1 enum 'Nothing' has no variants
+error: enum 'Nothing' has no variants
+at test.ura:3:1
   |
 3 | enum Nothing:
   | ^^^^
@@ -2031,7 +2032,8 @@ error: aborting due to 1 error
 ## 009 — enum: a variant name cannot be declared twice
 
 ```stderr
-error: test.ura:4:17 'RED' is already declared
+error: 'RED' is already declared
+at test.ura:4:17
   |
 4 |     RED, GREEN, RED
   |                 ^^^
@@ -2042,7 +2044,8 @@ error: aborting due to 1 error
 ## 010 — enum: an explicit variant value must be an integer
 
 ```stderr
-error: test.ura:4:9 the value of 'A' must be an integer
+error: the value of 'A' must be an integer
+at test.ura:4:9
   |
 4 |     A = hello
   |         ^^^^^
@@ -2302,15 +2305,15 @@ entry:
 define i32 @main() {
 entry:
   %a = alloca i32, align 4
-  %"match@74" = alloca i32, align 4
+  %"match@758" = alloca i32, align 4
   store i32 1, i32* %a, align 4
   %"$a" = load i32, i32* %a, align 4
-  store i32 %"$a", i32* %"match@74", align 4
+  store i32 %"$a", i32* %"match@758", align 4
   br label %if6
 
 if6:                                              ; preds = %entry
-  %"$match@74" = load i32, i32* %"match@74", align 4
-  %EQ = icmp eq i32 %"$match@74", 1
+  %"$match@758" = load i32, i32* %"match@758", align 4
+  %EQ = icmp eq i32 %"$match@758", 1
   br i1 %EQ, label %if6.then, label %else7
 
 if6.then:                                         ; preds = %if6
@@ -2584,20 +2587,20 @@ entry:
 define i32 @main() {
 entry:
   %a = alloca i32, align 4
-  %"match@76" = alloca i32, align 4
+  %"match@760" = alloca i32, align 4
   store i32 3, i32* %a, align 4
   %"$a" = load i32, i32* %a, align 4
-  store i32 %"$a", i32* %"match@76", align 4
+  store i32 %"$a", i32* %"match@760", align 4
   br label %if6
 
 if6:                                              ; preds = %entry
-  %"$match@76" = load i32, i32* %"match@76", align 4
-  %EQ = icmp eq i32 %"$match@76", 1
-  %"$match@761" = load i32, i32* %"match@76", align 4
-  %EQ2 = icmp eq i32 %"$match@761", 2
+  %"$match@760" = load i32, i32* %"match@760", align 4
+  %EQ = icmp eq i32 %"$match@760", 1
+  %"$match@7601" = load i32, i32* %"match@760", align 4
+  %EQ2 = icmp eq i32 %"$match@7601", 2
   %OR = or i1 %EQ, %EQ2
-  %"$match@763" = load i32, i32* %"match@76", align 4
-  %EQ4 = icmp eq i32 %"$match@763", 3
+  %"$match@7603" = load i32, i32* %"match@760", align 4
+  %EQ4 = icmp eq i32 %"$match@7603", 3
   %OR5 = or i1 %OR, %EQ4
   br i1 %OR5, label %if6.then, label %else7
 
@@ -2872,15 +2875,15 @@ entry:
 define i32 @main() {
 entry:
   %a = alloca i32, align 4
-  %"match@80" = alloca i32, align 4
+  %"match@764" = alloca i32, align 4
   store i32 99, i32* %a, align 4
   %"$a" = load i32, i32* %a, align 4
-  store i32 %"$a", i32* %"match@80", align 4
+  store i32 %"$a", i32* %"match@764", align 4
   br label %if6
 
 if6:                                              ; preds = %entry
-  %"$match@80" = load i32, i32* %"match@80", align 4
-  %EQ = icmp eq i32 %"$match@80", 1
+  %"$match@764" = load i32, i32* %"match@764", align 4
+  %EQ = icmp eq i32 %"$match@764", 1
   br i1 %EQ, label %if6.then, label %else7
 
 if6.then:                                         ; preds = %if6
@@ -3153,15 +3156,15 @@ entry:
 define i32 @main() {
 entry:
   %a = alloca i32, align 4
-  %"match@77" = alloca i32, align 4
+  %"match@761" = alloca i32, align 4
   store i32 1, i32* %a, align 4
   %"$a" = load i32, i32* %a, align 4
-  store i32 %"$a", i32* %"match@77", align 4
+  store i32 %"$a", i32* %"match@761", align 4
   br label %if6
 
 if6:                                              ; preds = %entry
-  %"$match@77" = load i32, i32* %"match@77", align 4
-  %EQ = icmp eq i32 %"$match@77", 1
+  %"$match@761" = load i32, i32* %"match@761", align 4
+  %EQ = icmp eq i32 %"$match@761", 1
   br i1 %EQ, label %if6.then, label %endif
 
 if6.then:                                         ; preds = %if6
@@ -3430,7 +3433,7 @@ entry:
 define i32 @main() {
 entry:
   %i = alloca i32, align 4
-  %"match@137" = alloca i32, align 4
+  %"match@821" = alloca i32, align 4
   %format.size = alloca i32, align 4
   %format.text = alloca i8*, align 8
   store i32 0, i32* %i, align 4
@@ -3446,12 +3449,12 @@ while6.then:                                      ; preds = %while6
   %ADD = add i32 %"$i1", 1
   store i32 %ADD, i32* %i, align 4
   %"$i2" = load i32, i32* %i, align 4
-  store i32 %"$i2", i32* %"match@137", align 4
+  store i32 %"$i2", i32* %"match@821", align 4
   br label %if7
 
 if7:                                              ; preds = %while6.then
-  %"$match@137" = load i32, i32* %"match@137", align 4
-  %EQ = icmp eq i32 %"$match@137", 2
+  %"$match@821" = load i32, i32* %"match@821", align 4
+  %EQ = icmp eq i32 %"$match@821", 2
   br i1 %EQ, label %if7.then, label %endif
 
 if7.then:                                         ; preds = %if7
@@ -3742,7 +3745,7 @@ entry:
 define i32 @main() {
 entry:
   %i = alloca i32, align 4
-  %"match@124" = alloca i32, align 4
+  %"match@808" = alloca i32, align 4
   %format.size = alloca i32, align 4
   %format.text = alloca i8*, align 8
   store i32 0, i32* %i, align 4
@@ -3758,12 +3761,12 @@ while6.then:                                      ; preds = %while6
   %ADD = add i32 %"$i1", 1
   store i32 %ADD, i32* %i, align 4
   %"$i2" = load i32, i32* %i, align 4
-  store i32 %"$i2", i32* %"match@124", align 4
+  store i32 %"$i2", i32* %"match@808", align 4
   br label %if7
 
 if7:                                              ; preds = %while6.then
-  %"$match@124" = load i32, i32* %"match@124", align 4
-  %EQ = icmp eq i32 %"$match@124", 2
+  %"$match@808" = load i32, i32* %"match@808", align 4
+  %EQ = icmp eq i32 %"$match@808", 2
   br i1 %EQ, label %if7.then, label %endif
 
 if7.then:                                         ; preds = %if7
@@ -3806,7 +3809,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 017 — match: a case needs at least one value
 
 ```stderr
-error: test.ura:7:9 expected a value after 'case'
+error: expected a value after 'case'
+at test.ura:7:9
   |
 7 |         case:
   |         ^^^^
@@ -3818,7 +3822,8 @@ error: aborting due to 1 error
 ## 018 — match: case value type must match the subject
 
 ```stderr
-error: test.ura:7:14 expected 'i32', found 'String'
+error: expected 'i32', found 'String'
+at test.ura:7:14
   |
 7 |         case "x":
   |              ^^^
@@ -3829,7 +3834,8 @@ error: aborting due to 1 error
 ## 019 — match: a case with no enclosing match
 
 ```stderr
-error: test.ura:5:5 'case' without a matching 'match'
+error: 'case' without a matching 'match'
+at test.ura:5:5
   |
 5 |     case 1:
   |     ^^^^
@@ -3840,7 +3846,8 @@ error: aborting due to 1 error
 ## 020 — match: a default with no enclosing match
 
 ```stderr
-error: test.ura:5:5 'default' without a matching 'match'
+error: 'default' without a matching 'match'
+at test.ura:5:5
   |
 5 |     default:
   |     ^^^^^^^
@@ -3853,7 +3860,30 @@ error: aborting due to 1 error
 ```llvm
 %"Array<i8>" = type { i8*, i32, i32 }
 %String = type { i8*, i32, i32 }
+%Error = type { %String }
 
+@ucg.thrown = global i1 false
+@"cstd::F_OK" = global i32 0
+@"cstd::O_RDONLY" = global i32 0
+@"cstd::O_WRONLY" = global i32 0
+@"cstd::O_RDWR" = global i32 0
+@"cstd::O_CREAT" = global i32 0
+@"cstd::O_TRUNC" = global i32 0
+@"cstd::O_APPEND" = global i32 0
+@"cstd::CLOCK_MONOTONIC" = global i32 0
+@"cstd::S_IFMT" = global i32 0
+@"cstd::S_IFREG" = global i32 0
+@"cstd::S_IFDIR" = global i32 0
+@"cstd::S_IRWXU" = global i32 0
+@"cstd::S_IRUSR" = global i32 0
+@"cstd::S_IWUSR" = global i32 0
+@"cstd::AF_INET" = global i32 0
+@"cstd::SOCK_STREAM" = global i32 0
+@"cstd::SOL_SOCKET" = global i32 0
+@"cstd::SO_REUSEADDR" = global i32 0
+@"cstd::INADDR_ANY" = global i32 0
+@ucg.error = global [2 x i64] zeroinitializer
+@ucg.error_type = global i32 0
 @str = private unnamed_addr constant [6 x i8] c"hello\00", align 1
 @str.1 = private unnamed_addr constant [5 x i8] c"test\00", align 1
 @str.2 = private unnamed_addr constant [5 x i8] c"stop\00", align 1
@@ -4406,6 +4436,22 @@ entry:
   ret i1 %EQ
 }
 
+define i32 @uncaught(%Error* %0) {
+entry:
+  %error = alloca %Error*, align 8
+  %copy = alloca %String, align 8
+  store %Error* %0, %Error** %error, align 8
+  store %String zeroinitializer, %String* %copy, align 8
+  %"*error" = load %Error*, %Error** %error, align 8
+  %"*error.message" = getelementptr inbounds %Error, %Error* %"*error", i32 0, i32 0
+  %1 = bitcast %String* %copy to %"Array<i8>"*
+  %2 = bitcast %String* %"*error.message" to %"Array<i8>"*
+  call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
+  %"$copy" = load %String, %String* %copy, align 8
+  call void @"io::err"(%String %"$copy")
+  ret i32 1
+}
+
 declare i64 @write(i32, i8*, i64)
 
 define void @"io::out"(%String %0) {
@@ -4421,10 +4467,23 @@ entry:
   ret void
 }
 
+define void @"io::err"(%String %0) {
+entry:
+  %text = alloca %String, align 8
+  store %String %0, %String* %text, align 8
+  %call.String.chars = call i8* @String.chars(%String* %text)
+  %call.String.len = call i32 @String.len(%String* %text)
+  %AS = sext i32 %call.String.len to i64
+  %call.write = call i64 @write(i32 2, i8* %call.String.chars, i64 %AS)
+  %1 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %1)
+  ret void
+}
+
 define i32 @kind(%String %0) {
 entry:
   %s = alloca %String, align 8
-  %"match@107" = alloca %String, align 8
+  %"match@784" = alloca %String, align 8
   %copy = alloca %String, align 8
   %tmp = alloca %String, align 8
   %tmp1 = alloca %String, align 8
@@ -4435,14 +4494,14 @@ entry:
   %2 = bitcast %String* %s to %"Array<i8>"*
   call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
   %"$copy" = load %String, %String* %copy, align 8
-  store %String %"$copy", %String* %"match@107", align 8
+  store %String %"$copy", %String* %"match@784", align 8
   br label %if14
 
 if14:                                             ; preds = %entry
   store %String { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str, i32 0, i32 0), i32 5, i32 0 }, %String* %tmp, align 8
-  %"call.String.==" = call i1 @"String.=="(%String* %"match@107", %String* %tmp)
+  %"call.String.==" = call i1 @"String.=="(%String* %"match@784", %String* %tmp)
   store %String { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.1, i32 0, i32 0), i32 4, i32 0 }, %String* %tmp1, align 8
-  %"call.String.==2" = call i1 @"String.=="(%String* %"match@107", %String* %tmp1)
+  %"call.String.==2" = call i1 @"String.=="(%String* %"match@784", %String* %tmp1)
   %OR = or i1 %"call.String.==", %"call.String.==2"
   %3 = bitcast %String* %tmp1 to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %3)
@@ -4451,7 +4510,7 @@ if14:                                             ; preds = %entry
   br i1 %OR, label %if14.then, label %elif15
 
 if14.then:                                        ; preds = %if14
-  %5 = bitcast %String* %"match@107" to %"Array<i8>"*
+  %5 = bitcast %String* %"match@784" to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %5)
   %6 = bitcast %String* %s to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %6)
@@ -4459,7 +4518,7 @@ if14.then:                                        ; preds = %if14
 
 elif15:                                           ; preds = %if14
   store %String { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.2, i32 0, i32 0), i32 4, i32 0 }, %String* %tmp3, align 8
-  %"call.String.==4" = call i1 @"String.=="(%String* %"match@107", %String* %tmp3)
+  %"call.String.==4" = call i1 @"String.=="(%String* %"match@784", %String* %tmp3)
   %7 = bitcast %String* %tmp3 to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %7)
   br i1 %"call.String.==4", label %elif15.then, label %else16
@@ -4468,14 +4527,14 @@ elif15.then:                                      ; preds = %elif15
   br label %endif
 
 else16:                                           ; preds = %elif15
-  %8 = bitcast %String* %"match@107" to %"Array<i8>"*
+  %8 = bitcast %String* %"match@784" to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %8)
   %9 = bitcast %String* %s to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %9)
   ret i32 0
 
 endif:                                            ; preds = %elif15.then
-  %10 = bitcast %String* %"match@107" to %"Array<i8>"*
+  %10 = bitcast %String* %"match@784" to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %10)
   %11 = bitcast %String* %s to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %11)
@@ -4489,25 +4548,51 @@ entry:
   %format.size = alloca i32, align 4
   %format.text = alloca i8*, align 8
   %i = alloca i32, align 4
-  %"match@487" = alloca %String, align 8
+  %"match@1164" = alloca %String, align 8
   %tmp = alloca %String, align 8
-  %format.size15 = alloca i32, align 4
-  %format.text20 = alloca i8*, align 8
+  %format.size16 = alloca i32, align 4
+  %format.text21 = alloca i8*, align 8
+  %error.at = alloca %Error*, align 8
+  br label %try17
+
+try17:                                            ; preds = %entry
+  br i1 true, label %try17.then, label %endtry
+
+try17.then:                                       ; preds = %try17
+  store i32 0, i32* @"cstd::F_OK", align 4
+  store i32 0, i32* @"cstd::O_RDONLY", align 4
+  store i32 1, i32* @"cstd::O_WRONLY", align 4
+  store i32 2, i32* @"cstd::O_RDWR", align 4
+  store i32 64, i32* @"cstd::O_CREAT", align 4
+  store i32 512, i32* @"cstd::O_TRUNC", align 4
+  store i32 1024, i32* @"cstd::O_APPEND", align 4
+  store i32 1, i32* @"cstd::CLOCK_MONOTONIC", align 4
+  store i32 61440, i32* @"cstd::S_IFMT", align 4
+  store i32 32768, i32* @"cstd::S_IFREG", align 4
+  store i32 16384, i32* @"cstd::S_IFDIR", align 4
+  store i32 448, i32* @"cstd::S_IRWXU", align 4
+  store i32 256, i32* @"cstd::S_IRUSR", align 4
+  store i32 128, i32* @"cstd::S_IWUSR", align 4
+  store i32 2, i32* @"cstd::AF_INET", align 4
+  store i32 1, i32* @"cstd::SOCK_STREAM", align 4
+  store i32 1, i32* @"cstd::SOL_SOCKET", align 4
+  store i32 2, i32* @"cstd::SO_REUSEADDR", align 4
+  store i32 0, i32* @"cstd::INADDR_ANY", align 4
   %call.String.create = call %String @String.create(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.3, i32 0, i32 0))
   store %String %call.String.create, %String* %name, align 8
-  %call.String.create1 = call %String @String.create(i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.4, i32 0, i32 0))
-  %call.kind = call i32 @kind(%String %call.String.create1)
+  %call.String.create2 = call %String @String.create(i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.4, i32 0, i32 0))
+  %call.kind = call i32 @kind(%String %call.String.create2)
   store %String zeroinitializer, %String* %copy, align 8
   %0 = bitcast %String* %copy to %"Array<i8>"*
   %1 = bitcast %String* %name to %"Array<i8>"*
   call void @"Array<i8>.="(%"Array<i8>"* %0, %"Array<i8>"* %1)
   %"$copy" = load %String, %String* %copy, align 8
-  %call.kind2 = call i32 @kind(%String %"$copy")
-  %call.String.create3 = call %String @String.create(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.5, i32 0, i32 0))
-  %call.kind4 = call i32 @kind(%String %call.String.create3)
-  %call.String.create5 = call %String @String.create(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @str.6, i32 0, i32 0))
-  %call.kind6 = call i32 @kind(%String %call.String.create5)
-  %call.snprintf = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.7, i32 0, i32 0), i32 %call.kind, i32 %call.kind2, i32 %call.kind4, i32 %call.kind6)
+  %call.kind3 = call i32 @kind(%String %"$copy")
+  %call.String.create4 = call %String @String.create(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.5, i32 0, i32 0))
+  %call.kind5 = call i32 @kind(%String %call.String.create4)
+  %call.String.create6 = call %String @String.create(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @str.6, i32 0, i32 0))
+  %call.kind7 = call i32 @kind(%String %call.String.create6)
+  %call.snprintf = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.7, i32 0, i32 0), i32 %call.kind, i32 %call.kind3, i32 %call.kind5, i32 %call.kind7)
   store i32 %call.snprintf, i32* %format.size, align 4
   %"$format.size" = load i32, i32* %format.size, align 4
   %ADD = add i32 %"$format.size", 1
@@ -4515,70 +4600,100 @@ entry:
   %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
   store i8* %call.calloc, i8** %format.text, align 8
   %"$format.text" = load i8*, i8** %format.text, align 8
-  %call.snprintf7 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text", i64 %AS, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.7, i32 0, i32 0), i32 %call.kind, i32 %call.kind2, i32 %call.kind4, i32 %call.kind6)
-  %"$format.size8" = load i32, i32* %format.size, align 4
-  %ADD9 = add i32 %"$format.size8", 1
-  %"$format.text10" = load i8*, i8** %format.text, align 8
-  %"$format.size11" = load i32, i32* %format.size, align 4
-  %2 = insertvalue %String zeroinitializer, i8* %"$format.text10", 0
-  %3 = insertvalue %String %2, i32 %"$format.size11", 1
-  %4 = insertvalue %String %3, i32 %ADD9, 2
+  %call.snprintf8 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text", i64 %AS, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.7, i32 0, i32 0), i32 %call.kind, i32 %call.kind3, i32 %call.kind5, i32 %call.kind7)
+  %"$format.size9" = load i32, i32* %format.size, align 4
+  %ADD10 = add i32 %"$format.size9", 1
+  %"$format.text11" = load i8*, i8** %format.text, align 8
+  %"$format.size12" = load i32, i32* %format.size, align 4
+  %2 = insertvalue %String zeroinitializer, i8* %"$format.text11", 0
+  %3 = insertvalue %String %2, i32 %"$format.size12", 1
+  %4 = insertvalue %String %3, i32 %ADD10, 2
   call void @"io::out"(%String %4)
   store i32 0, i32* %i, align 4
-  br label %while17
+  br label %while18
 
-while17:                                          ; preds = %endif, %if18.then, %entry
+while18:                                          ; preds = %endif, %if19.then, %try17.then
   %"$i" = load i32, i32* %i, align 4
   %LT = icmp slt i32 %"$i", 3
-  br i1 %LT, label %while17.then, label %endloop
+  br i1 %LT, label %while18.then, label %endloop
 
-while17.then:                                     ; preds = %while17
-  %"$i12" = load i32, i32* %i, align 4
-  %ADD13 = add i32 %"$i12", 1
-  store i32 %ADD13, i32* %i, align 4
-  %call.String.create14 = call %String @String.create(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.8, i32 0, i32 0))
-  store %String %call.String.create14, %String* %"match@487", align 8
-  br label %if18
+while18.then:                                     ; preds = %while18
+  %"$i13" = load i32, i32* %i, align 4
+  %ADD14 = add i32 %"$i13", 1
+  store i32 %ADD14, i32* %i, align 4
+  %call.String.create15 = call %String @String.create(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.8, i32 0, i32 0))
+  store %String %call.String.create15, %String* %"match@1164", align 8
+  br label %if19
 
-if18:                                             ; preds = %while17.then
+if19:                                             ; preds = %while18.then
   store %String { i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.9, i32 0, i32 0), i32 3, i32 0 }, %String* %tmp, align 8
-  %"call.String.==" = call i1 @"String.=="(%String* %"match@487", %String* %tmp)
+  %"call.String.==" = call i1 @"String.=="(%String* %"match@1164", %String* %tmp)
   %5 = bitcast %String* %tmp to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %5)
-  br i1 %"call.String.==", label %if18.then, label %endif
+  br i1 %"call.String.==", label %if19.then, label %endif
 
-if18.then:                                        ; preds = %if18
-  %6 = bitcast %String* %"match@487" to %"Array<i8>"*
+if19.then:                                        ; preds = %if19
+  %6 = bitcast %String* %"match@1164" to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %6)
-  br label %while17
+  br label %while18
 
-endif:                                            ; preds = %if18
+endif:                                            ; preds = %if19
   call void @"io::out"(%String { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @str.10, i32 0, i32 0), i32 6, i32 0 })
-  %7 = bitcast %String* %"match@487" to %"Array<i8>"*
+  %7 = bitcast %String* %"match@1164" to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %7)
-  br label %while17
+  br label %while18
 
-endloop:                                          ; preds = %while17
+endloop:                                          ; preds = %while18
   %call.String.chars = call i8* @String.chars(%String* %name)
-  %call.snprintf16 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.11, i32 0, i32 0), i8* %call.String.chars)
-  store i32 %call.snprintf16, i32* %format.size15, align 4
-  %"$format.size17" = load i32, i32* %format.size15, align 4
-  %ADD18 = add i32 %"$format.size17", 1
-  %AS19 = sext i32 %ADD18 to i64
-  %call.calloc21 = call i8* @calloc(i64 %AS19, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
-  store i8* %call.calloc21, i8** %format.text20, align 8
-  %"$format.text22" = load i8*, i8** %format.text20, align 8
-  %call.snprintf23 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text22", i64 %AS19, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.11, i32 0, i32 0), i8* %call.String.chars)
-  %"$format.size24" = load i32, i32* %format.size15, align 4
-  %ADD25 = add i32 %"$format.size24", 1
-  %"$format.text26" = load i8*, i8** %format.text20, align 8
-  %"$format.size27" = load i32, i32* %format.size15, align 4
-  %8 = insertvalue %String zeroinitializer, i8* %"$format.text26", 0
-  %9 = insertvalue %String %8, i32 %"$format.size27", 1
-  %10 = insertvalue %String %9, i32 %ADD25, 2
+  %call.snprintf17 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.11, i32 0, i32 0), i8* %call.String.chars)
+  store i32 %call.snprintf17, i32* %format.size16, align 4
+  %"$format.size18" = load i32, i32* %format.size16, align 4
+  %ADD19 = add i32 %"$format.size18", 1
+  %AS20 = sext i32 %ADD19 to i64
+  %call.calloc22 = call i8* @calloc(i64 %AS20, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc22, i8** %format.text21, align 8
+  %"$format.text23" = load i8*, i8** %format.text21, align 8
+  %call.snprintf24 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text23", i64 %AS20, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.11, i32 0, i32 0), i8* %call.String.chars)
+  %"$format.size25" = load i32, i32* %format.size16, align 4
+  %ADD26 = add i32 %"$format.size25", 1
+  %"$format.text27" = load i8*, i8** %format.text21, align 8
+  %"$format.size28" = load i32, i32* %format.size16, align 4
+  %8 = insertvalue %String zeroinitializer, i8* %"$format.text27", 0
+  %9 = insertvalue %String %8, i32 %"$format.size28", 1
+  %10 = insertvalue %String %9, i32 %ADD26, 2
   call void @"io::out"(%String %10)
   %11 = bitcast %String* %name to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %11)
+  ret i32 0
+
+endtry:                                           ; preds = %try17
+  br label %catch20
+
+catch20:                                          ; preds = %endtry
+  %"$ucg.error_type" = load i32, i32* @ucg.error_type, align 4
+  %EQ = icmp eq i32 %"$ucg.error_type", 1
+  %"$ucg.thrown" = load i1, i1* @ucg.thrown, align 1
+  %AND = and i1 %"$ucg.thrown", %EQ
+  br i1 %AND, label %catch20.then, label %endcatch
+
+catch20.then:                                     ; preds = %catch20
+  store i1 false, i1* @ucg.thrown, align 1
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  %call.uncaught = call i32 @uncaught(%Error* %"*error.at")
+  ret i32 %call.uncaught
+
+endcatch:                                         ; preds = %catch20
+  br label %if21
+
+if21:                                             ; preds = %endcatch
+  %"$ucg.thrown29" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown29", label %if21.then, label %endif1
+
+if21.then:                                        ; preds = %if21
+  ret i32 1
+
+endif1:                                           ; preds = %if21
   ret i32 0
 }
 
@@ -4590,3 +4705,4 @@ declare void @free(i8*)
 
 declare i32 @snprintf(i8*, i64, i8*, ...)
 ```
+

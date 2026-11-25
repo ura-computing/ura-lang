@@ -564,15 +564,12 @@ entry:
   %r = alloca %Range, align 8
   store i32 %0, i32* %start, align 4
   store i32 %1, i32* %stop, align 4
-  store %Range zeroinitializer, %Range* %r, align 4
-  %r.start = getelementptr inbounds %Range, %Range* %r, i32 0, i32 0
   %"$start" = load i32, i32* %start, align 4
-  store i32 %"$start", i32* %r.start, align 4
-  %r.stop = getelementptr inbounds %Range, %Range* %r, i32 0, i32 1
   %"$stop" = load i32, i32* %stop, align 4
-  store i32 %"$stop", i32* %r.stop, align 4
-  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 1, i32* %r.step, align 4
+  %2 = insertvalue %Range zeroinitializer, i32 %"$start", 0
+  %3 = insertvalue %Range %2, i32 %"$stop", 1
+  %4 = insertvalue %Range %3, i32 1, 2
+  store %Range %4, %Range* %r, align 4
   br label %if6
 
 if6:                                              ; preds = %entry
@@ -582,8 +579,8 @@ if6:                                              ; preds = %entry
   br i1 %LT, label %if6.then, label %endif
 
 if6.then:                                         ; preds = %if6
-  %r.step3 = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 -1, i32* %r.step3, align 4
+  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
+  store i32 -1, i32* %r.step, align 4
   br label %endif
 
 endif:                                            ; preds = %if6.then, %if6
@@ -1581,15 +1578,12 @@ entry:
   %r = alloca %Range, align 8
   store i32 %0, i32* %start, align 4
   store i32 %1, i32* %stop, align 4
-  store %Range zeroinitializer, %Range* %r, align 4
-  %r.start = getelementptr inbounds %Range, %Range* %r, i32 0, i32 0
   %"$start" = load i32, i32* %start, align 4
-  store i32 %"$start", i32* %r.start, align 4
-  %r.stop = getelementptr inbounds %Range, %Range* %r, i32 0, i32 1
   %"$stop" = load i32, i32* %stop, align 4
-  store i32 %"$stop", i32* %r.stop, align 4
-  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 1, i32* %r.step, align 4
+  %2 = insertvalue %Range zeroinitializer, i32 %"$start", 0
+  %3 = insertvalue %Range %2, i32 %"$stop", 1
+  %4 = insertvalue %Range %3, i32 1, 2
+  store %Range %4, %Range* %r, align 4
   br label %if6
 
 if6:                                              ; preds = %entry
@@ -1599,8 +1593,8 @@ if6:                                              ; preds = %entry
   br i1 %LT, label %if6.then, label %endif
 
 if6.then:                                         ; preds = %if6
-  %r.step3 = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 -1, i32* %r.step3, align 4
+  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
+  store i32 -1, i32* %r.step, align 4
   br label %endif
 
 endif:                                            ; preds = %if6.then, %if6
@@ -2071,26 +2065,31 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 005 — loop: for without a loop variable
 
 ```stderr
-error: test.ura:4:9 expected a name after 'for'
+error: expected a name after 'for'
+at test.ura:4:9
   |
 4 |     for in Range::create(0, 5):
   |         ^^
 help: use for x in Range::create(0, 5):
-error: test.ura:4:9 expected 'in' after the loop name
+error: expected 'in' after the loop name
+at test.ura:4:9
   |
 4 |     for in Range::create(0, 5):
   |         ^^
 help: use for in in Range::create(0, 5):
-error: test.ura:4:9 unexpected 'in'
+error: unexpected 'in'
+at test.ura:4:9
   |
 4 |     for in Range::create(0, 5):
   |         ^^
-error: test.ura:4:12 expected ':' after the for line
+error: expected ':' after the for line
+at test.ura:4:12
   |
 4 |     for in Range::create(0, 5):
   |            ^^^^^
 help: use for in: Range::create(0, 5):
-error: test.ura:4:31 unexpected ':'
+error: unexpected ':'
+at test.ura:4:31
   |
 4 |     for in Range::create(0, 5):
   |                               ^
@@ -2101,7 +2100,8 @@ error: aborting due to 5 errors
 ## 006 — loop: for over a non-iterable
 
 ```stderr
-error: test.ura:5:14 can't loop over 'i32'
+error: can't loop over 'i32'
+at test.ura:5:14
   |
 5 |     for i in x:
   |              ^
@@ -2361,15 +2361,12 @@ entry:
   %r = alloca %Range, align 8
   store i32 %0, i32* %start, align 4
   store i32 %1, i32* %stop, align 4
-  store %Range zeroinitializer, %Range* %r, align 4
-  %r.start = getelementptr inbounds %Range, %Range* %r, i32 0, i32 0
   %"$start" = load i32, i32* %start, align 4
-  store i32 %"$start", i32* %r.start, align 4
-  %r.stop = getelementptr inbounds %Range, %Range* %r, i32 0, i32 1
   %"$stop" = load i32, i32* %stop, align 4
-  store i32 %"$stop", i32* %r.stop, align 4
-  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 1, i32* %r.step, align 4
+  %2 = insertvalue %Range zeroinitializer, i32 %"$start", 0
+  %3 = insertvalue %Range %2, i32 %"$stop", 1
+  %4 = insertvalue %Range %3, i32 1, 2
+  store %Range %4, %Range* %r, align 4
   br label %if6
 
 if6:                                              ; preds = %entry
@@ -2379,8 +2376,8 @@ if6:                                              ; preds = %entry
   br i1 %LT, label %if6.then, label %endif
 
 if6.then:                                         ; preds = %if6
-  %r.step3 = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 -1, i32* %r.step3, align 4
+  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
+  store i32 -1, i32* %r.step, align 4
   br label %endif
 
 endif:                                            ; preds = %if6.then, %if6
@@ -3919,16 +3916,13 @@ entry:
   store i32 %0, i32* %start, align 4
   store i32 %1, i32* %stop, align 4
   store i32 %2, i32* %step, align 4
-  store %Range zeroinitializer, %Range* %r, align 4
-  %r.start = getelementptr inbounds %Range, %Range* %r, i32 0, i32 0
   %"$start" = load i32, i32* %start, align 4
-  store i32 %"$start", i32* %r.start, align 4
-  %r.stop = getelementptr inbounds %Range, %Range* %r, i32 0, i32 1
   %"$stop" = load i32, i32* %stop, align 4
-  store i32 %"$stop", i32* %r.stop, align 4
-  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
   %"$step" = load i32, i32* %step, align 4
-  store i32 %"$step", i32* %r.step, align 4
+  %3 = insertvalue %Range zeroinitializer, i32 %"$start", 0
+  %4 = insertvalue %Range %3, i32 %"$stop", 1
+  %5 = insertvalue %Range %4, i32 %"$step", 2
+  store %Range %5, %Range* %r, align 4
   %"$r" = load %Range, %Range* %r, align 4
   ret %Range %"$r"
 }
@@ -4426,15 +4420,12 @@ entry:
   %r = alloca %Range, align 8
   store i32 %0, i32* %start, align 4
   store i32 %1, i32* %stop, align 4
-  store %Range zeroinitializer, %Range* %r, align 4
-  %r.start = getelementptr inbounds %Range, %Range* %r, i32 0, i32 0
   %"$start" = load i32, i32* %start, align 4
-  store i32 %"$start", i32* %r.start, align 4
-  %r.stop = getelementptr inbounds %Range, %Range* %r, i32 0, i32 1
   %"$stop" = load i32, i32* %stop, align 4
-  store i32 %"$stop", i32* %r.stop, align 4
-  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 1, i32* %r.step, align 4
+  %2 = insertvalue %Range zeroinitializer, i32 %"$start", 0
+  %3 = insertvalue %Range %2, i32 %"$stop", 1
+  %4 = insertvalue %Range %3, i32 1, 2
+  store %Range %4, %Range* %r, align 4
   br label %if6
 
 if6:                                              ; preds = %entry
@@ -4444,8 +4435,8 @@ if6:                                              ; preds = %entry
   br i1 %LT, label %if6.then, label %endif
 
 if6.then:                                         ; preds = %if6
-  %r.step3 = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 -1, i32* %r.step3, align 4
+  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
+  store i32 -1, i32* %r.step, align 4
   br label %endif
 
 endif:                                            ; preds = %if6.then, %if6
@@ -5180,3 +5171,4 @@ declare void @free(i8*)
 
 declare i32 @snprintf(i8*, i64, i8*, ...)
 ```
+

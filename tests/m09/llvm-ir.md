@@ -303,7 +303,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 002 — method: calling a non-pub method with ::
 
 ```stderr
-error: test.ura:11:22 'Room' has no pub fn 'depth'
+error: 'Room' has no pub fn 'depth'
+at test.ura:11:22
    |
 11 |     io::out($"{Room::depth()}\n")
    |                      ^^^^^
@@ -314,7 +315,8 @@ error: aborting due to 1 error
 ## 003 — method: :: on a type that does not exist
 
 ```stderr
-error: test.ura:5:16 unknown type 'Nope'
+error: unknown type 'Nope'
+at test.ura:5:16
   |
 5 |     io::out($"{Nope::create()}\n")
   |                ^^^^
@@ -772,7 +774,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 005 — operator: an operator inside a struct is an error
 
 ```stderr
-error: test.ura:6:5 'operator' must be declared outside the struct
+error: 'operator' must be declared outside the struct
+at test.ura:6:5
   |
 6 |     operator +(other &Vec) Vec:
   |     ^^^^^^^^
@@ -784,21 +787,25 @@ error: aborting due to 1 error
 ## 006 — operator: operator missing operator symbol
 
 ```stderr
-error: test.ura:9:11 expected '(' after the function name
+error: expected '(' after the function name
+at test.ura:9:11
   |
 9 | operator (left &Vec) Vec:
   |           ^^^^
 help: use operator (()left &Vec) Vec:
-error: test.ura:9:16 expected ':' after the function header
+error: expected ':' after the function header
+at test.ura:9:16
   |
 9 | operator (left &Vec) Vec:
   |                ^
 help: use operator (left: &Vec) Vec:
-error: test.ura:9:20 unexpected ')'
+error: unexpected ')'
+at test.ura:9:20
   |
 9 | operator (left &Vec) Vec:
   |                    ^
-error: test.ura:9:25 unexpected ':'
+error: unexpected ':'
+at test.ura:9:25
   |
 9 | operator (left &Vec) Vec:
   |                         ^
@@ -809,7 +816,8 @@ error: aborting due to 4 errors
 ## 007 — operator: adding two structs without an operator + overload
 
 ```stderr
-error: test.ura:12:15 'Vec' has no operator '+' that takes 'Vec'
+error: 'Vec' has no operator '+' that takes 'Vec'
+at test.ura:12:15
    |
 12 |     c Vec = a + b
    |               ^
@@ -1863,7 +1871,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 011 — operator: no overload for that operator
 
 ```stderr
-error: test.ura:10:15 'Vec' has no operator '-' that takes 'Vec'
+error: 'Vec' has no operator '-' that takes 'Vec'
+at test.ura:10:15
    |
 10 |     c Vec = a - b
    |               ^
@@ -1874,7 +1883,8 @@ error: aborting due to 1 error
 ## 012 — operator: assigning a different struct
 
 ```stderr
-error: test.ura:13:9 expected 'Vec', found 'Point'
+error: expected 'Vec', found 'Point'
+at test.ura:13:9
    |
 13 |     v = p
    |         ^
@@ -2630,7 +2640,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 015 — operator: assigning a void result
 
 ```stderr
-error: test.ura:12:14 expected 'Vec', found 'void'
+error: expected 'Vec', found 'void'
+at test.ura:12:14
    |
 12 |     e Vec = a.show()
    |              ^
@@ -2641,7 +2652,8 @@ error: aborting due to 1 error
 ## 016 — operator: a binary operator with mismatched scalar types
 
 ```stderr
-error: test.ura:7:18 can't apply '+' to 'i32' and 'i8[]'
+error: can't apply '+' to 'i32' and 'i8[]'
+at test.ura:7:18
   |
 7 |     io::out($"{n + s}\n")
   |                  ^
@@ -3348,7 +3360,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 019 — operator: a compound operator with no overload
 
 ```stderr
-error: test.ura:10:7 'Vec' has no operator '*=' that takes 'Vec'
+error: 'Vec' has no operator '*=' that takes 'Vec'
+at test.ura:10:7
    |
 10 |     a *= b
    |       ^^
@@ -7475,18 +7488,26 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 028 — struct: pub inside struct must be followed by fn
 
 ```stderr
-error: test.ura:8:9 'n' is already declared, on line 6
+error: attribute 'n' needs a type
+at test.ura:8:9
   |
 8 |     pub n i32
   |         ^
-error: aborting due to 1 error
+help: like: n i32
+error: a struct holds only attributes and methods
+at test.ura:8:11
+  |
+8 |     pub n i32
+  |           ^^^
+error: aborting due to 2 errors
 1
 ```
 
 ## 029 — struct: instance method called via :: instead of .
 
 ```stderr
-error: test.ura:14:14 'Counter' has no pub fn 'bump'
+error: 'Counter' has no pub fn 'bump'
+at test.ura:14:14
    |
 14 |     Counter::bump()
    |              ^^^^
@@ -7497,7 +7518,8 @@ error: aborting due to 1 error
 ## 030 — struct: pub fn called via . instead of ::
 
 ```stderr
-error: test.ura:16:7 'Maker' has no method 'make'
+error: 'Maker' has no method 'make'
+at test.ura:16:7
    |
 16 |     m.make()
    |       ^^^^
@@ -7508,7 +7530,8 @@ error: aborting due to 1 error
 ## 031 — struct: pub may only be used inside a struct
 
 ```stderr
-error: test.ura:5:5 'pub' may only be used inside a struct
+error: 'pub' may only be used inside a struct
+at test.ura:5:5
   |
 5 | pub fn helper():
   |     ^^
@@ -8632,7 +8655,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 034 — operator: copying a struct with drop needs operator =
 
 ```stderr
-error: test.ura:11:16 'Buffer' can't be copied: it needs a drop and has no operator =
+error: 'Buffer' can't be copied: it needs a drop and has no operator =
+at test.ura:11:16
    |
 11 |     b Buffer = a
    |                ^
@@ -8644,7 +8668,8 @@ error: aborting due to 1 error
 ## 035 — operator: passing a struct with drop by value
 
 ```stderr
-error: test.ura:14:17 'Buffer' can't be copied: it needs a drop and has no operator =
+error: 'Buffer' can't be copied: it needs a drop and has no operator =
+at test.ura:14:17
    |
 14 |     return take(a)
    |                 ^
@@ -9453,7 +9478,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 037 — struct: from a struct that doesn't exist
 
 ```stderr
-error: test.ura:2:18 no struct named 'Nothing' to take from
+error: no struct named 'Nothing' to take from
+at test.ura:2:18
   |
 2 | struct Text from Nothing:
   |                  ^^^^^^^
@@ -9466,7 +9492,30 @@ error: aborting due to 1 error
 ```llvm
 %"Array<i8>" = type { i8*, i32, i32 }
 %String = type { i8*, i32, i32 }
+%Error = type { %String }
 
+@ucg.thrown = global i1 false
+@"cstd::F_OK" = global i32 0
+@"cstd::O_RDONLY" = global i32 0
+@"cstd::O_WRONLY" = global i32 0
+@"cstd::O_RDWR" = global i32 0
+@"cstd::O_CREAT" = global i32 0
+@"cstd::O_TRUNC" = global i32 0
+@"cstd::O_APPEND" = global i32 0
+@"cstd::CLOCK_MONOTONIC" = global i32 0
+@"cstd::S_IFMT" = global i32 0
+@"cstd::S_IFREG" = global i32 0
+@"cstd::S_IFDIR" = global i32 0
+@"cstd::S_IRWXU" = global i32 0
+@"cstd::S_IRUSR" = global i32 0
+@"cstd::S_IWUSR" = global i32 0
+@"cstd::AF_INET" = global i32 0
+@"cstd::SOCK_STREAM" = global i32 0
+@"cstd::SOL_SOCKET" = global i32 0
+@"cstd::SO_REUSEADDR" = global i32 0
+@"cstd::INADDR_ANY" = global i32 0
+@ucg.error = global [2 x i64] zeroinitializer
+@ucg.error_type = global i32 0
 @str = private unnamed_addr constant [16 x i8] c"  Hello World  \00", align 1
 @str.3 = private unnamed_addr constant [9 x i8] c"[%s] %d\0A\00", align 1
 @str.4 = private unnamed_addr constant [10 x i8] c"%s %s %s\0A\00", align 1
@@ -10907,6 +10956,22 @@ entry:
   ret %String %"$res"
 }
 
+define i32 @uncaught(%Error* %0) {
+entry:
+  %error = alloca %Error*, align 8
+  %copy = alloca %String, align 8
+  store %Error* %0, %Error** %error, align 8
+  store %String zeroinitializer, %String* %copy, align 8
+  %"*error" = load %Error*, %Error** %error, align 8
+  %"*error.message" = getelementptr inbounds %Error, %Error* %"*error", i32 0, i32 0
+  %1 = bitcast %String* %copy to %"Array<i8>"*
+  %2 = bitcast %String* %"*error.message" to %"Array<i8>"*
+  call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
+  %"$copy" = load %String, %String* %copy, align 8
+  call void @"io::err"(%String %"$copy")
+  ret i32 1
+}
+
 declare i64 @write(i32, i8*, i64)
 
 define void @"io::out"(%String %0) {
@@ -10922,6 +10987,19 @@ entry:
   ret void
 }
 
+define void @"io::err"(%String %0) {
+entry:
+  %text = alloca %String, align 8
+  store %String %0, %String* %text, align 8
+  %call.String.chars = call i8* @String.chars(%String* %text)
+  %call.String.len = call i32 @String.len(%String* %text)
+  %AS = sext i32 %call.String.len to i64
+  %call.write = call i64 @write(i32 2, i8* %call.String.chars, i64 %AS)
+  %1 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %1)
+  ret void
+}
+
 define i32 @main() {
 entry:
   %s = alloca %String, align 8
@@ -10929,33 +11007,59 @@ entry:
   %format.size = alloca i32, align 4
   %format.text = alloca i8*, align 8
   %tmp = alloca %String, align 8
-  %tmp12 = alloca %String, align 8
-  %tmp14 = alloca %String, align 8
-  %format.size16 = alloca i32, align 4
-  %format.text21 = alloca i8*, align 8
-  %format.size30 = alloca i32, align 4
+  %tmp13 = alloca %String, align 8
+  %tmp15 = alloca %String, align 8
+  %format.size17 = alloca i32, align 4
+  %format.text22 = alloca i8*, align 8
+  %format.size31 = alloca i32, align 4
   %bool.text = alloca i8*, align 8
-  %bool.text31 = alloca i8*, align 8
   %bool.text32 = alloca i8*, align 8
-  %format.text39 = alloca i8*, align 8
+  %bool.text33 = alloca i8*, align 8
+  %format.text40 = alloca i8*, align 8
   %r = alloca %String, align 8
-  %tmp51 = alloca %String, align 8
-  %tmp53 = alloca %String, align 8
-  %format.size55 = alloca i32, align 4
-  %format.text60 = alloca i8*, align 8
+  %tmp52 = alloca %String, align 8
+  %tmp54 = alloca %String, align 8
+  %format.size56 = alloca i32, align 4
+  %format.text61 = alloca i8*, align 8
   %a = alloca %String, align 8
   %b = alloca %String, align 8
   %c = alloca %String, align 8
-  %tmp68 = alloca %String, align 8
-  %tmp71 = alloca %String, align 8
-  %format.size73 = alloca i32, align 4
-  %bool.text74 = alloca i8*, align 8
+  %tmp69 = alloca %String, align 8
+  %tmp72 = alloca %String, align 8
+  %format.size74 = alloca i32, align 4
   %bool.text75 = alloca i8*, align 8
   %bool.text76 = alloca i8*, align 8
-  %format.text84 = alloca i8*, align 8
+  %bool.text77 = alloca i8*, align 8
+  %format.text85 = alloca i8*, align 8
   %n = alloca %String, align 8
-  %format.size96 = alloca i32, align 4
-  %format.text101 = alloca i8*, align 8
+  %format.size97 = alloca i32, align 4
+  %format.text102 = alloca i8*, align 8
+  %error.at = alloca %Error*, align 8
+  br label %try42
+
+try42:                                            ; preds = %entry
+  br i1 true, label %try42.then, label %endtry
+
+try42.then:                                       ; preds = %try42
+  store i32 0, i32* @"cstd::F_OK", align 4
+  store i32 0, i32* @"cstd::O_RDONLY", align 4
+  store i32 1, i32* @"cstd::O_WRONLY", align 4
+  store i32 2, i32* @"cstd::O_RDWR", align 4
+  store i32 64, i32* @"cstd::O_CREAT", align 4
+  store i32 512, i32* @"cstd::O_TRUNC", align 4
+  store i32 1024, i32* @"cstd::O_APPEND", align 4
+  store i32 1, i32* @"cstd::CLOCK_MONOTONIC", align 4
+  store i32 61440, i32* @"cstd::S_IFMT", align 4
+  store i32 32768, i32* @"cstd::S_IFREG", align 4
+  store i32 16384, i32* @"cstd::S_IFDIR", align 4
+  store i32 448, i32* @"cstd::S_IRWXU", align 4
+  store i32 256, i32* @"cstd::S_IRUSR", align 4
+  store i32 128, i32* @"cstd::S_IWUSR", align 4
+  store i32 2, i32* @"cstd::AF_INET", align 4
+  store i32 1, i32* @"cstd::SOCK_STREAM", align 4
+  store i32 1, i32* @"cstd::SOL_SOCKET", align 4
+  store i32 2, i32* @"cstd::SO_REUSEADDR", align 4
+  store i32 0, i32* @"cstd::INADDR_ANY", align 4
   store %String { i8* getelementptr inbounds ([16 x i8], [16 x i8]* @str, i32 0, i32 0), i32 15, i32 0 }, %String* %s, align 8
   %call.String.trim = call %String @String.trim(%String* %s)
   store %String %call.String.trim, %String* %t, align 8
@@ -10969,44 +11073,44 @@ entry:
   %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
   store i8* %call.calloc, i8** %format.text, align 8
   %"$format.text" = load i8*, i8** %format.text, align 8
-  %call.snprintf6 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text", i64 %AS, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @str.3, i32 0, i32 0), i8* %call.String.chars, i32 %call.String.size)
-  %"$format.size7" = load i32, i32* %format.size, align 4
-  %ADD8 = add i32 %"$format.size7", 1
-  %"$format.text9" = load i8*, i8** %format.text, align 8
-  %"$format.size10" = load i32, i32* %format.size, align 4
-  %0 = insertvalue %String zeroinitializer, i8* %"$format.text9", 0
-  %1 = insertvalue %String %0, i32 %"$format.size10", 1
-  %2 = insertvalue %String %1, i32 %ADD8, 2
+  %call.snprintf7 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text", i64 %AS, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @str.3, i32 0, i32 0), i8* %call.String.chars, i32 %call.String.size)
+  %"$format.size8" = load i32, i32* %format.size, align 4
+  %ADD9 = add i32 %"$format.size8", 1
+  %"$format.text10" = load i8*, i8** %format.text, align 8
+  %"$format.size11" = load i32, i32* %format.size, align 4
+  %0 = insertvalue %String zeroinitializer, i8* %"$format.text10", 0
+  %1 = insertvalue %String %0, i32 %"$format.size11", 1
+  %2 = insertvalue %String %1, i32 %ADD9, 2
   call void @"io::out"(%String %2)
   %call.String.upper = call %String @String.upper(%String* %t)
   store %String %call.String.upper, %String* %tmp, align 8
-  %call.String.chars11 = call i8* @String.chars(%String* %tmp)
+  %call.String.chars12 = call i8* @String.chars(%String* %tmp)
   %call.String.lower = call %String @String.lower(%String* %t)
-  store %String %call.String.lower, %String* %tmp12, align 8
-  %call.String.chars13 = call i8* @String.chars(%String* %tmp12)
+  store %String %call.String.lower, %String* %tmp13, align 8
+  %call.String.chars14 = call i8* @String.chars(%String* %tmp13)
   %call.String.reverse = call %String @String.reverse(%String* %t)
-  store %String %call.String.reverse, %String* %tmp14, align 8
-  %call.String.chars15 = call i8* @String.chars(%String* %tmp14)
-  %call.snprintf17 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.4, i32 0, i32 0), i8* %call.String.chars11, i8* %call.String.chars13, i8* %call.String.chars15)
-  store i32 %call.snprintf17, i32* %format.size16, align 4
-  %"$format.size18" = load i32, i32* %format.size16, align 4
-  %ADD19 = add i32 %"$format.size18", 1
-  %AS20 = sext i32 %ADD19 to i64
-  %call.calloc22 = call i8* @calloc(i64 %AS20, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
-  store i8* %call.calloc22, i8** %format.text21, align 8
-  %"$format.text23" = load i8*, i8** %format.text21, align 8
-  %call.snprintf24 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text23", i64 %AS20, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.4, i32 0, i32 0), i8* %call.String.chars11, i8* %call.String.chars13, i8* %call.String.chars15)
-  %"$format.size25" = load i32, i32* %format.size16, align 4
-  %ADD26 = add i32 %"$format.size25", 1
-  %"$format.text27" = load i8*, i8** %format.text21, align 8
-  %"$format.size28" = load i32, i32* %format.size16, align 4
-  %3 = insertvalue %String zeroinitializer, i8* %"$format.text27", 0
-  %4 = insertvalue %String %3, i32 %"$format.size28", 1
-  %5 = insertvalue %String %4, i32 %ADD26, 2
+  store %String %call.String.reverse, %String* %tmp15, align 8
+  %call.String.chars16 = call i8* @String.chars(%String* %tmp15)
+  %call.snprintf18 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.4, i32 0, i32 0), i8* %call.String.chars12, i8* %call.String.chars14, i8* %call.String.chars16)
+  store i32 %call.snprintf18, i32* %format.size17, align 4
+  %"$format.size19" = load i32, i32* %format.size17, align 4
+  %ADD20 = add i32 %"$format.size19", 1
+  %AS21 = sext i32 %ADD20 to i64
+  %call.calloc23 = call i8* @calloc(i64 %AS21, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc23, i8** %format.text22, align 8
+  %"$format.text24" = load i8*, i8** %format.text22, align 8
+  %call.snprintf25 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text24", i64 %AS21, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.4, i32 0, i32 0), i8* %call.String.chars12, i8* %call.String.chars14, i8* %call.String.chars16)
+  %"$format.size26" = load i32, i32* %format.size17, align 4
+  %ADD27 = add i32 %"$format.size26", 1
+  %"$format.text28" = load i8*, i8** %format.text22, align 8
+  %"$format.size29" = load i32, i32* %format.size17, align 4
+  %3 = insertvalue %String zeroinitializer, i8* %"$format.text28", 0
+  %4 = insertvalue %String %3, i32 %"$format.size29", 1
+  %5 = insertvalue %String %4, i32 %ADD27, 2
   call void @"io::out"(%String %5)
-  %6 = bitcast %String* %tmp14 to %"Array<i8>"*
+  %6 = bitcast %String* %tmp15 to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %6)
-  %7 = bitcast %String* %tmp12 to %"Array<i8>"*
+  %7 = bitcast %String* %tmp13 to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %7)
   %8 = bitcast %String* %tmp to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %8)
@@ -11014,212 +11118,212 @@ entry:
   %call.String.contains = call i1 @String.contains(%String* %t, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.6, i32 0, i32 0))
   %call.String.starts_with = call i1 @String.starts_with(%String* %t, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.7, i32 0, i32 0))
   %call.String.ends_with = call i1 @String.ends_with(%String* %t, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @str.8, i32 0, i32 0))
-  %call.String.find29 = call i32 @String.find(%String* %t, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.9, i32 0, i32 0))
-  store i32 0, i32* %format.size30, align 4
+  %call.String.find30 = call i32 @String.find(%String* %t, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.9, i32 0, i32 0))
+  store i32 0, i32* %format.size31, align 4
   store i8* null, i8** %bool.text, align 8
-  br label %if42
+  br label %if43
 
-if42:                                             ; preds = %entry
-  br i1 %call.String.contains, label %if42.then, label %else43
+if43:                                             ; preds = %try42.then
+  br i1 %call.String.contains, label %if43.then, label %else44
 
-if42.then:                                        ; preds = %if42
+if43.then:                                        ; preds = %if43
   store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.10, i32 0, i32 0), i8** %bool.text, align 8
   br label %endif
 
-else43:                                           ; preds = %if42
+else44:                                           ; preds = %if43
   store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.11, i32 0, i32 0), i8** %bool.text, align 8
   br label %endif
 
-endif:                                            ; preds = %else43, %if42.then
-  store i8* null, i8** %bool.text31, align 8
-  br label %if44
-
-if44:                                             ; preds = %endif
-  br i1 %call.String.starts_with, label %if44.then, label %else45
-
-if44.then:                                        ; preds = %if44
-  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.12, i32 0, i32 0), i8** %bool.text31, align 8
-  br label %endif1
-
-else45:                                           ; preds = %if44
-  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.13, i32 0, i32 0), i8** %bool.text31, align 8
-  br label %endif1
-
-endif1:                                           ; preds = %else45, %if44.then
+endif:                                            ; preds = %else44, %if43.then
   store i8* null, i8** %bool.text32, align 8
-  br label %if46
+  br label %if45
 
-if46:                                             ; preds = %endif1
-  br i1 %call.String.ends_with, label %if46.then, label %else47
+if45:                                             ; preds = %endif
+  br i1 %call.String.starts_with, label %if45.then, label %else46
 
-if46.then:                                        ; preds = %if46
-  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.14, i32 0, i32 0), i8** %bool.text32, align 8
+if45.then:                                        ; preds = %if45
+  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.12, i32 0, i32 0), i8** %bool.text32, align 8
+  br label %endif1
+
+else46:                                           ; preds = %if45
+  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.13, i32 0, i32 0), i8** %bool.text32, align 8
+  br label %endif1
+
+endif1:                                           ; preds = %else46, %if45.then
+  store i8* null, i8** %bool.text33, align 8
+  br label %if47
+
+if47:                                             ; preds = %endif1
+  br i1 %call.String.ends_with, label %if47.then, label %else48
+
+if47.then:                                        ; preds = %if47
+  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.14, i32 0, i32 0), i8** %bool.text33, align 8
   br label %endif2
 
-else47:                                           ; preds = %if46
-  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.15, i32 0, i32 0), i8** %bool.text32, align 8
+else48:                                           ; preds = %if47
+  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.15, i32 0, i32 0), i8** %bool.text33, align 8
   br label %endif2
 
-endif2:                                           ; preds = %else47, %if46.then
+endif2:                                           ; preds = %else48, %if47.then
   %"$bool.text" = load i8*, i8** %bool.text, align 8
-  %"$bool.text33" = load i8*, i8** %bool.text31, align 8
   %"$bool.text34" = load i8*, i8** %bool.text32, align 8
-  %call.snprintf35 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @str.16, i32 0, i32 0), i32 %call.String.find, i8* %"$bool.text", i8* %"$bool.text33", i8* %"$bool.text34", i32 %call.String.find29)
-  store i32 %call.snprintf35, i32* %format.size30, align 4
-  %"$format.size36" = load i32, i32* %format.size30, align 4
-  %ADD37 = add i32 %"$format.size36", 1
-  %AS38 = sext i32 %ADD37 to i64
-  %call.calloc40 = call i8* @calloc(i64 %AS38, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
-  store i8* %call.calloc40, i8** %format.text39, align 8
-  %"$format.text41" = load i8*, i8** %format.text39, align 8
-  %"$bool.text42" = load i8*, i8** %bool.text, align 8
-  %"$bool.text43" = load i8*, i8** %bool.text31, align 8
+  %"$bool.text35" = load i8*, i8** %bool.text33, align 8
+  %call.snprintf36 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @str.16, i32 0, i32 0), i32 %call.String.find, i8* %"$bool.text", i8* %"$bool.text34", i8* %"$bool.text35", i32 %call.String.find30)
+  store i32 %call.snprintf36, i32* %format.size31, align 4
+  %"$format.size37" = load i32, i32* %format.size31, align 4
+  %ADD38 = add i32 %"$format.size37", 1
+  %AS39 = sext i32 %ADD38 to i64
+  %call.calloc41 = call i8* @calloc(i64 %AS39, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc41, i8** %format.text40, align 8
+  %"$format.text42" = load i8*, i8** %format.text40, align 8
+  %"$bool.text43" = load i8*, i8** %bool.text, align 8
   %"$bool.text44" = load i8*, i8** %bool.text32, align 8
-  %call.snprintf45 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text41", i64 %AS38, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @str.16, i32 0, i32 0), i32 %call.String.find, i8* %"$bool.text42", i8* %"$bool.text43", i8* %"$bool.text44", i32 %call.String.find29)
-  %"$format.size46" = load i32, i32* %format.size30, align 4
-  %ADD47 = add i32 %"$format.size46", 1
-  %"$format.text48" = load i8*, i8** %format.text39, align 8
-  %"$format.size49" = load i32, i32* %format.size30, align 4
-  %9 = insertvalue %String zeroinitializer, i8* %"$format.text48", 0
-  %10 = insertvalue %String %9, i32 %"$format.size49", 1
-  %11 = insertvalue %String %10, i32 %ADD47, 2
+  %"$bool.text45" = load i8*, i8** %bool.text33, align 8
+  %call.snprintf46 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text42", i64 %AS39, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @str.16, i32 0, i32 0), i32 %call.String.find, i8* %"$bool.text43", i8* %"$bool.text44", i8* %"$bool.text45", i32 %call.String.find30)
+  %"$format.size47" = load i32, i32* %format.size31, align 4
+  %ADD48 = add i32 %"$format.size47", 1
+  %"$format.text49" = load i8*, i8** %format.text40, align 8
+  %"$format.size50" = load i32, i32* %format.size31, align 4
+  %9 = insertvalue %String zeroinitializer, i8* %"$format.text49", 0
+  %10 = insertvalue %String %9, i32 %"$format.size50", 1
+  %11 = insertvalue %String %10, i32 %ADD48, 2
   call void @"io::out"(%String %11)
   %call.String.replace = call %String @String.replace(%String* %t, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.17, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.18, i32 0, i32 0))
   store %String %call.String.replace, %String* %r, align 8
-  %call.String.chars50 = call i8* @String.chars(%String* %r)
+  %call.String.chars51 = call i8* @String.chars(%String* %r)
   %call.String.substr = call %String @String.substr(%String* %r, i32 1, i32 3)
-  store %String %call.String.substr, %String* %tmp51, align 8
-  %call.String.chars52 = call i8* @String.chars(%String* %tmp51)
+  store %String %call.String.substr, %String* %tmp52, align 8
+  %call.String.chars53 = call i8* @String.chars(%String* %tmp52)
   %call.String.repeat = call %String @String.repeat(%String* %r, i32 2)
-  store %String %call.String.repeat, %String* %tmp53, align 8
-  %call.String.chars54 = call i8* @String.chars(%String* %tmp53)
-  %call.snprintf56 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.19, i32 0, i32 0), i8* %call.String.chars50, i8* %call.String.chars52, i8* %call.String.chars54)
-  store i32 %call.snprintf56, i32* %format.size55, align 4
-  %"$format.size57" = load i32, i32* %format.size55, align 4
-  %ADD58 = add i32 %"$format.size57", 1
-  %AS59 = sext i32 %ADD58 to i64
-  %call.calloc61 = call i8* @calloc(i64 %AS59, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
-  store i8* %call.calloc61, i8** %format.text60, align 8
-  %"$format.text62" = load i8*, i8** %format.text60, align 8
-  %call.snprintf63 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text62", i64 %AS59, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.19, i32 0, i32 0), i8* %call.String.chars50, i8* %call.String.chars52, i8* %call.String.chars54)
-  %"$format.size64" = load i32, i32* %format.size55, align 4
-  %ADD65 = add i32 %"$format.size64", 1
-  %"$format.text66" = load i8*, i8** %format.text60, align 8
-  %"$format.size67" = load i32, i32* %format.size55, align 4
-  %12 = insertvalue %String zeroinitializer, i8* %"$format.text66", 0
-  %13 = insertvalue %String %12, i32 %"$format.size67", 1
-  %14 = insertvalue %String %13, i32 %ADD65, 2
+  store %String %call.String.repeat, %String* %tmp54, align 8
+  %call.String.chars55 = call i8* @String.chars(%String* %tmp54)
+  %call.snprintf57 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.19, i32 0, i32 0), i8* %call.String.chars51, i8* %call.String.chars53, i8* %call.String.chars55)
+  store i32 %call.snprintf57, i32* %format.size56, align 4
+  %"$format.size58" = load i32, i32* %format.size56, align 4
+  %ADD59 = add i32 %"$format.size58", 1
+  %AS60 = sext i32 %ADD59 to i64
+  %call.calloc62 = call i8* @calloc(i64 %AS60, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc62, i8** %format.text61, align 8
+  %"$format.text63" = load i8*, i8** %format.text61, align 8
+  %call.snprintf64 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text63", i64 %AS60, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.19, i32 0, i32 0), i8* %call.String.chars51, i8* %call.String.chars53, i8* %call.String.chars55)
+  %"$format.size65" = load i32, i32* %format.size56, align 4
+  %ADD66 = add i32 %"$format.size65", 1
+  %"$format.text67" = load i8*, i8** %format.text61, align 8
+  %"$format.size68" = load i32, i32* %format.size56, align 4
+  %12 = insertvalue %String zeroinitializer, i8* %"$format.text67", 0
+  %13 = insertvalue %String %12, i32 %"$format.size68", 1
+  %14 = insertvalue %String %13, i32 %ADD66, 2
   call void @"io::out"(%String %14)
-  %15 = bitcast %String* %tmp53 to %"Array<i8>"*
+  %15 = bitcast %String* %tmp54 to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %15)
-  %16 = bitcast %String* %tmp51 to %"Array<i8>"*
+  %16 = bitcast %String* %tmp52 to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %16)
   %call.String.create = call %String @String.create(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.20, i32 0, i32 0))
   store %String %call.String.create, %String* %a, align 8
   store %String { i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.21, i32 0, i32 0), i32 3, i32 0 }, %String* %b, align 8
   %"call.String.+" = call %String @"String.+"(%String* %a, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @str.22, i32 0, i32 0))
-  store %String %"call.String.+", %String* %tmp68, align 8
-  %"call.String.+69" = call %String @"String.+.2"(%String* %tmp68, %String* %b)
-  store %String %"call.String.+69", %String* %c, align 8
-  %17 = bitcast %String* %tmp68 to %"Array<i8>"*
+  store %String %"call.String.+", %String* %tmp69, align 8
+  %"call.String.+70" = call %String @"String.+.2"(%String* %tmp69, %String* %b)
+  store %String %"call.String.+70", %String* %c, align 8
+  %17 = bitcast %String* %tmp69 to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %17)
   call void @"String.+="(%String* %c, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @str.23, i32 0, i32 0))
-  %call.String.chars70 = call i8* @String.chars(%String* %c)
+  %call.String.chars71 = call i8* @String.chars(%String* %c)
   %"call.String.<" = call i1 @"String.<"(%String* %a, %String* %b)
-  store %String { i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.24, i32 0, i32 0), i32 3, i32 0 }, %String* %tmp71, align 8
-  %"call.String.==" = call i1 @"String.=="(%String* %a, %String* %tmp71)
+  store %String { i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.24, i32 0, i32 0), i32 3, i32 0 }, %String* %tmp72, align 8
+  %"call.String.==" = call i1 @"String.=="(%String* %a, %String* %tmp72)
   %"call.String.!=" = call i1 @"String.!="(%String* %a, %String* %b)
-  %call.String.size72 = call i32 @String.size(%String* %c)
-  store i32 0, i32* %format.size73, align 4
-  store i8* null, i8** %bool.text74, align 8
-  br label %if48
-
-if48:                                             ; preds = %endif2
-  br i1 %"call.String.<", label %if48.then, label %else49
-
-if48.then:                                        ; preds = %if48
-  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.25, i32 0, i32 0), i8** %bool.text74, align 8
-  br label %endif3
-
-else49:                                           ; preds = %if48
-  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.26, i32 0, i32 0), i8** %bool.text74, align 8
-  br label %endif3
-
-endif3:                                           ; preds = %else49, %if48.then
+  %call.String.size73 = call i32 @String.size(%String* %c)
+  store i32 0, i32* %format.size74, align 4
   store i8* null, i8** %bool.text75, align 8
-  br label %if50
+  br label %if49
 
-if50:                                             ; preds = %endif3
-  br i1 %"call.String.==", label %if50.then, label %else51
+if49:                                             ; preds = %endif2
+  br i1 %"call.String.<", label %if49.then, label %else50
 
-if50.then:                                        ; preds = %if50
-  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.27, i32 0, i32 0), i8** %bool.text75, align 8
-  br label %endif4
+if49.then:                                        ; preds = %if49
+  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.25, i32 0, i32 0), i8** %bool.text75, align 8
+  br label %endif3
 
-else51:                                           ; preds = %if50
-  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.28, i32 0, i32 0), i8** %bool.text75, align 8
-  br label %endif4
+else50:                                           ; preds = %if49
+  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.26, i32 0, i32 0), i8** %bool.text75, align 8
+  br label %endif3
 
-endif4:                                           ; preds = %else51, %if50.then
+endif3:                                           ; preds = %else50, %if49.then
   store i8* null, i8** %bool.text76, align 8
-  br label %if52
+  br label %if51
 
-if52:                                             ; preds = %endif4
-  br i1 %"call.String.!=", label %if52.then, label %else53
+if51:                                             ; preds = %endif3
+  br i1 %"call.String.==", label %if51.then, label %else52
 
-if52.then:                                        ; preds = %if52
-  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.29, i32 0, i32 0), i8** %bool.text76, align 8
+if51.then:                                        ; preds = %if51
+  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.27, i32 0, i32 0), i8** %bool.text76, align 8
+  br label %endif4
+
+else52:                                           ; preds = %if51
+  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.28, i32 0, i32 0), i8** %bool.text76, align 8
+  br label %endif4
+
+endif4:                                           ; preds = %else52, %if51.then
+  store i8* null, i8** %bool.text77, align 8
+  br label %if53
+
+if53:                                             ; preds = %endif4
+  br i1 %"call.String.!=", label %if53.then, label %else54
+
+if53.then:                                        ; preds = %if53
+  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.29, i32 0, i32 0), i8** %bool.text77, align 8
   br label %endif5
 
-else53:                                           ; preds = %if52
-  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.30, i32 0, i32 0), i8** %bool.text76, align 8
+else54:                                           ; preds = %if53
+  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @str.30, i32 0, i32 0), i8** %bool.text77, align 8
   br label %endif5
 
-endif5:                                           ; preds = %else53, %if52.then
-  %"$bool.text77" = load i8*, i8** %bool.text74, align 8
+endif5:                                           ; preds = %else54, %if53.then
   %"$bool.text78" = load i8*, i8** %bool.text75, align 8
   %"$bool.text79" = load i8*, i8** %bool.text76, align 8
-  %call.snprintf80 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @str.31, i32 0, i32 0), i8* %call.String.chars70, i8* %"$bool.text77", i8* %"$bool.text78", i8* %"$bool.text79", i32 %call.String.size72)
-  store i32 %call.snprintf80, i32* %format.size73, align 4
-  %"$format.size81" = load i32, i32* %format.size73, align 4
-  %ADD82 = add i32 %"$format.size81", 1
-  %AS83 = sext i32 %ADD82 to i64
-  %call.calloc85 = call i8* @calloc(i64 %AS83, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
-  store i8* %call.calloc85, i8** %format.text84, align 8
-  %"$format.text86" = load i8*, i8** %format.text84, align 8
-  %"$bool.text87" = load i8*, i8** %bool.text74, align 8
+  %"$bool.text80" = load i8*, i8** %bool.text77, align 8
+  %call.snprintf81 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @str.31, i32 0, i32 0), i8* %call.String.chars71, i8* %"$bool.text78", i8* %"$bool.text79", i8* %"$bool.text80", i32 %call.String.size73)
+  store i32 %call.snprintf81, i32* %format.size74, align 4
+  %"$format.size82" = load i32, i32* %format.size74, align 4
+  %ADD83 = add i32 %"$format.size82", 1
+  %AS84 = sext i32 %ADD83 to i64
+  %call.calloc86 = call i8* @calloc(i64 %AS84, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc86, i8** %format.text85, align 8
+  %"$format.text87" = load i8*, i8** %format.text85, align 8
   %"$bool.text88" = load i8*, i8** %bool.text75, align 8
   %"$bool.text89" = load i8*, i8** %bool.text76, align 8
-  %call.snprintf90 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text86", i64 %AS83, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @str.31, i32 0, i32 0), i8* %call.String.chars70, i8* %"$bool.text87", i8* %"$bool.text88", i8* %"$bool.text89", i32 %call.String.size72)
-  %"$format.size91" = load i32, i32* %format.size73, align 4
-  %ADD92 = add i32 %"$format.size91", 1
-  %"$format.text93" = load i8*, i8** %format.text84, align 8
-  %"$format.size94" = load i32, i32* %format.size73, align 4
-  %18 = insertvalue %String zeroinitializer, i8* %"$format.text93", 0
-  %19 = insertvalue %String %18, i32 %"$format.size94", 1
-  %20 = insertvalue %String %19, i32 %ADD92, 2
+  %"$bool.text90" = load i8*, i8** %bool.text77, align 8
+  %call.snprintf91 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text87", i64 %AS84, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @str.31, i32 0, i32 0), i8* %call.String.chars71, i8* %"$bool.text88", i8* %"$bool.text89", i8* %"$bool.text90", i32 %call.String.size73)
+  %"$format.size92" = load i32, i32* %format.size74, align 4
+  %ADD93 = add i32 %"$format.size92", 1
+  %"$format.text94" = load i8*, i8** %format.text85, align 8
+  %"$format.size95" = load i32, i32* %format.size74, align 4
+  %18 = insertvalue %String zeroinitializer, i8* %"$format.text94", 0
+  %19 = insertvalue %String %18, i32 %"$format.size95", 1
+  %20 = insertvalue %String %19, i32 %ADD93, 2
   call void @"io::out"(%String %20)
-  %21 = bitcast %String* %tmp71 to %"Array<i8>"*
+  %21 = bitcast %String* %tmp72 to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %21)
   store %String { i8* getelementptr inbounds ([3 x i8], [3 x i8]* @str.32, i32 0, i32 0), i32 2, i32 0 }, %String* %n, align 8
   %call.String.to_int = call i32 @String.to_int(%String* %n)
-  %ADD95 = add i32 %call.String.to_int, 1
-  %call.snprintf97 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @str.33, i32 0, i32 0), i32 %ADD95, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @TYPEOF, i32 0, i32 0))
-  store i32 %call.snprintf97, i32* %format.size96, align 4
-  %"$format.size98" = load i32, i32* %format.size96, align 4
-  %ADD99 = add i32 %"$format.size98", 1
-  %AS100 = sext i32 %ADD99 to i64
-  %call.calloc102 = call i8* @calloc(i64 %AS100, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
-  store i8* %call.calloc102, i8** %format.text101, align 8
-  %"$format.text103" = load i8*, i8** %format.text101, align 8
-  %call.snprintf104 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text103", i64 %AS100, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @str.33, i32 0, i32 0), i32 %ADD95, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @TYPEOF, i32 0, i32 0))
-  %"$format.size105" = load i32, i32* %format.size96, align 4
-  %ADD106 = add i32 %"$format.size105", 1
-  %"$format.text107" = load i8*, i8** %format.text101, align 8
-  %"$format.size108" = load i32, i32* %format.size96, align 4
-  %22 = insertvalue %String zeroinitializer, i8* %"$format.text107", 0
-  %23 = insertvalue %String %22, i32 %"$format.size108", 1
-  %24 = insertvalue %String %23, i32 %ADD106, 2
+  %ADD96 = add i32 %call.String.to_int, 1
+  %call.snprintf98 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @str.33, i32 0, i32 0), i32 %ADD96, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @TYPEOF, i32 0, i32 0))
+  store i32 %call.snprintf98, i32* %format.size97, align 4
+  %"$format.size99" = load i32, i32* %format.size97, align 4
+  %ADD100 = add i32 %"$format.size99", 1
+  %AS101 = sext i32 %ADD100 to i64
+  %call.calloc103 = call i8* @calloc(i64 %AS101, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc103, i8** %format.text102, align 8
+  %"$format.text104" = load i8*, i8** %format.text102, align 8
+  %call.snprintf105 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text104", i64 %AS101, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @str.33, i32 0, i32 0), i32 %ADD96, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @TYPEOF, i32 0, i32 0))
+  %"$format.size106" = load i32, i32* %format.size97, align 4
+  %ADD107 = add i32 %"$format.size106", 1
+  %"$format.text108" = load i8*, i8** %format.text102, align 8
+  %"$format.size109" = load i32, i32* %format.size97, align 4
+  %22 = insertvalue %String zeroinitializer, i8* %"$format.text108", 0
+  %23 = insertvalue %String %22, i32 %"$format.size109", 1
+  %24 = insertvalue %String %23, i32 %ADD107, 2
   call void @"io::out"(%String %24)
   %25 = bitcast %String* %n to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %25)
@@ -11235,6 +11339,36 @@ endif5:                                           ; preds = %else53, %if52.then
   call void @"Array<i8>.drop"(%"Array<i8>"* %30)
   %31 = bitcast %String* %s to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %31)
+  ret i32 0
+
+endtry:                                           ; preds = %try42
+  br label %catch55
+
+catch55:                                          ; preds = %endtry
+  %"$ucg.error_type" = load i32, i32* @ucg.error_type, align 4
+  %EQ = icmp eq i32 %"$ucg.error_type", 1
+  %"$ucg.thrown" = load i1, i1* @ucg.thrown, align 1
+  %AND = and i1 %"$ucg.thrown", %EQ
+  br i1 %AND, label %catch55.then, label %endcatch
+
+catch55.then:                                     ; preds = %catch55
+  store i1 false, i1* @ucg.thrown, align 1
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  %call.uncaught = call i32 @uncaught(%Error* %"*error.at")
+  ret i32 %call.uncaught
+
+endcatch:                                         ; preds = %catch55
+  br label %if56
+
+if56:                                             ; preds = %endcatch
+  %"$ucg.thrown110" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown110", label %if56.then, label %endif6
+
+if56.then:                                        ; preds = %if56
+  ret i32 1
+
+endif6:                                           ; preds = %if56
   ret i32 0
 }
 
@@ -12834,7 +12968,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 041 — ownership: operator = taking the other side by value
 
 ```stderr
-error: test.ura:6:1 operator = takes the right side by reference, a copy would need itself
+error: operator = takes the right side by reference, a copy would need itself
+at test.ura:6:1
   |
 6 | operator =(left &Vec, other Vec):
   | ^^^^^^^^
@@ -13408,3 +13543,4 @@ declare void @free(i8*)
 
 declare i32 @snprintf(i8*, i64, i8*, ...)
 ```
+

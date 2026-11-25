@@ -3,7 +3,8 @@
 ## 001 — nullable: comparing a never-null value to null is rejected
 
 ```stderr
-error: test.ura:6:8 's1' is never null, so this comparison is always the same
+error: 's1' is never null, so this comparison is always the same
+at test.ura:6:8
   |
 6 |     if s1 != null:
   |        ^^
@@ -14,7 +15,8 @@ error: aborting due to 1 error
 ## 002 — nullable: a char[] (C string) can be null, an i32 can't
 
 ```stderr
-error: test.ura:8:13 'i32' can't be null
+error: 'i32' can't be null
+at test.ura:8:13
   |
 8 |     n i32 = null
   |             ^^^^
@@ -487,23 +489,17 @@ entry:
 define %Error @Error.create(%String %0) {
 entry:
   %message = alloca %String, align 8
-  %e = alloca %Error, align 8
   %copy = alloca %String, align 8
   store %String %0, %String* %message, align 8
-  store %Error zeroinitializer, %Error* %e, align 8
-  %e.message = getelementptr inbounds %Error, %Error* %e, i32 0, i32 0
   store %String zeroinitializer, %String* %copy, align 8
   %1 = bitcast %String* %copy to %"Array<i8>"*
   %2 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
   %"$copy" = load %String, %String* %copy, align 8
-  %3 = bitcast %String* %e.message to %"Array<i8>"*
-  call void @"Array<i8>.drop"(%"Array<i8>"* %3)
-  store %String %"$copy", %String* %e.message, align 8
-  %"$e" = load %Error, %Error* %e, align 8
+  %3 = insertvalue %Error zeroinitializer, %String %"$copy", 0
   %4 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %4)
-  ret %Error %"$e"
+  ret %Error %3
 }
 
 define i32 @uncaught(%Error* %0) {
@@ -1140,23 +1136,17 @@ entry:
 define %Error @Error.create(%String %0) {
 entry:
   %message = alloca %String, align 8
-  %e = alloca %Error, align 8
   %copy = alloca %String, align 8
   store %String %0, %String* %message, align 8
-  store %Error zeroinitializer, %Error* %e, align 8
-  %e.message = getelementptr inbounds %Error, %Error* %e, i32 0, i32 0
   store %String zeroinitializer, %String* %copy, align 8
   %1 = bitcast %String* %copy to %"Array<i8>"*
   %2 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
   %"$copy" = load %String, %String* %copy, align 8
-  %3 = bitcast %String* %e.message to %"Array<i8>"*
-  call void @"Array<i8>.drop"(%"Array<i8>"* %3)
-  store %String %"$copy", %String* %e.message, align 8
-  %"$e" = load %Error, %Error* %e, align 8
+  %3 = insertvalue %Error zeroinitializer, %String %"$copy", 0
   %4 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %4)
-  ret %Error %"$e"
+  ret %Error %3
 }
 
 define i32 @uncaught(%Error* %0) {
@@ -1831,23 +1821,17 @@ entry:
 define %Error @Error.create(%String %0) {
 entry:
   %message = alloca %String, align 8
-  %e = alloca %Error, align 8
   %copy = alloca %String, align 8
   store %String %0, %String* %message, align 8
-  store %Error zeroinitializer, %Error* %e, align 8
-  %e.message = getelementptr inbounds %Error, %Error* %e, i32 0, i32 0
   store %String zeroinitializer, %String* %copy, align 8
   %1 = bitcast %String* %copy to %"Array<i8>"*
   %2 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
   %"$copy" = load %String, %String* %copy, align 8
-  %3 = bitcast %String* %e.message to %"Array<i8>"*
-  call void @"Array<i8>.drop"(%"Array<i8>"* %3)
-  store %String %"$copy", %String* %e.message, align 8
-  %"$e" = load %Error, %Error* %e, align 8
+  %3 = insertvalue %Error zeroinitializer, %String %"$copy", 0
   %4 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %4)
-  ret %Error %"$e"
+  ret %Error %3
 }
 
 define i32 @uncaught(%Error* %0) {
@@ -2576,23 +2560,17 @@ entry:
 define %Error @Error.create(%String %0) {
 entry:
   %message = alloca %String, align 8
-  %e = alloca %Error, align 8
   %copy = alloca %String, align 8
   store %String %0, %String* %message, align 8
-  store %Error zeroinitializer, %Error* %e, align 8
-  %e.message = getelementptr inbounds %Error, %Error* %e, i32 0, i32 0
   store %String zeroinitializer, %String* %copy, align 8
   %1 = bitcast %String* %copy to %"Array<i8>"*
   %2 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
   %"$copy" = load %String, %String* %copy, align 8
-  %3 = bitcast %String* %e.message to %"Array<i8>"*
-  call void @"Array<i8>.drop"(%"Array<i8>"* %3)
-  store %String %"$copy", %String* %e.message, align 8
-  %"$e" = load %Error, %Error* %e, align 8
+  %3 = insertvalue %Error zeroinitializer, %String %"$copy", 0
   %4 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %4)
-  ret %Error %"$e"
+  ret %Error %3
 }
 
 define i32 @uncaught(%Error* %0) {
@@ -4382,23 +4360,17 @@ entry:
 define %Error @Error.create(%String %0) {
 entry:
   %message = alloca %String, align 8
-  %e = alloca %Error, align 8
   %copy = alloca %String, align 8
   store %String %0, %String* %message, align 8
-  store %Error zeroinitializer, %Error* %e, align 8
-  %e.message = getelementptr inbounds %Error, %Error* %e, i32 0, i32 0
   store %String zeroinitializer, %String* %copy, align 8
   %1 = bitcast %String* %copy to %"Array<i8>"*
   %2 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
   %"$copy" = load %String, %String* %copy, align 8
-  %3 = bitcast %String* %e.message to %"Array<i8>"*
-  call void @"Array<i8>.drop"(%"Array<i8>"* %3)
-  store %String %"$copy", %String* %e.message, align 8
-  %"$e" = load %Error, %Error* %e, align 8
+  %3 = insertvalue %Error zeroinitializer, %String %"$copy", 0
   %4 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %4)
-  ret %Error %"$e"
+  ret %Error %3
 }
 
 define i32 @uncaught(%Error* %0) {
@@ -5086,7 +5058,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 011 — try: catch without a matching try is a parse error
 
 ```stderr
-error: test.ura:4:5 'catch' without a matching 'try'
+error: 'catch' without a matching 'try'
+at test.ura:4:5
   |
 4 |     catch e Error:
   |     ^^^^^
@@ -5558,23 +5531,17 @@ entry:
 define %Error @Error.create(%String %0) {
 entry:
   %message = alloca %String, align 8
-  %e = alloca %Error, align 8
   %copy = alloca %String, align 8
   store %String %0, %String* %message, align 8
-  store %Error zeroinitializer, %Error* %e, align 8
-  %e.message = getelementptr inbounds %Error, %Error* %e, i32 0, i32 0
   store %String zeroinitializer, %String* %copy, align 8
   %1 = bitcast %String* %copy to %"Array<i8>"*
   %2 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
   %"$copy" = load %String, %String* %copy, align 8
-  %3 = bitcast %String* %e.message to %"Array<i8>"*
-  call void @"Array<i8>.drop"(%"Array<i8>"* %3)
-  store %String %"$copy", %String* %e.message, align 8
-  %"$e" = load %Error, %Error* %e, align 8
+  %3 = insertvalue %Error zeroinitializer, %String %"$copy", 0
   %4 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %4)
-  ret %Error %"$e"
+  ret %Error %3
 }
 
 define i32 @uncaught(%Error* %0) {
@@ -5763,3 +5730,4 @@ declare void @free(i8*)
 
 declare i32 @snprintf(i8*, i64, i8*, ...)
 ```
+

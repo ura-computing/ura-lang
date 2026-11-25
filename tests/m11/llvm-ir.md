@@ -3,12 +3,14 @@
 ## 001 — builtins: typeof without an argument
 
 ```stderr
-error: test.ura:5:11 'typeof' takes one argument, got 0
+error: 'typeof' takes one argument, got 0
+at test.ura:5:11
   |
 5 |    return typeof()
   |           ^^^^^^
 help: use typeof(x)
-error: test.ura:5:11 expected 'i32', found 'i8[]'
+error: expected 'i32', found 'i8[]'
+at test.ura:5:11
   |
 5 |    return typeof()
   |           ^^^^^^
@@ -19,7 +21,8 @@ error: aborting due to 2 errors
 ## 002 — builtins: sizeof with two arguments
 
 ```stderr
-error: test.ura:5:11 'sizeof' takes one argument, got 2
+error: 'sizeof' takes one argument, got 2
+at test.ura:5:11
   |
 5 |    return sizeof(x, x)
   |           ^^^^^^
@@ -1245,7 +1248,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 008 — builtin: sizeof without parentheses
 
 ```stderr
-error: test.ura:5:23 expected '(' after 'sizeof'
+error: expected '(' after 'sizeof'
+at test.ura:5:23
   |
 5 |     io::out($"{sizeof x}")
   |                       ^
@@ -1257,7 +1261,8 @@ error: aborting due to 1 error
 ## 009 — builtin: typeof without parentheses
 
 ```stderr
-error: test.ura:5:23 expected '(' after 'typeof'
+error: expected '(' after 'typeof'
+at test.ura:5:23
   |
 5 |     io::out($"{typeof x}")
   |                       ^
@@ -3637,7 +3642,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 017 — cast: a struct cannot be cast to or from a scalar
 
 ```stderr
-error: test.ura:10:15 can't cast 'Point' to 'i32'
+error: can't cast 'Point' to 'i32'
+at test.ura:10:15
    |
 10 |     n i32 = p as i32
    |               ^^
@@ -3649,7 +3655,8 @@ error: aborting due to 1 error
 ## 018 — cast: casting a scalar to a struct
 
 ```stderr
-error: test.ura:9:17 can't cast 'i32' to 'Point'
+error: can't cast 'i32' to 'Point'
+at test.ura:9:17
   |
 9 |     p Point = 5 as Point
   |                 ^^
@@ -5733,7 +5740,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 024 — literal: a return that does not match the function's type
 
 ```stderr
-error: test.ura:5:12 expected 'i32', found 'f64'
+error: expected 'i32', found 'f64'
+at test.ura:5:12
   |
 5 |     return 1.5
   |            ^^^
@@ -6474,7 +6482,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 027 — literal: a literal that does not fit its target type
 
 ```stderr
-error: test.ura:5:16 300 doesn't fit in i8
+error: 300 doesn't fit in i8
+at test.ura:5:16
   |
 5 |     small i8 = 300
   |                ^^^
@@ -7963,7 +7972,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 032 — operator: bitwise operator on f32 operands is rejected
 
 ```stderr
-error: test.ura:5:17 can't apply '&' to 'f64'
+error: can't apply '&' to 'f64'
+at test.ura:5:17
   |
 5 |     x f32 = 1.5 & 2.0
   |                 ^
@@ -8083,3 +8093,4 @@ endif:                                            ; preds = %if0
   ret i32 0
 }
 ```
+

@@ -1442,7 +1442,7 @@ use "@/core"
 
 fn putchar(c char) i32:
     buf char[] = [c, '\0']
-    write(1, buf, 1)
+    io::write(1, buf, 1)
     return 0
 
 fn main() i32:

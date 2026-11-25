@@ -1749,11 +1749,13 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 018 — function: conflict between two of your own protos
 
 ```stderr
-error: test.ura:6:7 'scan' is already declared with other parameters, on line 4
+error: 'scan' is already declared with other parameters
+at test.ura:6:7
   |
 6 | proto scan(a i32, b i8[], c i32) i32
   |       ^^^^
-help: declare it once, with ... for the optional arguments
+help: the first one is proto scan(a i32, b i8[]) i32
+declared at test.ura:3
 error: aborting due to 1 error
 1
 ```
@@ -2440,23 +2442,17 @@ entry:
 define %Error @Error.create(%String %0) {
 entry:
   %message = alloca %String, align 8
-  %e = alloca %Error, align 8
   %copy = alloca %String, align 8
   store %String %0, %String* %message, align 8
-  store %Error zeroinitializer, %Error* %e, align 8
-  %e.message = getelementptr inbounds %Error, %Error* %e, i32 0, i32 0
   store %String zeroinitializer, %String* %copy, align 8
   %1 = bitcast %String* %copy to %"Array<i8>"*
   %2 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
   %"$copy" = load %String, %String* %copy, align 8
-  %3 = bitcast %String* %e.message to %"Array<i8>"*
-  call void @"Array<i8>.drop"(%"Array<i8>"* %3)
-  store %String %"$copy", %String* %e.message, align 8
-  %"$e" = load %Error, %Error* %e, align 8
+  %3 = insertvalue %Error zeroinitializer, %String %"$copy", 0
   %4 = bitcast %String* %message to %"Array<i8>"*
   call void @"Array<i8>.drop"(%"Array<i8>"* %4)
-  ret %Error %"$e"
+  ret %Error %3
 }
 
 define i32 @uncaught(%Error* %0) {
@@ -2850,7 +2846,7 @@ entry:
   %t = alloca %Token, align 8
   %ref12 = alloca i8*, align 8
   %ref19 = alloca i8*, align 8
-  %"match@1439" = alloca i8, align 1
+  %"match@2123" = alloca i8, align 1
   store %String %0, %String* %src, align 8
   store %"Array<Token>" zeroinitializer, %"Array<Token>"* %toks, align 8
   store i32 0, i32* %i, align 4
@@ -2938,12 +2934,12 @@ endloop:                                          ; preds = %while30
 
 endif1:                                           ; preds = %if29
   %"$c25" = load i8, i8* %c, align 1
-  store i8 %"$c25", i8* %"match@1439", align 1
+  store i8 %"$c25", i8* %"match@2123", align 1
   br label %if31
 
 if31:                                             ; preds = %endif1
-  %"$match@1439" = load i8, i8* %"match@1439", align 1
-  %EQ26 = icmp eq i8 %"$match@1439", 43
+  %"$match@2123" = load i8, i8* %"match@2123", align 1
+  %EQ26 = icmp eq i8 %"$match@2123", 43
   br i1 %EQ26, label %if31.then, label %elif32
 
 if31.then:                                        ; preds = %if31
@@ -2952,8 +2948,8 @@ if31.then:                                        ; preds = %if31
   br label %endif2
 
 elif32:                                           ; preds = %if31
-  %"$match@143928" = load i8, i8* %"match@1439", align 1
-  %EQ29 = icmp eq i8 %"$match@143928", 45
+  %"$match@212328" = load i8, i8* %"match@2123", align 1
+  %EQ29 = icmp eq i8 %"$match@212328", 45
   br i1 %EQ29, label %elif32.then, label %elif33
 
 elif32.then:                                      ; preds = %elif32
@@ -2962,8 +2958,8 @@ elif32.then:                                      ; preds = %elif32
   br label %endif2
 
 elif33:                                           ; preds = %elif32
-  %"$match@143931" = load i8, i8* %"match@1439", align 1
-  %EQ32 = icmp eq i8 %"$match@143931", 42
+  %"$match@212331" = load i8, i8* %"match@2123", align 1
+  %EQ32 = icmp eq i8 %"$match@212331", 42
   br i1 %EQ32, label %elif33.then, label %elif34
 
 elif33.then:                                      ; preds = %elif33
@@ -2972,8 +2968,8 @@ elif33.then:                                      ; preds = %elif33
   br label %endif2
 
 elif34:                                           ; preds = %elif33
-  %"$match@143934" = load i8, i8* %"match@1439", align 1
-  %EQ35 = icmp eq i8 %"$match@143934", 47
+  %"$match@212334" = load i8, i8* %"match@2123", align 1
+  %EQ35 = icmp eq i8 %"$match@212334", 47
   br i1 %EQ35, label %elif34.then, label %elif35
 
 elif34.then:                                      ; preds = %elif34
@@ -2982,8 +2978,8 @@ elif34.then:                                      ; preds = %elif34
   br label %endif2
 
 elif35:                                           ; preds = %elif34
-  %"$match@143937" = load i8, i8* %"match@1439", align 1
-  %EQ38 = icmp eq i8 %"$match@143937", 40
+  %"$match@212337" = load i8, i8* %"match@2123", align 1
+  %EQ38 = icmp eq i8 %"$match@212337", 40
   br i1 %EQ38, label %elif35.then, label %elif36
 
 elif35.then:                                      ; preds = %elif35
@@ -2992,8 +2988,8 @@ elif35.then:                                      ; preds = %elif35
   br label %endif2
 
 elif36:                                           ; preds = %elif35
-  %"$match@143940" = load i8, i8* %"match@1439", align 1
-  %EQ41 = icmp eq i8 %"$match@143940", 41
+  %"$match@212340" = load i8, i8* %"match@2123", align 1
+  %EQ41 = icmp eq i8 %"$match@212340", 41
   br i1 %EQ41, label %elif36.then, label %endif2
 
 elif36.then:                                      ; preds = %elif36
@@ -3019,39 +3015,39 @@ endloop3:                                         ; preds = %while27
 define %String @sign(i32 %0) {
 entry:
   %kind = alloca i32, align 4
-  %"match@1786" = alloca i32, align 4
+  %"match@2470" = alloca i32, align 4
   store i32 %0, i32* %kind, align 4
   %"$kind" = load i32, i32* %kind, align 4
-  store i32 %"$kind", i32* %"match@1786", align 4
+  store i32 %"$kind", i32* %"match@2470", align 4
   br label %if37
 
 if37:                                             ; preds = %entry
-  %"$match@1786" = load i32, i32* %"match@1786", align 4
-  %EQ = icmp eq i32 %"$match@1786", 2
+  %"$match@2470" = load i32, i32* %"match@2470", align 4
+  %EQ = icmp eq i32 %"$match@2470", 2
   br i1 %EQ, label %if37.then, label %elif38
 
 if37.then:                                        ; preds = %if37
   ret %String { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @str, i32 0, i32 0), i32 1, i32 0 }
 
 elif38:                                           ; preds = %if37
-  %"$match@17861" = load i32, i32* %"match@1786", align 4
-  %EQ2 = icmp eq i32 %"$match@17861", 3
+  %"$match@24701" = load i32, i32* %"match@2470", align 4
+  %EQ2 = icmp eq i32 %"$match@24701", 3
   br i1 %EQ2, label %elif38.then, label %elif39
 
 elif38.then:                                      ; preds = %elif38
   ret %String { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @str.1, i32 0, i32 0), i32 1, i32 0 }
 
 elif39:                                           ; preds = %elif38
-  %"$match@17863" = load i32, i32* %"match@1786", align 4
-  %EQ4 = icmp eq i32 %"$match@17863", 4
+  %"$match@24703" = load i32, i32* %"match@2470", align 4
+  %EQ4 = icmp eq i32 %"$match@24703", 4
   br i1 %EQ4, label %elif39.then, label %elif40
 
 elif39.then:                                      ; preds = %elif39
   ret %String { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @str.2, i32 0, i32 0), i32 1, i32 0 }
 
 elif40:                                           ; preds = %elif39
-  %"$match@17865" = load i32, i32* %"match@1786", align 4
-  %EQ6 = icmp eq i32 %"$match@17865", 5
+  %"$match@24705" = load i32, i32* %"match@2470", align 4
+  %EQ6 = icmp eq i32 %"$match@24705", 5
   br i1 %EQ6, label %elif40.then, label %endif
 
 elif40.then:                                      ; preds = %elif40
@@ -3782,7 +3778,7 @@ entry:
   %i = alloca i32, align 4
   %n = alloca %Node, align 8
   %ref = alloca %Node*, align 8
-  %"match@3864" = alloca i32, align 4
+  %"match@4548" = alloca i32, align 4
   %d = alloca i32, align 4
   %error.at = alloca %Error*, align 8
   store %Parser* %0, %Parser** %self, align 8
@@ -3798,12 +3794,12 @@ entry:
   %n.token = getelementptr inbounds %Node, %Node* %n, i32 0, i32 0
   %n.token.kind = getelementptr inbounds %Token, %Token* %n.token, i32 0, i32 0
   %"$n.token.kind" = load i32, i32* %n.token.kind, align 4
-  store i32 %"$n.token.kind", i32* %"match@3864", align 4
+  store i32 %"$n.token.kind", i32* %"match@4548", align 4
   br label %if57
 
 if57:                                             ; preds = %entry
-  %"$match@3864" = load i32, i32* %"match@3864", align 4
-  %EQ = icmp eq i32 %"$match@3864", 1
+  %"$match@4548" = load i32, i32* %"match@4548", align 4
+  %EQ = icmp eq i32 %"$match@4548", 1
   br i1 %EQ, label %if57.then, label %elif58
 
 if57.then:                                        ; preds = %if57
@@ -3813,8 +3809,8 @@ if57.then:                                        ; preds = %if57
   ret i32 %"$n.token.value"
 
 elif58:                                           ; preds = %if57
-  %"$match@386410" = load i32, i32* %"match@3864", align 4
-  %EQ11 = icmp eq i32 %"$match@386410", 2
+  %"$match@454810" = load i32, i32* %"match@4548", align 4
+  %EQ11 = icmp eq i32 %"$match@454810", 2
   br i1 %EQ11, label %elif58.then, label %elif61
 
 elif58.then:                                      ; preds = %elif58
@@ -3854,8 +3850,8 @@ endthrown1:                                       ; preds = %thrown60
   ret i32 %ADD
 
 elif61:                                           ; preds = %elif58
-  %"$match@386416" = load i32, i32* %"match@3864", align 4
-  %EQ17 = icmp eq i32 %"$match@386416", 3
+  %"$match@454816" = load i32, i32* %"match@4548", align 4
+  %EQ17 = icmp eq i32 %"$match@454816", 3
   br i1 %EQ17, label %elif61.then, label %elif64
 
 elif61.then:                                      ; preds = %elif61
@@ -3895,8 +3891,8 @@ endthrown3:                                       ; preds = %thrown63
   ret i32 %SUB
 
 elif64:                                           ; preds = %elif61
-  %"$match@386428" = load i32, i32* %"match@3864", align 4
-  %EQ29 = icmp eq i32 %"$match@386428", 4
+  %"$match@454828" = load i32, i32* %"match@4548", align 4
+  %EQ29 = icmp eq i32 %"$match@454828", 4
   br i1 %EQ29, label %elif64.then, label %elif67
 
 elif64.then:                                      ; preds = %elif64
@@ -3936,8 +3932,8 @@ endthrown5:                                       ; preds = %thrown66
   ret i32 %MUL
 
 elif67:                                           ; preds = %elif64
-  %"$match@386440" = load i32, i32* %"match@3864", align 4
-  %EQ41 = icmp eq i32 %"$match@386440", 5
+  %"$match@454840" = load i32, i32* %"match@4548", align 4
+  %EQ41 = icmp eq i32 %"$match@454840", 5
   br i1 %EQ41, label %elif67.then, label %endif8
 
 elif67.then:                                      ; preds = %elif67
@@ -4321,18 +4317,59 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ```llvm
 %"Array<i8>" = type { i8*, i32, i32 }
 %String = type { i8*, i32, i32 }
+%Error = type { %String }
 %Range = type { i32, i32, i32 }
-%"Array<i32>" = type { i32*, i32, i32 }
-%Pollfd = type { i32, i16, i16 }
-%"Array<Pollfd>" = type { %Pollfd*, i32, i32 }
+%"cstd::sockaddr_in" = type { i16, i16, %"cstd::in_addr", i64 }
+%"cstd::in_addr" = type { i32 }
+%"cstd::pollfd" = type { i32, i16, i16 }
+%"net::Address" = type { %"cstd::sockaddr_in" }
+%"net::Socket" = type { i32 }
+%"Array<net::Socket>" = type { %"net::Socket"*, i32, i32 }
+%"Array<i16>" = type { i16*, i32, i32 }
+%"Array<cstd::pollfd>" = type { %"cstd::pollfd"*, i32, i32 }
+%"net::Server" = type { %"net::Socket", %"net::Address" }
 
-@POLLIN = global i32 0
+@ucg.thrown = global i1 false
+@"cstd::F_OK" = global i32 0
+@"cstd::O_RDONLY" = global i32 0
+@"cstd::O_WRONLY" = global i32 0
+@"cstd::O_RDWR" = global i32 0
+@"cstd::O_CREAT" = global i32 0
+@"cstd::O_TRUNC" = global i32 0
+@"cstd::O_APPEND" = global i32 0
+@"cstd::CLOCK_MONOTONIC" = global i32 0
+@"cstd::S_IFMT" = global i32 0
+@"cstd::S_IFREG" = global i32 0
+@"cstd::S_IFDIR" = global i32 0
+@"cstd::S_IRWXU" = global i32 0
+@"cstd::S_IRUSR" = global i32 0
+@"cstd::S_IWUSR" = global i32 0
+@"cstd::AF_INET" = global i32 0
+@"cstd::SOCK_STREAM" = global i32 0
+@"cstd::SOL_SOCKET" = global i32 0
+@"cstd::SO_REUSEADDR" = global i32 0
+@"cstd::POLLIN" = global i16 0
+@"cstd::INADDR_ANY" = global i32 0
 @PORT = global i32 0
-@str = private unnamed_addr constant [36 x i8] c"[server] can't listen on port 8080\0A\00", align 1
-@str.2 = private unnamed_addr constant [33 x i8] c"[server] listening on port 8080\0A\00", align 1
-@str.3 = private unnamed_addr constant [27 x i8] c"[server] client connected\0A\00", align 1
-@str.4 = private unnamed_addr constant [30 x i8] c"[server] client disconnected\0A\00", align 1
-@str.5 = private unnamed_addr constant [10 x i8] c"[client] \00", align 1
+@BACKLOG = global i32 0
+@CHUNK = global i32 0
+@STDIN = global i32 0
+@ucg.error = global [2 x i64] zeroinitializer
+@ucg.error_type = global i32 0
+@str = private unnamed_addr constant [8 x i8] c"%s: %s\0A\00", align 1
+@str.1 = private unnamed_addr constant [7 x i8] c"socket\00", align 1
+@str.2 = private unnamed_addr constant [11 x i8] c"setsockopt\00", align 1
+@str.3 = private unnamed_addr constant [5 x i8] c"bind\00", align 1
+@str.4 = private unnamed_addr constant [7 x i8] c"listen\00", align 1
+@str.5 = private unnamed_addr constant [7 x i8] c"accept\00", align 1
+@str.6 = private unnamed_addr constant [5 x i8] c"send\00", align 1
+@str.7 = private unnamed_addr constant [5 x i8] c"recv\00", align 1
+@str.8 = private unnamed_addr constant [5 x i8] c"poll\00", align 1
+@str.9 = private unnamed_addr constant [31 x i8] c"[server] listening on port %d\0A\00", align 1
+@str.10 = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1
+@str.11 = private unnamed_addr constant [27 x i8] c"[server] client connected\0A\00", align 1
+@str.12 = private unnamed_addr constant [30 x i8] c"[server] client disconnected\0A\00", align 1
+@str.13 = private unnamed_addr constant [12 x i8] c"[client] %s\00", align 1
 
 define i8* @"new<i8>"(i32 %0) {
 entry:
@@ -4450,79 +4487,36 @@ endif2:                                           ; preds = %if2.then, %if2
   ret void
 }
 
-define void @"Array<i8>.resize"(%"Array<i8>"* %0, i32 %1) {
-entry:
-  %self = alloca %"Array<i8>"*, align 8
-  %size = alloca i32, align 4
-  store %"Array<i8>"* %0, %"Array<i8>"** %self, align 8
-  store i32 %1, i32* %size, align 4
-  %"*self" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"$size" = load i32, i32* %size, align 4
-  call void @"Array<i8>.reserve"(%"Array<i8>"* %"*self", i32 %"$size")
-  br label %while3
-
-while3:                                           ; preds = %while3.then, %entry
-  %"*self1" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self1", i32 0, i32 1
-  %"$*self.count" = load i32, i32* %"*self.count", align 4
-  %"$size2" = load i32, i32* %size, align 4
-  %GT = icmp sgt i32 %"$*self.count", %"$size2"
-  br i1 %GT, label %while3.then, label %endloop
-
-while3.then:                                      ; preds = %while3
-  %"*self3" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count4" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self3", i32 0, i32 1
-  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
-  %SUB = sub i32 %"$*self.count5", 1
-  store i32 %SUB, i32* %"*self.count4", align 4
-  %"*self6" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self6", i32 0, i32 0
-  %"*self7" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count8" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self7", i32 0, i32 1
-  %"$*self.data" = load i8*, i8** %"*self.data", align 8
-  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
-  %"*self.data[]" = getelementptr inbounds i8, i8* %"$*self.data", i32 %"$*self.count9"
-  store i8 0, i8* %"*self.data[]", align 1
-  br label %while3
-
-endloop:                                          ; preds = %while3
-  %"*self10" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count11" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self10", i32 0, i32 1
-  %"$size12" = load i32, i32* %size, align 4
-  store i32 %"$size12", i32* %"*self.count11", align 4
-  ret void
-}
-
 define void @"Array<i8>.clear"(%"Array<i8>"* %0) {
 entry:
   %self = alloca %"Array<i8>"*, align 8
   store %"Array<i8>"* %0, %"Array<i8>"** %self, align 8
-  br label %if4
+  br label %if3
 
-if4:                                              ; preds = %entry
+if3:                                              ; preds = %entry
   %"*self" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
   %"*self.cap" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self", i32 0, i32 2
   %"$*self.cap" = load i32, i32* %"*self.cap", align 4
   %EQ = icmp eq i32 %"$*self.cap", 0
-  br i1 %EQ, label %if4.then, label %endif
+  br i1 %EQ, label %if3.then, label %endif
 
-if4.then:                                         ; preds = %if4
+if3.then:                                         ; preds = %if3
   %"*self1" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
   %"*self.count" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self1", i32 0, i32 1
   store i32 0, i32* %"*self.count", align 4
   br label %endif
 
-endif:                                            ; preds = %if4.then, %if4
-  br label %while5
+endif:                                            ; preds = %if3.then, %if3
+  br label %while4
 
-while5:                                           ; preds = %while5.then, %endif
+while4:                                           ; preds = %while4.then, %endif
   %"*self2" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
   %"*self.count3" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self2", i32 0, i32 1
   %"$*self.count" = load i32, i32* %"*self.count3", align 4
   %GT = icmp sgt i32 %"$*self.count", 0
-  br i1 %GT, label %while5.then, label %endloop
+  br i1 %GT, label %while4.then, label %endloop
 
-while5.then:                                      ; preds = %while5
+while4.then:                                      ; preds = %while4
   %"*self4" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
   %"*self.count5" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self4", i32 0, i32 1
   %"$*self.count6" = load i32, i32* %"*self.count5", align 4
@@ -4536,55 +4530,62 @@ while5.then:                                      ; preds = %while5
   %"$*self.count10" = load i32, i32* %"*self.count9", align 4
   %"*self.data[]" = getelementptr inbounds i8, i8* %"$*self.data", i32 %"$*self.count10"
   store i8 0, i8* %"*self.data[]", align 1
-  br label %while5
+  br label %while4
 
-endloop:                                          ; preds = %while5
+endloop:                                          ; preds = %while4
   ret void
 }
 
-define void @"Array<i8>.append"(%"Array<i8>"* %0, i8 %1) {
+define void @"Array<i8>.="(%"Array<i8>"* %0, %"Array<i8>"* %1) {
 entry:
-  %self = alloca %"Array<i8>"*, align 8
-  %value = alloca i8, align 1
-  store %"Array<i8>"* %0, %"Array<i8>"** %self, align 8
-  store i8 %1, i8* %value, align 1
-  br label %if6
+  %left = alloca %"Array<i8>"*, align 8
+  %right = alloca %"Array<i8>"*, align 8
+  %i = alloca i32, align 4
+  store %"Array<i8>"* %0, %"Array<i8>"** %left, align 8
+  store %"Array<i8>"* %1, %"Array<i8>"** %right, align 8
+  %"*left" = load %"Array<i8>"*, %"Array<i8>"** %left, align 8
+  call void @"Array<i8>.clear"(%"Array<i8>"* %"*left")
+  %"*left1" = load %"Array<i8>"*, %"Array<i8>"** %left, align 8
+  %"*right" = load %"Array<i8>"*, %"Array<i8>"** %right, align 8
+  %"*right.count" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*right", i32 0, i32 1
+  %"$*right.count" = load i32, i32* %"*right.count", align 4
+  call void @"Array<i8>.reserve"(%"Array<i8>"* %"*left1", i32 %"$*right.count")
+  store i32 0, i32* %i, align 4
+  br label %while5
 
-if6:                                              ; preds = %entry
-  %"*self" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self", i32 0, i32 1
-  %"*self1" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self1", i32 0, i32 2
-  %"$*self.count" = load i32, i32* %"*self.count", align 4
-  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
-  %GE = icmp sge i32 %"$*self.count", %"$*self.cap"
-  br i1 %GE, label %if6.then, label %endif
+while5:                                           ; preds = %while5.then, %entry
+  %"*right2" = load %"Array<i8>"*, %"Array<i8>"** %right, align 8
+  %"*right.count3" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*right2", i32 0, i32 1
+  %"$i" = load i32, i32* %i, align 4
+  %"$*right.count4" = load i32, i32* %"*right.count3", align 4
+  %LT = icmp slt i32 %"$i", %"$*right.count4"
+  br i1 %LT, label %while5.then, label %endloop
 
-if6.then:                                         ; preds = %if6
-  %"*self2" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self3" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count4" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self3", i32 0, i32 1
-  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
-  %MUL = mul i32 %"$*self.count5", 2
-  %ADD = add i32 %MUL, 4
-  call void @"Array<i8>.reserve"(%"Array<i8>"* %"*self2", i32 %ADD)
-  br label %endif
+while5.then:                                      ; preds = %while5
+  %"*left5" = load %"Array<i8>"*, %"Array<i8>"** %left, align 8
+  %"*left.data" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*left5", i32 0, i32 0
+  %"$*left.data" = load i8*, i8** %"*left.data", align 8
+  %"$i6" = load i32, i32* %i, align 4
+  %"*left.data[]" = getelementptr inbounds i8, i8* %"$*left.data", i32 %"$i6"
+  %"*right7" = load %"Array<i8>"*, %"Array<i8>"** %right, align 8
+  %"*right.data" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*right7", i32 0, i32 0
+  %"$*right.data" = load i8*, i8** %"*right.data", align 8
+  %"$i8" = load i32, i32* %i, align 4
+  %"*right.data[]" = getelementptr inbounds i8, i8* %"$*right.data", i32 %"$i8"
+  %"$*right.data[]" = load i8, i8* %"*right.data[]", align 1
+  store i8 %"$*right.data[]", i8* %"*left.data[]", align 1
+  %"$i9" = load i32, i32* %i, align 4
+  %ADD = add i32 %"$i9", 1
+  store i32 %ADD, i32* %i, align 4
+  br label %while5
 
-endif:                                            ; preds = %if6.then, %if6
-  %"*self6" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self6", i32 0, i32 0
-  %"*self7" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count8" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self7", i32 0, i32 1
-  %"$*self.data" = load i8*, i8** %"*self.data", align 8
-  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
-  %"*self.data[]" = getelementptr inbounds i8, i8* %"$*self.data", i32 %"$*self.count9"
-  %"$value" = load i8, i8* %value, align 1
-  store i8 %"$value", i8* %"*self.data[]", align 1
-  %"*self10" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count11" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self10", i32 0, i32 1
-  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
-  %ADD13 = add i32 %"$*self.count12", 1
-  store i32 %ADD13, i32* %"*self.count11", align 4
+endloop:                                          ; preds = %while5
+  %"*left10" = load %"Array<i8>"*, %"Array<i8>"** %left, align 8
+  %"*left.count" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*left10", i32 0, i32 1
+  %"*right11" = load %"Array<i8>"*, %"Array<i8>"** %right, align 8
+  %"*right.count12" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*right11", i32 0, i32 1
+  %"$*right.count13" = load i32, i32* %"*right.count12", align 4
+  store i32 %"$*right.count13", i32* %"*left.count", align 4
   ret void
 }
 
@@ -4594,23 +4595,23 @@ entry:
   store %"Array<i8>"* %0, %"Array<i8>"** %value, align 8
   %"*value" = load %"Array<i8>"*, %"Array<i8>"** %value, align 8
   call void @"Array<i8>.clear"(%"Array<i8>"* %"*value")
-  br label %if7
+  br label %if6
 
-if7:                                              ; preds = %entry
+if6:                                              ; preds = %entry
   %"*value1" = load %"Array<i8>"*, %"Array<i8>"** %value, align 8
   %"*value.cap" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*value1", i32 0, i32 2
   %"$*value.cap" = load i32, i32* %"*value.cap", align 4
   %GT = icmp sgt i32 %"$*value.cap", 0
-  br i1 %GT, label %if7.then, label %endif
+  br i1 %GT, label %if6.then, label %endif
 
-if7.then:                                         ; preds = %if7
+if6.then:                                         ; preds = %if6
   %"*value2" = load %"Array<i8>"*, %"Array<i8>"** %value, align 8
   %"*value.data" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*value2", i32 0, i32 0
   %"$*value.data" = load i8*, i8** %"*value.data", align 8
   call void @"free<i8>"(i8* %"$*value.data")
   br label %endif
 
-endif:                                            ; preds = %if7.then, %if7
+endif:                                            ; preds = %if6.then, %if6
   ret void
 }
 
@@ -4621,38 +4622,38 @@ entry:
   %bigger = alloca i8*, align 8
   store %String* %0, %String** %self, align 8
   store i32 %1, i32* %cap, align 4
-  br label %if8
+  br label %if7
 
-if8:                                              ; preds = %entry
+if7:                                              ; preds = %entry
   %"*self" = load %String*, %String** %self, align 8
   %"*self.count" = getelementptr inbounds %String, %String* %"*self", i32 0, i32 1
   %"$cap" = load i32, i32* %cap, align 4
   %"$*self.count" = load i32, i32* %"*self.count", align 4
   %LT = icmp slt i32 %"$cap", %"$*self.count"
-  br i1 %LT, label %if8.then, label %endif
+  br i1 %LT, label %if7.then, label %endif
 
-if8.then:                                         ; preds = %if8
+if7.then:                                         ; preds = %if7
   %"*self3" = load %String*, %String** %self, align 8
   %"*self.count4" = getelementptr inbounds %String, %String* %"*self3", i32 0, i32 1
   %"$*self.count5" = load i32, i32* %"*self.count4", align 4
   store i32 %"$*self.count5", i32* %cap, align 4
   br label %endif
 
-endif:                                            ; preds = %if8.then, %if8
-  br label %if9
+endif:                                            ; preds = %if7.then, %if7
+  br label %if8
 
-if9:                                              ; preds = %endif
+if8:                                              ; preds = %endif
   %"*self6" = load %String*, %String** %self, align 8
   %"*self.cap" = getelementptr inbounds %String, %String* %"*self6", i32 0, i32 2
   %"$cap7" = load i32, i32* %cap, align 4
   %"$*self.cap" = load i32, i32* %"*self.cap", align 4
   %LE = icmp sle i32 %"$cap7", %"$*self.cap"
-  br i1 %LE, label %if9.then, label %endif1
+  br i1 %LE, label %if8.then, label %endif1
 
-if9.then:                                         ; preds = %if9
+if8.then:                                         ; preds = %if8
   ret void
 
-endif1:                                           ; preds = %if9
+endif1:                                           ; preds = %if8
   %"$cap8" = load i32, i32* %cap, align 4
   %"call.new<i8>" = call i8* @"new<i8>"(i32 %"$cap8")
   store i8* %"call.new<i8>", i8** %bigger, align 8
@@ -4664,23 +4665,23 @@ endif1:                                           ; preds = %if9
   %"$*self.data" = load i8*, i8** %"*self.data", align 8
   %"$*self.count12" = load i32, i32* %"*self.count11", align 4
   call void @"copy<i8>"(i8* %"$bigger", i8* %"$*self.data", i32 %"$*self.count12")
-  br label %if10
+  br label %if9
 
-if10:                                             ; preds = %endif1
+if9:                                              ; preds = %endif1
   %"*self13" = load %String*, %String** %self, align 8
   %"*self.cap14" = getelementptr inbounds %String, %String* %"*self13", i32 0, i32 2
   %"$*self.cap15" = load i32, i32* %"*self.cap14", align 4
   %GT = icmp sgt i32 %"$*self.cap15", 0
-  br i1 %GT, label %if10.then, label %endif2
+  br i1 %GT, label %if9.then, label %endif2
 
-if10.then:                                        ; preds = %if10
+if9.then:                                         ; preds = %if9
   %"*self16" = load %String*, %String** %self, align 8
   %"*self.data17" = getelementptr inbounds %String, %String* %"*self16", i32 0, i32 0
   %"$*self.data18" = load i8*, i8** %"*self.data17", align 8
   call void @"free<i8>"(i8* %"$*self.data18")
   br label %endif2
 
-endif2:                                           ; preds = %if10.then, %if10
+endif2:                                           ; preds = %if9.then, %if9
   %"*self19" = load %String*, %String** %self, align 8
   %"*self.data20" = getelementptr inbounds %String, %String* %"*self19", i32 0, i32 0
   %"$bigger21" = load i8*, i8** %bigger, align 8
@@ -4692,6 +4693,95 @@ endif2:                                           ; preds = %if10.then, %if10
   ret void
 }
 
+define void @String.resize(%String* %0, i32 %1) {
+entry:
+  %self = alloca %String*, align 8
+  %size = alloca i32, align 4
+  store %String* %0, %String** %self, align 8
+  store i32 %1, i32* %size, align 4
+  %"*self" = load %String*, %String** %self, align 8
+  %"$size" = load i32, i32* %size, align 4
+  call void @String.reserve(%String* %"*self", i32 %"$size")
+  br label %while10
+
+while10:                                          ; preds = %while10.then, %entry
+  %"*self1" = load %String*, %String** %self, align 8
+  %"*self.count" = getelementptr inbounds %String, %String* %"*self1", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %"$size2" = load i32, i32* %size, align 4
+  %GT = icmp sgt i32 %"$*self.count", %"$size2"
+  br i1 %GT, label %while10.then, label %endloop
+
+while10.then:                                     ; preds = %while10
+  %"*self3" = load %String*, %String** %self, align 8
+  %"*self.count4" = getelementptr inbounds %String, %String* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  %SUB = sub i32 %"$*self.count5", 1
+  store i32 %SUB, i32* %"*self.count4", align 4
+  %"*self6" = load %String*, %String** %self, align 8
+  %"*self.data" = getelementptr inbounds %String, %String* %"*self6", i32 0, i32 0
+  %"*self7" = load %String*, %String** %self, align 8
+  %"*self.count8" = getelementptr inbounds %String, %String* %"*self7", i32 0, i32 1
+  %"$*self.data" = load i8*, i8** %"*self.data", align 8
+  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
+  %"*self.data[]" = getelementptr inbounds i8, i8* %"$*self.data", i32 %"$*self.count9"
+  store i8 0, i8* %"*self.data[]", align 1
+  br label %while10
+
+endloop:                                          ; preds = %while10
+  %"*self10" = load %String*, %String** %self, align 8
+  %"*self.count11" = getelementptr inbounds %String, %String* %"*self10", i32 0, i32 1
+  %"$size12" = load i32, i32* %size, align 4
+  store i32 %"$size12", i32* %"*self.count11", align 4
+  ret void
+}
+
+define void @String.append(%String* %0, i8 %1) {
+entry:
+  %self = alloca %String*, align 8
+  %value = alloca i8, align 1
+  store %String* %0, %String** %self, align 8
+  store i8 %1, i8* %value, align 1
+  br label %if11
+
+if11:                                             ; preds = %entry
+  %"*self" = load %String*, %String** %self, align 8
+  %"*self.count" = getelementptr inbounds %String, %String* %"*self", i32 0, i32 1
+  %"*self1" = load %String*, %String** %self, align 8
+  %"*self.cap" = getelementptr inbounds %String, %String* %"*self1", i32 0, i32 2
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %GE = icmp sge i32 %"$*self.count", %"$*self.cap"
+  br i1 %GE, label %if11.then, label %endif
+
+if11.then:                                        ; preds = %if11
+  %"*self2" = load %String*, %String** %self, align 8
+  %"*self3" = load %String*, %String** %self, align 8
+  %"*self.count4" = getelementptr inbounds %String, %String* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  %MUL = mul i32 %"$*self.count5", 2
+  %ADD = add i32 %MUL, 4
+  call void @String.reserve(%String* %"*self2", i32 %ADD)
+  br label %endif
+
+endif:                                            ; preds = %if11.then, %if11
+  %"*self6" = load %String*, %String** %self, align 8
+  %"*self.data" = getelementptr inbounds %String, %String* %"*self6", i32 0, i32 0
+  %"*self7" = load %String*, %String** %self, align 8
+  %"*self.count8" = getelementptr inbounds %String, %String* %"*self7", i32 0, i32 1
+  %"$*self.data" = load i8*, i8** %"*self.data", align 8
+  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
+  %"*self.data[]" = getelementptr inbounds i8, i8* %"$*self.data", i32 %"$*self.count9"
+  %"$value" = load i8, i8* %value, align 1
+  store i8 %"$value", i8* %"*self.data[]", align 1
+  %"*self10" = load %String*, %String** %self, align 8
+  %"*self.count11" = getelementptr inbounds %String, %String* %"*self10", i32 0, i32 1
+  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
+  %ADD13 = add i32 %"$*self.count12", 1
+  store i32 %ADD13, i32* %"*self.count11", align 4
+  ret void
+}
+
 define i32 @String.len(%String* %0) {
 entry:
   %self = alloca %String*, align 8
@@ -4700,6 +4790,63 @@ entry:
   %"*self.count" = getelementptr inbounds %String, %String* %"*self", i32 0, i32 1
   %"$*self.count" = load i32, i32* %"*self.count", align 4
   ret i32 %"$*self.count"
+}
+
+define i1 @String.is_empty(%String* %0) {
+entry:
+  %self = alloca %String*, align 8
+  store %String* %0, %String** %self, align 8
+  %"*self" = load %String*, %String** %self, align 8
+  %"*self.count" = getelementptr inbounds %String, %String* %"*self", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %EQ = icmp eq i32 %"$*self.count", 0
+  ret i1 %EQ
+}
+
+define %String @String.create(i8* %0) {
+entry:
+  %text = alloca i8*, align 8
+  %res = alloca %String, align 8
+  store i8* %0, i8** %text, align 8
+  store %String zeroinitializer, %String* %res, align 8
+  %"$text" = load i8*, i8** %text, align 8
+  call void @String.join(%String* %res, i8* %"$text")
+  %"$res" = load %String, %String* %res, align 8
+  ret %String %"$res"
+}
+
+define void @String.join(%String* %0, i8* %1) {
+entry:
+  %self = alloca %String*, align 8
+  %text = alloca i8*, align 8
+  %i = alloca i32, align 4
+  store %String* %0, %String** %self, align 8
+  store i8* %1, i8** %text, align 8
+  store i32 0, i32* %i, align 4
+  br label %while12
+
+while12:                                          ; preds = %while12.then, %entry
+  %"$text" = load i8*, i8** %text, align 8
+  %"$i" = load i32, i32* %i, align 4
+  %"text[]" = getelementptr inbounds i8, i8* %"$text", i32 %"$i"
+  %"$text[]" = load i8, i8* %"text[]", align 1
+  %NQ = icmp ne i8 %"$text[]", 0
+  br i1 %NQ, label %while12.then, label %endloop
+
+while12.then:                                     ; preds = %while12
+  %"*self" = load %String*, %String** %self, align 8
+  %"$text1" = load i8*, i8** %text, align 8
+  %"$i2" = load i32, i32* %i, align 4
+  %"text[]3" = getelementptr inbounds i8, i8* %"$text1", i32 %"$i2"
+  %"$text[]4" = load i8, i8* %"text[]3", align 1
+  call void @String.append(%String* %"*self", i8 %"$text[]4")
+  %"$i5" = load i32, i32* %i, align 4
+  %ADD = add i32 %"$i5", 1
+  store i32 %ADD, i32* %i, align 4
+  br label %while12
+
+endloop:                                          ; preds = %while12
+  ret void
 }
 
 define i8* @String.chars(%String* %0) {
@@ -4726,6 +4873,38 @@ entry:
   ret i8* %"$*self.data8"
 }
 
+define %Error @Error.create(%String %0) {
+entry:
+  %message = alloca %String, align 8
+  %copy = alloca %String, align 8
+  store %String %0, %String* %message, align 8
+  store %String zeroinitializer, %String* %copy, align 8
+  %1 = bitcast %String* %copy to %"Array<i8>"*
+  %2 = bitcast %String* %message to %"Array<i8>"*
+  call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
+  %"$copy" = load %String, %String* %copy, align 8
+  %3 = insertvalue %Error zeroinitializer, %String %"$copy", 0
+  %4 = bitcast %String* %message to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %4)
+  ret %Error %3
+}
+
+define i32 @uncaught(%Error* %0) {
+entry:
+  %error = alloca %Error*, align 8
+  %copy = alloca %String, align 8
+  store %Error* %0, %Error** %error, align 8
+  store %String zeroinitializer, %String* %copy, align 8
+  %"*error" = load %Error*, %Error** %error, align 8
+  %"*error.message" = getelementptr inbounds %Error, %Error* %"*error", i32 0, i32 0
+  %1 = bitcast %String* %copy to %"Array<i8>"*
+  %2 = bitcast %String* %"*error.message" to %"Array<i8>"*
+  call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
+  %"$copy" = load %String, %String* %copy, align 8
+  call void @"io::err"(%String %"$copy")
+  ret i32 1
+}
+
 define %Range @Range.create(i32 %0, i32 %1) {
 entry:
   %start = alloca i32, align 4
@@ -4733,29 +4912,26 @@ entry:
   %r = alloca %Range, align 8
   store i32 %0, i32* %start, align 4
   store i32 %1, i32* %stop, align 4
-  store %Range zeroinitializer, %Range* %r, align 4
-  %r.start = getelementptr inbounds %Range, %Range* %r, i32 0, i32 0
   %"$start" = load i32, i32* %start, align 4
-  store i32 %"$start", i32* %r.start, align 4
-  %r.stop = getelementptr inbounds %Range, %Range* %r, i32 0, i32 1
   %"$stop" = load i32, i32* %stop, align 4
-  store i32 %"$stop", i32* %r.stop, align 4
-  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 1, i32* %r.step, align 4
-  br label %if11
+  %2 = insertvalue %Range zeroinitializer, i32 %"$start", 0
+  %3 = insertvalue %Range %2, i32 %"$stop", 1
+  %4 = insertvalue %Range %3, i32 1, 2
+  store %Range %4, %Range* %r, align 4
+  br label %if13
 
-if11:                                             ; preds = %entry
+if13:                                             ; preds = %entry
   %"$stop1" = load i32, i32* %stop, align 4
   %"$start2" = load i32, i32* %start, align 4
   %LT = icmp slt i32 %"$stop1", %"$start2"
-  br i1 %LT, label %if11.then, label %endif
+  br i1 %LT, label %if13.then, label %endif
 
-if11.then:                                        ; preds = %if11
-  %r.step3 = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 -1, i32* %r.step3, align 4
+if13.then:                                        ; preds = %if13
+  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
+  store i32 -1, i32* %r.step, align 4
   br label %endif
 
-endif:                                            ; preds = %if11.then, %if11
+endif:                                            ; preds = %if13.then, %if13
   %"$r" = load %Range, %Range* %r, align 4
   ret %Range %"$r"
 }
@@ -4805,16 +4981,16 @@ entry:
   %AND15 = and i1 %LT, %LE
   %OR = or i1 %AND, %AND15
   store i1 %OR, i1* %done, align 1
-  br label %if12
+  br label %if14
 
-if12:                                             ; preds = %entry
+if14:                                             ; preds = %entry
   %"$done" = load i1, i1* %done, align 1
-  br i1 %"$done", label %if12.then, label %endif
+  br i1 %"$done", label %if14.then, label %endif
 
-if12.then:                                        ; preds = %if12
+if14.then:                                        ; preds = %if14
   ret i1 false
 
-endif:                                            ; preds = %if12
+endif:                                            ; preds = %if14
   %"*i16" = load i32*, i32** %i, align 8
   %"$*i17" = load i32, i32* %"*i16", align 4
   %ADD18 = add i32 %"$*i17", 1
@@ -4852,1016 +5028,1993 @@ entry:
   ret void
 }
 
-declare i32 @socket(i32, i32, i32)
+define %String @"io::input"() {
+entry:
+  %line = alloca %String, align 8
+  %c = alloca i8, align 1
+  store %String zeroinitializer, %String* %line, align 8
+  store i8 0, i8* %c, align 1
+  br label %while15
 
-declare i32 @bind(i32, i8*, i32)
+while15:                                          ; preds = %while15.then, %entry
+  %call.read = call i64 @read(i32 0, i8* %c, i64 1)
+  %EQ = icmp eq i64 %call.read, 1
+  %"$c" = load i8, i8* %c, align 1
+  %NQ = icmp ne i8 %"$c", 10
+  %AND = and i1 %EQ, %NQ
+  br i1 %AND, label %while15.then, label %endloop
 
-declare i32 @listen(i32, i32)
+while15.then:                                     ; preds = %while15
+  %"$c1" = load i8, i8* %c, align 1
+  call void @String.append(%String* %line, i8 %"$c1")
+  br label %while15
 
-declare i32 @accept(i32, i8*, i8*)
+endloop:                                          ; preds = %while15
+  %"$line" = load %String, %String* %line, align 8
+  ret %String %"$line"
+}
 
-declare i32 @setsockopt(i32, i32, i32, i8*, i32)
+declare i32* @__errno_location()
 
-declare i32 @poll(i8*, i32, i32)
+define i32 @"cstd::errno"() {
+entry:
+  %ref = alloca i32*, align 8
+  %call.__errno_location = call i32* @__errno_location()
+  store i32* %call.__errno_location, i32** %ref, align 8
+  %"*ref" = load i32*, i32** %ref, align 8
+  %"$*ref" = load i32, i32* %"*ref", align 4
+  ret i32 %"$*ref"
+}
+
+declare i8* @strerror(i32)
 
 declare i32 @close(i32)
 
-define %"Array<i8>" @address(i32 %0) {
+declare i32 @socket(i32, i32, i32)
+
+declare i32 @bind(i32, %"cstd::sockaddr_in"*, i32)
+
+declare i32 @listen(i32, i32)
+
+declare i32 @accept(i32, %"cstd::sockaddr_in"*, i32*)
+
+declare i32 @setsockopt(i32, i32, i32, i32*, i32)
+
+declare i64 @send(i32, i8*, i64, i32)
+
+declare i64 @recv(i32, i8*, i64, i32)
+
+declare i16 @htons(i16)
+
+declare i32 @poll(%"cstd::pollfd"*, i32, i32)
+
+define %Error @"net::fail"(%String %0) {
+entry:
+  %call = alloca %String, align 8
+  %reason = alloca %String, align 8
+  %format.size = alloca i32, align 4
+  %format.text = alloca i8*, align 8
+  store %String %0, %String* %call, align 8
+  %"call.cstd::errno" = call i32 @"cstd::errno"()
+  %call.strerror = call i8* @strerror(i32 %"call.cstd::errno")
+  %call.String.create = call %String @String.create(i8* %call.strerror)
+  store %String %call.String.create, %String* %reason, align 8
+  %call.String.chars = call i8* @String.chars(%String* %call)
+  %call.String.chars1 = call i8* @String.chars(%String* %reason)
+  %call.snprintf = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @str, i32 0, i32 0), i8* %call.String.chars, i8* %call.String.chars1)
+  store i32 %call.snprintf, i32* %format.size, align 4
+  %"$format.size" = load i32, i32* %format.size, align 4
+  %ADD = add i32 %"$format.size", 1
+  %AS = sext i32 %ADD to i64
+  %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc, i8** %format.text, align 8
+  %"$format.text" = load i8*, i8** %format.text, align 8
+  %call.snprintf2 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text", i64 %AS, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @str, i32 0, i32 0), i8* %call.String.chars, i8* %call.String.chars1)
+  %"$format.size3" = load i32, i32* %format.size, align 4
+  %ADD4 = add i32 %"$format.size3", 1
+  %"$format.text5" = load i8*, i8** %format.text, align 8
+  %"$format.size6" = load i32, i32* %format.size, align 4
+  %1 = insertvalue %String zeroinitializer, i8* %"$format.text5", 0
+  %2 = insertvalue %String %1, i32 %"$format.size6", 1
+  %3 = insertvalue %String %2, i32 %ADD4, 2
+  %call.Error.create = call %Error @Error.create(%String %3)
+  %4 = bitcast %String* %reason to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %4)
+  %5 = bitcast %String* %call to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %5)
+  ret %Error %call.Error.create
+}
+
+define %"net::Address" @"net::Address.create"(i32 %0) {
 entry:
   %port = alloca i32, align 4
-  %data = alloca %"Array<i8>", align 8
-  %tmp = alloca %Range, align 8
-  %i = alloca i32, align 4
-  %i3 = alloca i32, align 4
+  %address = alloca %"net::Address", align 8
   store i32 %0, i32* %port, align 4
-  store %"Array<i8>" zeroinitializer, %"Array<i8>"* %data, align 8
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 2)
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 0)
+  %"$cstd::AF_INET" = load i32, i32* @"cstd::AF_INET", align 4
+  %AS = trunc i32 %"$cstd::AF_INET" to i16
   %"$port" = load i32, i32* %port, align 4
-  %RSHIFT = ashr i32 %"$port", 8
-  %AS = trunc i32 %RSHIFT to i8
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 %AS)
-  %"$port1" = load i32, i32* %port, align 4
-  %BAND = and i32 %"$port1", 255
-  %AS2 = trunc i32 %BAND to i8
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 %AS2)
-  %call.Range.create = call %Range @Range.create(i32 0, i32 12)
-  store %Range %call.Range.create, %Range* %tmp, align 4
-  store i32 0, i32* %i, align 4
-  store i32 0, i32* %i3, align 4
-  br label %while13
-
-while13:                                          ; preds = %while13.then, %entry
-  %call.Range.in = call i1 @Range.in(%Range* %tmp, i32* %i, i32* %i3)
-  br i1 %call.Range.in, label %while13.then, label %endloop
-
-while13.then:                                     ; preds = %while13
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 0)
-  br label %while13
-
-endloop:                                          ; preds = %while13
-  %"$data" = load %"Array<i8>", %"Array<i8>"* %data, align 8
-  ret %"Array<i8>" %"$data"
+  %AS1 = trunc i32 %"$port" to i16
+  %call.htons = call i16 @htons(i16 %AS1)
+  %"$cstd::INADDR_ANY" = load i32, i32* @"cstd::INADDR_ANY", align 4
+  %1 = insertvalue %"cstd::in_addr" zeroinitializer, i32 %"$cstd::INADDR_ANY", 0
+  %2 = insertvalue %"cstd::sockaddr_in" zeroinitializer, i16 %AS, 0
+  %3 = insertvalue %"cstd::sockaddr_in" %2, i16 %call.htons, 1
+  %4 = insertvalue %"cstd::sockaddr_in" %3, %"cstd::in_addr" %1, 2
+  %5 = insertvalue %"net::Address" zeroinitializer, %"cstd::sockaddr_in" %4, 0
+  store %"net::Address" %5, %"net::Address"* %address, align 8
+  %"$address" = load %"net::Address", %"net::Address"* %address, align 8
+  ret %"net::Address" %"$address"
 }
 
-define i32* @"new<i32>"(i32 %0) {
+define %"net::Socket" @"net::Socket.create"() {
 entry:
-  %count = alloca i32, align 4
-  store i32 %0, i32* %count, align 4
-  %"$count" = load i32, i32* %count, align 4
-  %MUL = mul i32 %"$count", ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i32)
-  %AS = sext i32 %MUL to i64
-  %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
-  %AS1 = bitcast i8* %call.calloc to i32*
-  ret i32* %AS1
-}
-
-define void @"copy<i32>"(i32* %0, i32* %1, i32 %2) {
-entry:
-  %dst = alloca i32*, align 8
-  %src = alloca i32*, align 8
-  %count = alloca i32, align 4
-  store i32* %0, i32** %dst, align 8
-  store i32* %1, i32** %src, align 8
-  store i32 %2, i32* %count, align 4
-  %"$dst" = load i32*, i32** %dst, align 8
-  %AS = bitcast i32* %"$dst" to i8*
-  %"$src" = load i32*, i32** %src, align 8
-  %AS1 = bitcast i32* %"$src" to i8*
-  %"$count" = load i32, i32* %count, align 4
-  %MUL = mul i32 %"$count", ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i32)
-  %AS2 = sext i32 %MUL to i64
-  %MUL3 = mul i64 %AS2, sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64)
-  %call.memcpy = call i8* @memcpy(i8* %AS, i8* %AS1, i64 %MUL3)
-  ret void
-}
-
-define void @"free<i32>"(i32* %0) {
-entry:
-  %data = alloca i32*, align 8
-  store i32* %0, i32** %data, align 8
-  %"$data" = load i32*, i32** %data, align 8
-  %AS = bitcast i32* %"$data" to i8*
-  call void @free(i8* %AS)
-  ret void
-}
-
-define void @"Array<i32>.reserve"(%"Array<i32>"* %0, i32 %1) {
-entry:
-  %self = alloca %"Array<i32>"*, align 8
-  %cap = alloca i32, align 4
-  %bigger = alloca i32*, align 8
-  store %"Array<i32>"* %0, %"Array<i32>"** %self, align 8
-  store i32 %1, i32* %cap, align 4
-  br label %if14
-
-if14:                                             ; preds = %entry
-  %"*self" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self", i32 0, i32 1
-  %"$cap" = load i32, i32* %cap, align 4
-  %"$*self.count" = load i32, i32* %"*self.count", align 4
-  %LT = icmp slt i32 %"$cap", %"$*self.count"
-  br i1 %LT, label %if14.then, label %endif
-
-if14.then:                                        ; preds = %if14
-  %"*self3" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.count4" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self3", i32 0, i32 1
-  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
-  store i32 %"$*self.count5", i32* %cap, align 4
-  br label %endif
-
-endif:                                            ; preds = %if14.then, %if14
-  br label %if15
-
-if15:                                             ; preds = %endif
-  %"*self6" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self6", i32 0, i32 2
-  %"$cap7" = load i32, i32* %cap, align 4
-  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
-  %LE = icmp sle i32 %"$cap7", %"$*self.cap"
-  br i1 %LE, label %if15.then, label %endif1
-
-if15.then:                                        ; preds = %if15
-  ret void
-
-endif1:                                           ; preds = %if15
-  %"$cap8" = load i32, i32* %cap, align 4
-  %"call.new<i32>" = call i32* @"new<i32>"(i32 %"$cap8")
-  store i32* %"call.new<i32>", i32** %bigger, align 8
-  %"*self9" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self9", i32 0, i32 0
-  %"*self10" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.count11" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self10", i32 0, i32 1
-  %"$bigger" = load i32*, i32** %bigger, align 8
-  %"$*self.data" = load i32*, i32** %"*self.data", align 8
-  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
-  call void @"copy<i32>"(i32* %"$bigger", i32* %"$*self.data", i32 %"$*self.count12")
+  %socket = alloca %"net::Socket", align 8
+  %error.at = alloca %Error*, align 8
+  %"$cstd::AF_INET" = load i32, i32* @"cstd::AF_INET", align 4
+  %"$cstd::SOCK_STREAM" = load i32, i32* @"cstd::SOCK_STREAM", align 4
+  %call.socket = call i32 @socket(i32 %"$cstd::AF_INET", i32 %"$cstd::SOCK_STREAM", i32 0)
+  %0 = insertvalue %"net::Socket" zeroinitializer, i32 %call.socket, 0
+  store %"net::Socket" %0, %"net::Socket"* %socket, align 4
   br label %if16
 
-if16:                                             ; preds = %endif1
-  %"*self13" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.cap14" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self13", i32 0, i32 2
-  %"$*self.cap15" = load i32, i32* %"*self.cap14", align 4
-  %GT = icmp sgt i32 %"$*self.cap15", 0
-  br i1 %GT, label %if16.then, label %endif2
+if16:                                             ; preds = %entry
+  %socket.fd = getelementptr inbounds %"net::Socket", %"net::Socket"* %socket, i32 0, i32 0
+  %"$socket.fd" = load i32, i32* %socket.fd, align 4
+  %LT = icmp slt i32 %"$socket.fd", 0
+  br i1 %LT, label %if16.then, label %endif
 
 if16.then:                                        ; preds = %if16
-  %"*self16" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.data17" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self16", i32 0, i32 0
-  %"$*self.data18" = load i32*, i32** %"*self.data17", align 8
-  call void @"free<i32>"(i32* %"$*self.data18")
-  br label %endif2
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @str.1, i32 0, i32 0), i32 6, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"net::Socket" zeroinitializer
 
-endif2:                                           ; preds = %if16.then, %if16
-  %"*self19" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.data20" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self19", i32 0, i32 0
-  %"$bigger21" = load i32*, i32** %bigger, align 8
-  store i32* %"$bigger21", i32** %"*self.data20", align 8
-  %"*self22" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.cap23" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self22", i32 0, i32 2
-  %"$cap24" = load i32, i32* %cap, align 4
-  store i32 %"$cap24", i32* %"*self.cap23", align 4
-  ret void
+endif:                                            ; preds = %if16
+  %"$socket" = load %"net::Socket", %"net::Socket"* %socket, align 4
+  ret %"net::Socket" %"$socket"
 }
 
-define void @"Array<i32>.clear"(%"Array<i32>"* %0) {
+define %"net::Socket"* @"net::Socket.reuse"(%"net::Socket"* %0) {
 entry:
-  %self = alloca %"Array<i32>"*, align 8
-  store %"Array<i32>"* %0, %"Array<i32>"** %self, align 8
+  %self = alloca %"net::Socket"*, align 8
+  %yes = alloca i32, align 4
+  %size = alloca i32, align 4
+  %code = alloca i32, align 4
+  %error.at = alloca %Error*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %self, align 8
+  store i32 1, i32* %yes, align 4
+  store i32 ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i32), i32* %size, align 4
+  %"*self" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self", i32 0, i32 0
+  %"$*self.fd" = load i32, i32* %"*self.fd", align 4
+  %"$cstd::SOL_SOCKET" = load i32, i32* @"cstd::SOL_SOCKET", align 4
+  %"$cstd::SO_REUSEADDR" = load i32, i32* @"cstd::SO_REUSEADDR", align 4
+  %"$size" = load i32, i32* %size, align 4
+  %call.setsockopt = call i32 @setsockopt(i32 %"$*self.fd", i32 %"$cstd::SOL_SOCKET", i32 %"$cstd::SO_REUSEADDR", i32* %yes, i32 %"$size")
+  store i32 %call.setsockopt, i32* %code, align 4
   br label %if17
 
 if17:                                             ; preds = %entry
-  %"*self" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self", i32 0, i32 2
-  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
-  %EQ = icmp eq i32 %"$*self.cap", 0
-  br i1 %EQ, label %if17.then, label %endif
+  %"$code" = load i32, i32* %code, align 4
+  %LT = icmp slt i32 %"$code", 0
+  br i1 %LT, label %if17.then, label %endif
 
 if17.then:                                        ; preds = %if17
-  %"*self1" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self1", i32 0, i32 1
-  store i32 0, i32* %"*self.count", align 4
-  br label %endif
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([11 x i8], [11 x i8]* @str.2, i32 0, i32 0), i32 10, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"net::Socket"* null
 
-endif:                                            ; preds = %if17.then, %if17
-  br label %while18
-
-while18:                                          ; preds = %while18.then, %endif
-  %"*self2" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.count3" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self2", i32 0, i32 1
-  %"$*self.count" = load i32, i32* %"*self.count3", align 4
-  %GT = icmp sgt i32 %"$*self.count", 0
-  br i1 %GT, label %while18.then, label %endloop
-
-while18.then:                                     ; preds = %while18
-  %"*self4" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.count5" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self4", i32 0, i32 1
-  %"$*self.count6" = load i32, i32* %"*self.count5", align 4
-  %SUB = sub i32 %"$*self.count6", 1
-  store i32 %SUB, i32* %"*self.count5", align 4
-  %"*self7" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self7", i32 0, i32 0
-  %"*self8" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.count9" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self8", i32 0, i32 1
-  %"$*self.data" = load i32*, i32** %"*self.data", align 8
-  %"$*self.count10" = load i32, i32* %"*self.count9", align 4
-  %"*self.data[]" = getelementptr inbounds i32, i32* %"$*self.data", i32 %"$*self.count10"
-  store i32 0, i32* %"*self.data[]", align 4
-  br label %while18
-
-endloop:                                          ; preds = %while18
-  ret void
+endif:                                            ; preds = %if17
+  %"*self1" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  ret %"net::Socket"* %"*self1"
 }
 
-define void @"Array<i32>.append"(%"Array<i32>"* %0, i32 %1) {
+define %"net::Socket"* @"net::Socket.bind"(%"net::Socket"* %0, %"net::Address"* %1) {
 entry:
-  %self = alloca %"Array<i32>"*, align 8
-  %value = alloca i32, align 4
-  store %"Array<i32>"* %0, %"Array<i32>"** %self, align 8
-  store i32 %1, i32* %value, align 4
+  %self = alloca %"net::Socket"*, align 8
+  %address = alloca %"net::Address"*, align 8
+  %size = alloca i32, align 4
+  %error.at = alloca %Error*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %self, align 8
+  store %"net::Address"* %1, %"net::Address"** %address, align 8
+  store i32 ptrtoint (%"cstd::sockaddr_in"* getelementptr (%"cstd::sockaddr_in", %"cstd::sockaddr_in"* null, i32 1) to i32), i32* %size, align 4
+  br label %if18
+
+if18:                                             ; preds = %entry
+  %"*self" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self", i32 0, i32 0
+  %"*address" = load %"net::Address"*, %"net::Address"** %address, align 8
+  %"*address.raw" = getelementptr inbounds %"net::Address", %"net::Address"* %"*address", i32 0, i32 0
+  %"$*self.fd" = load i32, i32* %"*self.fd", align 4
+  %"$size" = load i32, i32* %size, align 4
+  %call.bind = call i32 @bind(i32 %"$*self.fd", %"cstd::sockaddr_in"* %"*address.raw", i32 %"$size")
+  %LT = icmp slt i32 %call.bind, 0
+  br i1 %LT, label %if18.then, label %endif
+
+if18.then:                                        ; preds = %if18
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.3, i32 0, i32 0), i32 4, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"net::Socket"* null
+
+endif:                                            ; preds = %if18
+  %"*self1" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  ret %"net::Socket"* %"*self1"
+}
+
+define void @"net::Socket.listen"(%"net::Socket"* %0, i32 %1) {
+entry:
+  %self = alloca %"net::Socket"*, align 8
+  %backlog = alloca i32, align 4
+  %error.at = alloca %Error*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %self, align 8
+  store i32 %1, i32* %backlog, align 4
   br label %if19
 
 if19:                                             ; preds = %entry
-  %"*self" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self", i32 0, i32 1
-  %"*self1" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self1", i32 0, i32 2
-  %"$*self.count" = load i32, i32* %"*self.count", align 4
-  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
-  %GE = icmp sge i32 %"$*self.count", %"$*self.cap"
-  br i1 %GE, label %if19.then, label %endif
+  %"*self" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self", i32 0, i32 0
+  %"$*self.fd" = load i32, i32* %"*self.fd", align 4
+  %"$backlog" = load i32, i32* %backlog, align 4
+  %call.listen = call i32 @listen(i32 %"$*self.fd", i32 %"$backlog")
+  %LT = icmp slt i32 %call.listen, 0
+  br i1 %LT, label %if19.then, label %endif
 
 if19.then:                                        ; preds = %if19
-  %"*self2" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self3" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.count4" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self3", i32 0, i32 1
-  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
-  %MUL = mul i32 %"$*self.count5", 2
-  %ADD = add i32 %MUL, 4
-  call void @"Array<i32>.reserve"(%"Array<i32>"* %"*self2", i32 %ADD)
-  br label %endif
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @str.4, i32 0, i32 0), i32 6, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  ret void
 
-endif:                                            ; preds = %if19.then, %if19
-  %"*self6" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self6", i32 0, i32 0
-  %"*self7" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.count8" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self7", i32 0, i32 1
-  %"$*self.data" = load i32*, i32** %"*self.data", align 8
-  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
-  %"*self.data[]" = getelementptr inbounds i32, i32* %"$*self.data", i32 %"$*self.count9"
-  %"$value" = load i32, i32* %value, align 4
-  store i32 %"$value", i32* %"*self.data[]", align 4
-  %"*self10" = load %"Array<i32>"*, %"Array<i32>"** %self, align 8
-  %"*self.count11" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*self10", i32 0, i32 1
-  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
-  %ADD13 = add i32 %"$*self.count12", 1
-  store i32 %ADD13, i32* %"*self.count11", align 4
+endif:                                            ; preds = %if19
   ret void
 }
 
-define void @"Array<i32>.drop"(%"Array<i32>"* %0) {
+define %"net::Socket" @"net::Socket.accept"(%"net::Socket"* %0) {
 entry:
-  %value = alloca %"Array<i32>"*, align 8
-  store %"Array<i32>"* %0, %"Array<i32>"** %value, align 8
-  %"*value" = load %"Array<i32>"*, %"Array<i32>"** %value, align 8
-  call void @"Array<i32>.clear"(%"Array<i32>"* %"*value")
+  %self = alloca %"net::Socket"*, align 8
+  %client = alloca %"net::Socket", align 8
+  %address = alloca %"net::Address", align 8
+  %size = alloca i32, align 4
+  %error.at = alloca %Error*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %self, align 8
+  store %"net::Socket" zeroinitializer, %"net::Socket"* %client, align 4
+  store %"net::Address" zeroinitializer, %"net::Address"* %address, align 8
+  store i32 ptrtoint (%"cstd::sockaddr_in"* getelementptr (%"cstd::sockaddr_in", %"cstd::sockaddr_in"* null, i32 1) to i32), i32* %size, align 4
+  %client.fd = getelementptr inbounds %"net::Socket", %"net::Socket"* %client, i32 0, i32 0
+  %"*self" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self", i32 0, i32 0
+  %address.raw = getelementptr inbounds %"net::Address", %"net::Address"* %address, i32 0, i32 0
+  %"$*self.fd" = load i32, i32* %"*self.fd", align 4
+  %call.accept = call i32 @accept(i32 %"$*self.fd", %"cstd::sockaddr_in"* %address.raw, i32* %size)
+  store i32 %call.accept, i32* %client.fd, align 4
   br label %if20
 
 if20:                                             ; preds = %entry
-  %"*value1" = load %"Array<i32>"*, %"Array<i32>"** %value, align 8
-  %"*value.cap" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*value1", i32 0, i32 2
-  %"$*value.cap" = load i32, i32* %"*value.cap", align 4
-  %GT = icmp sgt i32 %"$*value.cap", 0
-  br i1 %GT, label %if20.then, label %endif
+  %client.fd1 = getelementptr inbounds %"net::Socket", %"net::Socket"* %client, i32 0, i32 0
+  %"$client.fd" = load i32, i32* %client.fd1, align 4
+  %LT = icmp slt i32 %"$client.fd", 0
+  br i1 %LT, label %if20.then, label %endif
 
 if20.then:                                        ; preds = %if20
-  %"*value2" = load %"Array<i32>"*, %"Array<i32>"** %value, align 8
-  %"*value.data" = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %"*value2", i32 0, i32 0
-  %"$*value.data" = load i32*, i32** %"*value.data", align 8
-  call void @"free<i32>"(i32* %"$*value.data")
-  br label %endif
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @str.5, i32 0, i32 0), i32 6, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"net::Socket" zeroinitializer
 
-endif:                                            ; preds = %if20.then, %if20
-  ret void
+endif:                                            ; preds = %if20
+  %"$client" = load %"net::Socket", %"net::Socket"* %client, align 4
+  ret %"net::Socket" %"$client"
 }
 
-define i32 @listener(i32 %0) {
+define i64 @"net::Socket.send"(%"net::Socket"* %0, %String %1) {
 entry:
-  %port = alloca i32, align 4
-  %fd = alloca i32, align 4
-  %one = alloca %"Array<i32>", align 8
-  %addr = alloca %"Array<i8>", align 8
-  %is_bound = alloca i1, align 1
-  store i32 %0, i32* %port, align 4
-  %call.socket = call i32 @socket(i32 2, i32 1, i32 0)
-  store i32 %call.socket, i32* %fd, align 4
+  %self = alloca %"net::Socket"*, align 8
+  %text = alloca %String, align 8
+  %count = alloca i64, align 8
+  %error.at = alloca %Error*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %self, align 8
+  store %String %1, %String* %text, align 8
+  %"*self" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self", i32 0, i32 0
+  %text.data = getelementptr inbounds %String, %String* %text, i32 0, i32 0
+  %text.count = getelementptr inbounds %String, %String* %text, i32 0, i32 1
+  %"$text.count" = load i32, i32* %text.count, align 4
+  %AS = sext i32 %"$text.count" to i64
+  %"$*self.fd" = load i32, i32* %"*self.fd", align 4
+  %"$text.data" = load i8*, i8** %text.data, align 8
+  %call.send = call i64 @send(i32 %"$*self.fd", i8* %"$text.data", i64 %AS, i32 0)
+  store i64 %call.send, i64* %count, align 8
   br label %if21
 
 if21:                                             ; preds = %entry
-  %"$fd" = load i32, i32* %fd, align 4
-  %LT = icmp slt i32 %"$fd", 0
+  %"$count" = load i64, i64* %count, align 8
+  %LT = icmp slt i64 %"$count", 0
   br i1 %LT, label %if21.then, label %endif
 
 if21.then:                                        ; preds = %if21
-  ret i32 -1
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.6, i32 0, i32 0), i32 4, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  %2 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %2)
+  store i1 true, i1* @ucg.thrown, align 1
+  ret i64 0
 
 endif:                                            ; preds = %if21
-  store %"Array<i32>" zeroinitializer, %"Array<i32>"* %one, align 8
-  call void @"Array<i32>.append"(%"Array<i32>"* %one, i32 1)
-  %one.data = getelementptr inbounds %"Array<i32>", %"Array<i32>"* %one, i32 0, i32 0
-  %"$one.data" = load i32*, i32** %one.data, align 8
-  %AS = bitcast i32* %"$one.data" to i8*
-  %"$fd2" = load i32, i32* %fd, align 4
-  %call.setsockopt = call i32 @setsockopt(i32 %"$fd2", i32 1, i32 2, i8* %AS, i32 4)
-  %"$port" = load i32, i32* %port, align 4
-  %call.address = call %"Array<i8>" @address(i32 %"$port")
-  store %"Array<i8>" %call.address, %"Array<i8>"* %addr, align 8
-  %addr.data = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %addr, i32 0, i32 0
-  %"$fd3" = load i32, i32* %fd, align 4
-  %"$addr.data" = load i8*, i8** %addr.data, align 8
-  %call.bind = call i32 @bind(i32 %"$fd3", i8* %"$addr.data", i32 16)
-  %EQ = icmp eq i32 %call.bind, 0
-  store i1 %EQ, i1* %is_bound, align 1
-  br label %if22
-
-if22:                                             ; preds = %endif
-  %"$is_bound" = load i1, i1* %is_bound, align 1
-  %NOT = xor i1 %"$is_bound", true
-  %"$fd4" = load i32, i32* %fd, align 4
-  %call.listen = call i32 @listen(i32 %"$fd4", i32 16)
-  %LT5 = icmp slt i32 %call.listen, 0
-  %OR = or i1 %NOT, %LT5
-  br i1 %OR, label %if22.then, label %endif1
-
-if22.then:                                        ; preds = %if22
-  %"$fd6" = load i32, i32* %fd, align 4
-  %call.close = call i32 @close(i32 %"$fd6")
-  call void @"Array<i8>.drop"(%"Array<i8>"* %addr)
-  call void @"Array<i32>.drop"(%"Array<i32>"* %one)
-  ret i32 -1
-
-endif1:                                           ; preds = %if22
-  %"$fd7" = load i32, i32* %fd, align 4
-  call void @"Array<i8>.drop"(%"Array<i8>"* %addr)
-  call void @"Array<i32>.drop"(%"Array<i32>"* %one)
-  ret i32 %"$fd7"
+  %"$count1" = load i64, i64* %count, align 8
+  %3 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %3)
+  ret i64 %"$count1"
 }
 
-define %Pollfd* @"new<Pollfd>"(i32 %0) {
+define %String @"net::Socket.recv"(%"net::Socket"* %0, i32 %1) {
+entry:
+  %self = alloca %"net::Socket"*, align 8
+  %size = alloca i32, align 4
+  %text = alloca %String, align 8
+  %count = alloca i64, align 8
+  %error.at = alloca %Error*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %self, align 8
+  store i32 %1, i32* %size, align 4
+  store %String zeroinitializer, %String* %text, align 8
+  %"$size" = load i32, i32* %size, align 4
+  call void @String.resize(%String* %text, i32 %"$size")
+  %"*self" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self", i32 0, i32 0
+  %text.data = getelementptr inbounds %String, %String* %text, i32 0, i32 0
+  %"$size1" = load i32, i32* %size, align 4
+  %AS = sext i32 %"$size1" to i64
+  %"$*self.fd" = load i32, i32* %"*self.fd", align 4
+  %"$text.data" = load i8*, i8** %text.data, align 8
+  %call.recv = call i64 @recv(i32 %"$*self.fd", i8* %"$text.data", i64 %AS, i32 0)
+  store i64 %call.recv, i64* %count, align 8
+  br label %if22
+
+if22:                                             ; preds = %entry
+  %"$count" = load i64, i64* %count, align 8
+  %LT = icmp slt i64 %"$count", 0
+  br i1 %LT, label %if22.then, label %endif
+
+if22.then:                                        ; preds = %if22
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.7, i32 0, i32 0), i32 4, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  %2 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %2)
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %String zeroinitializer
+
+endif:                                            ; preds = %if22
+  %"$count2" = load i64, i64* %count, align 8
+  %AS3 = trunc i64 %"$count2" to i32
+  call void @String.resize(%String* %text, i32 %AS3)
+  %"$text" = load %String, %String* %text, align 8
+  ret %String %"$text"
+}
+
+define void @"net::Socket.close"(%"net::Socket"* %0) {
+entry:
+  %self = alloca %"net::Socket"*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %self, align 8
+  br label %if23
+
+if23:                                             ; preds = %entry
+  %"*self" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self", i32 0, i32 0
+  %"$*self.fd" = load i32, i32* %"*self.fd", align 4
+  %LT = icmp slt i32 %"$*self.fd", 0
+  br i1 %LT, label %if23.then, label %endif
+
+if23.then:                                        ; preds = %if23
+  ret void
+
+endif:                                            ; preds = %if23
+  %"*self1" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd2" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self1", i32 0, i32 0
+  %"$*self.fd3" = load i32, i32* %"*self.fd2", align 4
+  %call.close = call i32 @close(i32 %"$*self.fd3")
+  %"*self4" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd5" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self4", i32 0, i32 0
+  store i32 -1, i32* %"*self.fd5", align 4
+  ret void
+}
+
+define %"net::Socket"* @"new<net::Socket>"(i32 %0) {
 entry:
   %count = alloca i32, align 4
   store i32 %0, i32* %count, align 4
   %"$count" = load i32, i32* %count, align 4
-  %MUL = mul i32 %"$count", ptrtoint (%Pollfd* getelementptr (%Pollfd, %Pollfd* null, i32 1) to i32)
+  %MUL = mul i32 %"$count", ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i32)
   %AS = sext i32 %MUL to i64
   %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
-  %AS1 = bitcast i8* %call.calloc to %Pollfd*
-  ret %Pollfd* %AS1
+  %AS1 = bitcast i8* %call.calloc to %"net::Socket"*
+  ret %"net::Socket"* %AS1
 }
 
-define void @"copy<Pollfd>"(%Pollfd* %0, %Pollfd* %1, i32 %2) {
+define void @"copy<net::Socket>"(%"net::Socket"* %0, %"net::Socket"* %1, i32 %2) {
 entry:
-  %dst = alloca %Pollfd*, align 8
-  %src = alloca %Pollfd*, align 8
+  %dst = alloca %"net::Socket"*, align 8
+  %src = alloca %"net::Socket"*, align 8
   %count = alloca i32, align 4
-  store %Pollfd* %0, %Pollfd** %dst, align 8
-  store %Pollfd* %1, %Pollfd** %src, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %dst, align 8
+  store %"net::Socket"* %1, %"net::Socket"** %src, align 8
   store i32 %2, i32* %count, align 4
-  %"$dst" = load %Pollfd*, %Pollfd** %dst, align 8
-  %AS = bitcast %Pollfd* %"$dst" to i8*
-  %"$src" = load %Pollfd*, %Pollfd** %src, align 8
-  %AS1 = bitcast %Pollfd* %"$src" to i8*
+  %"$dst" = load %"net::Socket"*, %"net::Socket"** %dst, align 8
+  %AS = bitcast %"net::Socket"* %"$dst" to i8*
+  %"$src" = load %"net::Socket"*, %"net::Socket"** %src, align 8
+  %AS1 = bitcast %"net::Socket"* %"$src" to i8*
   %"$count" = load i32, i32* %count, align 4
-  %MUL = mul i32 %"$count", ptrtoint (%Pollfd* getelementptr (%Pollfd, %Pollfd* null, i32 1) to i32)
+  %MUL = mul i32 %"$count", ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i32)
   %AS2 = sext i32 %MUL to i64
   %MUL3 = mul i64 %AS2, sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64)
   %call.memcpy = call i8* @memcpy(i8* %AS, i8* %AS1, i64 %MUL3)
   ret void
 }
 
-define void @"free<Pollfd>"(%Pollfd* %0) {
+define void @"free<net::Socket>"(%"net::Socket"* %0) {
 entry:
-  %data = alloca %Pollfd*, align 8
-  store %Pollfd* %0, %Pollfd** %data, align 8
-  %"$data" = load %Pollfd*, %Pollfd** %data, align 8
-  %AS = bitcast %Pollfd* %"$data" to i8*
+  %data = alloca %"net::Socket"*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %data, align 8
+  %"$data" = load %"net::Socket"*, %"net::Socket"** %data, align 8
+  %AS = bitcast %"net::Socket"* %"$data" to i8*
   call void @free(i8* %AS)
   ret void
 }
 
-define void @"Array<Pollfd>.reserve"(%"Array<Pollfd>"* %0, i32 %1) {
+define void @"Array<net::Socket>.reserve"(%"Array<net::Socket>"* %0, i32 %1) {
 entry:
-  %self = alloca %"Array<Pollfd>"*, align 8
+  %self = alloca %"Array<net::Socket>"*, align 8
   %cap = alloca i32, align 4
-  %bigger = alloca %Pollfd*, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %self, align 8
+  %bigger = alloca %"net::Socket"*, align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %self, align 8
   store i32 %1, i32* %cap, align 4
-  br label %if23
+  br label %if24
 
-if23:                                             ; preds = %entry
-  %"*self" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self", i32 0, i32 1
+if24:                                             ; preds = %entry
+  %"*self" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self", i32 0, i32 1
   %"$cap" = load i32, i32* %cap, align 4
   %"$*self.count" = load i32, i32* %"*self.count", align 4
   %LT = icmp slt i32 %"$cap", %"$*self.count"
-  br i1 %LT, label %if23.then, label %endif
+  br i1 %LT, label %if24.then, label %endif
 
-if23.then:                                        ; preds = %if23
-  %"*self3" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count4" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self3", i32 0, i32 1
+if24.then:                                        ; preds = %if24
+  %"*self3" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self3", i32 0, i32 1
   %"$*self.count5" = load i32, i32* %"*self.count4", align 4
   store i32 %"$*self.count5", i32* %cap, align 4
   br label %endif
 
-endif:                                            ; preds = %if23.then, %if23
-  br label %if24
+endif:                                            ; preds = %if24.then, %if24
+  br label %if25
 
-if24:                                             ; preds = %endif
-  %"*self6" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self6", i32 0, i32 2
+if25:                                             ; preds = %endif
+  %"*self6" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self6", i32 0, i32 2
   %"$cap7" = load i32, i32* %cap, align 4
   %"$*self.cap" = load i32, i32* %"*self.cap", align 4
   %LE = icmp sle i32 %"$cap7", %"$*self.cap"
-  br i1 %LE, label %if24.then, label %endif1
-
-if24.then:                                        ; preds = %if24
-  ret void
-
-endif1:                                           ; preds = %if24
-  %"$cap8" = load i32, i32* %cap, align 4
-  %"call.new<Pollfd>" = call %Pollfd* @"new<Pollfd>"(i32 %"$cap8")
-  store %Pollfd* %"call.new<Pollfd>", %Pollfd** %bigger, align 8
-  %"*self9" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self9", i32 0, i32 0
-  %"*self10" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count11" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self10", i32 0, i32 1
-  %"$bigger" = load %Pollfd*, %Pollfd** %bigger, align 8
-  %"$*self.data" = load %Pollfd*, %Pollfd** %"*self.data", align 8
-  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
-  call void @"copy<Pollfd>"(%Pollfd* %"$bigger", %Pollfd* %"$*self.data", i32 %"$*self.count12")
-  br label %if25
-
-if25:                                             ; preds = %endif1
-  %"*self13" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.cap14" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self13", i32 0, i32 2
-  %"$*self.cap15" = load i32, i32* %"*self.cap14", align 4
-  %GT = icmp sgt i32 %"$*self.cap15", 0
-  br i1 %GT, label %if25.then, label %endif2
+  br i1 %LE, label %if25.then, label %endif1
 
 if25.then:                                        ; preds = %if25
-  %"*self16" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data17" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self16", i32 0, i32 0
-  %"$*self.data18" = load %Pollfd*, %Pollfd** %"*self.data17", align 8
-  call void @"free<Pollfd>"(%Pollfd* %"$*self.data18")
+  ret void
+
+endif1:                                           ; preds = %if25
+  %"$cap8" = load i32, i32* %cap, align 4
+  %"call.new<net::Socket>" = call %"net::Socket"* @"new<net::Socket>"(i32 %"$cap8")
+  store %"net::Socket"* %"call.new<net::Socket>", %"net::Socket"** %bigger, align 8
+  %"*self9" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self9", i32 0, i32 0
+  %"*self10" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count11" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self10", i32 0, i32 1
+  %"$bigger" = load %"net::Socket"*, %"net::Socket"** %bigger, align 8
+  %"$*self.data" = load %"net::Socket"*, %"net::Socket"** %"*self.data", align 8
+  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
+  call void @"copy<net::Socket>"(%"net::Socket"* %"$bigger", %"net::Socket"* %"$*self.data", i32 %"$*self.count12")
+  br label %if26
+
+if26:                                             ; preds = %endif1
+  %"*self13" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.cap14" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self13", i32 0, i32 2
+  %"$*self.cap15" = load i32, i32* %"*self.cap14", align 4
+  %GT = icmp sgt i32 %"$*self.cap15", 0
+  br i1 %GT, label %if26.then, label %endif2
+
+if26.then:                                        ; preds = %if26
+  %"*self16" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data17" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self16", i32 0, i32 0
+  %"$*self.data18" = load %"net::Socket"*, %"net::Socket"** %"*self.data17", align 8
+  call void @"free<net::Socket>"(%"net::Socket"* %"$*self.data18")
   br label %endif2
 
-endif2:                                           ; preds = %if25.then, %if25
-  %"*self19" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data20" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self19", i32 0, i32 0
-  %"$bigger21" = load %Pollfd*, %Pollfd** %bigger, align 8
-  store %Pollfd* %"$bigger21", %Pollfd** %"*self.data20", align 8
-  %"*self22" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.cap23" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self22", i32 0, i32 2
+endif2:                                           ; preds = %if26.then, %if26
+  %"*self19" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data20" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self19", i32 0, i32 0
+  %"$bigger21" = load %"net::Socket"*, %"net::Socket"** %bigger, align 8
+  store %"net::Socket"* %"$bigger21", %"net::Socket"** %"*self.data20", align 8
+  %"*self22" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.cap23" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self22", i32 0, i32 2
   %"$cap24" = load i32, i32* %cap, align 4
   store i32 %"$cap24", i32* %"*self.cap23", align 4
   ret void
 }
 
-define void @"Array<Pollfd>.own"(%"Array<Pollfd>"* %0) {
+define void @"Array<net::Socket>.own"(%"Array<net::Socket>"* %0) {
 entry:
-  %self = alloca %"Array<Pollfd>"*, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %self, align 8
-  br label %if26
-
-if26:                                             ; preds = %entry
-  %"*self" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self", i32 0, i32 2
-  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
-  %EQ = icmp eq i32 %"$*self.cap", 0
-  %"*self1" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self1", i32 0, i32 1
-  %"$*self.count" = load i32, i32* %"*self.count", align 4
-  %GT = icmp sgt i32 %"$*self.count", 0
-  %AND = and i1 %EQ, %GT
-  br i1 %AND, label %if26.then, label %endif
-
-if26.then:                                        ; preds = %if26
-  %"*self2" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self3" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count4" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self3", i32 0, i32 1
-  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
-  call void @"Array<Pollfd>.reserve"(%"Array<Pollfd>"* %"*self2", i32 %"$*self.count5")
-  br label %endif
-
-endif:                                            ; preds = %if26.then, %if26
-  ret void
-}
-
-define void @"Array<Pollfd>.clear"(%"Array<Pollfd>"* %0) {
-entry:
-  %self = alloca %"Array<Pollfd>"*, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %self, align 8
+  %self = alloca %"Array<net::Socket>"*, align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %self, align 8
   br label %if27
 
 if27:                                             ; preds = %entry
-  %"*self" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self", i32 0, i32 2
+  %"*self" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self", i32 0, i32 2
   %"$*self.cap" = load i32, i32* %"*self.cap", align 4
   %EQ = icmp eq i32 %"$*self.cap", 0
-  br i1 %EQ, label %if27.then, label %endif
+  %"*self1" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self1", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %GT = icmp sgt i32 %"$*self.count", 0
+  %AND = and i1 %EQ, %GT
+  br i1 %AND, label %if27.then, label %endif
 
 if27.then:                                        ; preds = %if27
-  %"*self1" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self1", i32 0, i32 1
-  store i32 0, i32* %"*self.count", align 4
+  %"*self2" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self3" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  call void @"Array<net::Socket>.reserve"(%"Array<net::Socket>"* %"*self2", i32 %"$*self.count5")
   br label %endif
 
 endif:                                            ; preds = %if27.then, %if27
-  br label %while28
-
-while28:                                          ; preds = %while28.then, %endif
-  %"*self2" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count3" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self2", i32 0, i32 1
-  %"$*self.count" = load i32, i32* %"*self.count3", align 4
-  %GT = icmp sgt i32 %"$*self.count", 0
-  br i1 %GT, label %while28.then, label %endloop
-
-while28.then:                                     ; preds = %while28
-  %"*self4" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count5" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self4", i32 0, i32 1
-  %"$*self.count6" = load i32, i32* %"*self.count5", align 4
-  %SUB = sub i32 %"$*self.count6", 1
-  store i32 %SUB, i32* %"*self.count5", align 4
-  %"*self7" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self7", i32 0, i32 0
-  %"*self8" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count9" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self8", i32 0, i32 1
-  %"$*self.data" = load %Pollfd*, %Pollfd** %"*self.data", align 8
-  %"$*self.count10" = load i32, i32* %"*self.count9", align 4
-  %"*self.data[]" = getelementptr inbounds %Pollfd, %Pollfd* %"$*self.data", i32 %"$*self.count10"
-  store %Pollfd zeroinitializer, %Pollfd* %"*self.data[]", align 4
-  br label %while28
-
-endloop:                                          ; preds = %while28
   ret void
 }
 
-define void @"Array<Pollfd>.append"(%"Array<Pollfd>"* %0, %Pollfd %1) {
+define void @"Array<net::Socket>.clear"(%"Array<net::Socket>"* %0) {
 entry:
-  %self = alloca %"Array<Pollfd>"*, align 8
-  %value = alloca %Pollfd, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %self, align 8
-  store %Pollfd %1, %Pollfd* %value, align 4
-  br label %if29
+  %self = alloca %"Array<net::Socket>"*, align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %self, align 8
+  br label %if28
 
-if29:                                             ; preds = %entry
-  %"*self" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self", i32 0, i32 1
-  %"*self1" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self1", i32 0, i32 2
+if28:                                             ; preds = %entry
+  %"*self" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self", i32 0, i32 2
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %EQ = icmp eq i32 %"$*self.cap", 0
+  br i1 %EQ, label %if28.then, label %endif
+
+if28.then:                                        ; preds = %if28
+  %"*self1" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self1", i32 0, i32 1
+  store i32 0, i32* %"*self.count", align 4
+  br label %endif
+
+endif:                                            ; preds = %if28.then, %if28
+  br label %while29
+
+while29:                                          ; preds = %while29.then, %endif
+  %"*self2" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count3" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self2", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count3", align 4
+  %GT = icmp sgt i32 %"$*self.count", 0
+  br i1 %GT, label %while29.then, label %endloop
+
+while29.then:                                     ; preds = %while29
+  %"*self4" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count5" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self4", i32 0, i32 1
+  %"$*self.count6" = load i32, i32* %"*self.count5", align 4
+  %SUB = sub i32 %"$*self.count6", 1
+  store i32 %SUB, i32* %"*self.count5", align 4
+  %"*self7" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self7", i32 0, i32 0
+  %"*self8" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count9" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self8", i32 0, i32 1
+  %"$*self.data" = load %"net::Socket"*, %"net::Socket"** %"*self.data", align 8
+  %"$*self.count10" = load i32, i32* %"*self.count9", align 4
+  %"*self.data[]" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"$*self.data", i32 %"$*self.count10"
+  store %"net::Socket" zeroinitializer, %"net::Socket"* %"*self.data[]", align 4
+  br label %while29
+
+endloop:                                          ; preds = %while29
+  ret void
+}
+
+define void @"Array<net::Socket>.append"(%"Array<net::Socket>"* %0, %"net::Socket" %1) {
+entry:
+  %self = alloca %"Array<net::Socket>"*, align 8
+  %value = alloca %"net::Socket", align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %self, align 8
+  store %"net::Socket" %1, %"net::Socket"* %value, align 4
+  br label %if30
+
+if30:                                             ; preds = %entry
+  %"*self" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self", i32 0, i32 1
+  %"*self1" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self1", i32 0, i32 2
   %"$*self.count" = load i32, i32* %"*self.count", align 4
   %"$*self.cap" = load i32, i32* %"*self.cap", align 4
   %GE = icmp sge i32 %"$*self.count", %"$*self.cap"
-  br i1 %GE, label %if29.then, label %endif
+  br i1 %GE, label %if30.then, label %endif
 
-if29.then:                                        ; preds = %if29
-  %"*self2" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self3" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count4" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self3", i32 0, i32 1
+if30.then:                                        ; preds = %if30
+  %"*self2" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self3" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self3", i32 0, i32 1
   %"$*self.count5" = load i32, i32* %"*self.count4", align 4
   %MUL = mul i32 %"$*self.count5", 2
   %ADD = add i32 %MUL, 4
-  call void @"Array<Pollfd>.reserve"(%"Array<Pollfd>"* %"*self2", i32 %ADD)
+  call void @"Array<net::Socket>.reserve"(%"Array<net::Socket>"* %"*self2", i32 %ADD)
   br label %endif
 
-endif:                                            ; preds = %if29.then, %if29
-  %"*self6" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self6", i32 0, i32 0
-  %"*self7" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count8" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self7", i32 0, i32 1
-  %"$*self.data" = load %Pollfd*, %Pollfd** %"*self.data", align 8
+endif:                                            ; preds = %if30.then, %if30
+  %"*self6" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self6", i32 0, i32 0
+  %"*self7" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count8" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self7", i32 0, i32 1
+  %"$*self.data" = load %"net::Socket"*, %"net::Socket"** %"*self.data", align 8
   %"$*self.count9" = load i32, i32* %"*self.count8", align 4
-  %"*self.data[]" = getelementptr inbounds %Pollfd, %Pollfd* %"$*self.data", i32 %"$*self.count9"
-  %"$value" = load %Pollfd, %Pollfd* %value, align 4
-  store %Pollfd %"$value", %Pollfd* %"*self.data[]", align 4
-  %"*self10" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count11" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self10", i32 0, i32 1
+  %"*self.data[]" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"$*self.data", i32 %"$*self.count9"
+  %"$value" = load %"net::Socket", %"net::Socket"* %value, align 4
+  store %"net::Socket" %"$value", %"net::Socket"* %"*self.data[]", align 4
+  %"*self10" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count11" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self10", i32 0, i32 1
   %"$*self.count12" = load i32, i32* %"*self.count11", align 4
   %ADD13 = add i32 %"$*self.count12", 1
   store i32 %ADD13, i32* %"*self.count11", align 4
   ret void
 }
 
-define %Pollfd @"Array<Pollfd>.pop"(%"Array<Pollfd>"* %0, i32 %1) {
+define %"net::Socket" @"Array<net::Socket>.pop"(%"Array<net::Socket>"* %0, i32 %1) {
 entry:
-  %self = alloca %"Array<Pollfd>"*, align 8
+  %self = alloca %"Array<net::Socket>"*, align 8
   %index = alloca i32, align 4
-  %value = alloca %Pollfd, align 8
+  %value = alloca %"net::Socket", align 8
   %i = alloca i32, align 4
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %self, align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %self, align 8
   store i32 %1, i32* %index, align 4
-  store %Pollfd zeroinitializer, %Pollfd* %value, align 4
-  br label %if30
+  store %"net::Socket" zeroinitializer, %"net::Socket"* %value, align 4
+  br label %if31
 
-if30:                                             ; preds = %entry
+if31:                                             ; preds = %entry
   %"$index" = load i32, i32* %index, align 4
   %LT = icmp slt i32 %"$index", 0
-  %"*self" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self", i32 0, i32 1
+  %"*self" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self", i32 0, i32 1
   %"$index1" = load i32, i32* %index, align 4
   %"$*self.count" = load i32, i32* %"*self.count", align 4
   %GE = icmp sge i32 %"$index1", %"$*self.count"
   %OR = or i1 %LT, %GE
-  br i1 %OR, label %if30.then, label %endif
+  br i1 %OR, label %if31.then, label %endif
 
-if30.then:                                        ; preds = %if30
-  %"$value" = load %Pollfd, %Pollfd* %value, align 4
-  ret %Pollfd %"$value"
+if31.then:                                        ; preds = %if31
+  %"$value" = load %"net::Socket", %"net::Socket"* %value, align 4
+  ret %"net::Socket" %"$value"
 
-endif:                                            ; preds = %if30
-  %"*self2" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  call void @"Array<Pollfd>.own"(%"Array<Pollfd>"* %"*self2")
-  %"*self3" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self3", i32 0, i32 0
-  %"$*self.data" = load %Pollfd*, %Pollfd** %"*self.data", align 8
+endif:                                            ; preds = %if31
+  %"*self2" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  call void @"Array<net::Socket>.own"(%"Array<net::Socket>"* %"*self2")
+  %"*self3" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self3", i32 0, i32 0
+  %"$*self.data" = load %"net::Socket"*, %"net::Socket"** %"*self.data", align 8
   %"$index4" = load i32, i32* %index, align 4
-  %"*self.data[]" = getelementptr inbounds %Pollfd, %Pollfd* %"$*self.data", i32 %"$index4"
-  %"$*self.data[]" = load %Pollfd, %Pollfd* %"*self.data[]", align 4
-  store %Pollfd %"$*self.data[]", %Pollfd* %value, align 4
+  %"*self.data[]" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"$*self.data", i32 %"$index4"
+  %"$*self.data[]" = load %"net::Socket", %"net::Socket"* %"*self.data[]", align 4
+  store %"net::Socket" %"$*self.data[]", %"net::Socket"* %value, align 4
   %"$index5" = load i32, i32* %index, align 4
   store i32 %"$index5", i32* %i, align 4
-  br label %while31
+  br label %while32
 
-while31:                                          ; preds = %while31.then, %endif
-  %"*self6" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count7" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self6", i32 0, i32 1
+while32:                                          ; preds = %while32.then, %endif
+  %"*self6" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count7" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self6", i32 0, i32 1
   %"$*self.count8" = load i32, i32* %"*self.count7", align 4
   %SUB = sub i32 %"$*self.count8", 1
   %"$i" = load i32, i32* %i, align 4
   %LT9 = icmp slt i32 %"$i", %SUB
-  br i1 %LT9, label %while31.then, label %endloop
+  br i1 %LT9, label %while32.then, label %endloop
 
-while31.then:                                     ; preds = %while31
-  %"*self10" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data11" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self10", i32 0, i32 0
-  %"$*self.data12" = load %Pollfd*, %Pollfd** %"*self.data11", align 8
+while32.then:                                     ; preds = %while32
+  %"*self10" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data11" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self10", i32 0, i32 0
+  %"$*self.data12" = load %"net::Socket"*, %"net::Socket"** %"*self.data11", align 8
   %"$i13" = load i32, i32* %i, align 4
-  %"*self.data[]14" = getelementptr inbounds %Pollfd, %Pollfd* %"$*self.data12", i32 %"$i13"
-  %"*self15" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data16" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self15", i32 0, i32 0
+  %"*self.data[]14" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"$*self.data12", i32 %"$i13"
+  %"*self15" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data16" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self15", i32 0, i32 0
   %"$i17" = load i32, i32* %i, align 4
   %ADD = add i32 %"$i17", 1
-  %"$*self.data18" = load %Pollfd*, %Pollfd** %"*self.data16", align 8
-  %"*self.data[]19" = getelementptr inbounds %Pollfd, %Pollfd* %"$*self.data18", i32 %ADD
-  %"$*self.data[]20" = load %Pollfd, %Pollfd* %"*self.data[]19", align 4
-  store %Pollfd %"$*self.data[]20", %Pollfd* %"*self.data[]14", align 4
+  %"$*self.data18" = load %"net::Socket"*, %"net::Socket"** %"*self.data16", align 8
+  %"*self.data[]19" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"$*self.data18", i32 %ADD
+  %"$*self.data[]20" = load %"net::Socket", %"net::Socket"* %"*self.data[]19", align 4
+  store %"net::Socket" %"$*self.data[]20", %"net::Socket"* %"*self.data[]14", align 4
   %"$i21" = load i32, i32* %i, align 4
   %ADD22 = add i32 %"$i21", 1
   store i32 %ADD22, i32* %i, align 4
-  br label %while31
+  br label %while32
 
-endloop:                                          ; preds = %while31
-  %"*self23" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count24" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self23", i32 0, i32 1
+endloop:                                          ; preds = %while32
+  %"*self23" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count24" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self23", i32 0, i32 1
   %"$*self.count25" = load i32, i32* %"*self.count24", align 4
   %SUB26 = sub i32 %"$*self.count25", 1
   store i32 %SUB26, i32* %"*self.count24", align 4
-  %"*self27" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data28" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self27", i32 0, i32 0
-  %"*self29" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count30" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self29", i32 0, i32 1
-  %"$*self.data31" = load %Pollfd*, %Pollfd** %"*self.data28", align 8
+  %"*self27" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data28" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self27", i32 0, i32 0
+  %"*self29" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count30" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self29", i32 0, i32 1
+  %"$*self.data31" = load %"net::Socket"*, %"net::Socket"** %"*self.data28", align 8
   %"$*self.count32" = load i32, i32* %"*self.count30", align 4
-  %"*self.data[]33" = getelementptr inbounds %Pollfd, %Pollfd* %"$*self.data31", i32 %"$*self.count32"
-  store %Pollfd zeroinitializer, %Pollfd* %"*self.data[]33", align 4
-  %"$value34" = load %Pollfd, %Pollfd* %value, align 4
-  ret %Pollfd %"$value34"
+  %"*self.data[]33" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"$*self.data31", i32 %"$*self.count32"
+  store %"net::Socket" zeroinitializer, %"net::Socket"* %"*self.data[]33", align 4
+  %"$value34" = load %"net::Socket", %"net::Socket"* %value, align 4
+  ret %"net::Socket" %"$value34"
 }
 
-define %Pollfd @"Array<Pollfd>.pop.1"(%"Array<Pollfd>"* %0) {
+define i32 @"Array<net::Socket>.len"(%"Array<net::Socket>"* %0) {
 entry:
-  %self = alloca %"Array<Pollfd>"*, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %self, align 8
-  %"*self" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self1" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self1", i32 0, i32 1
-  %"$*self.count" = load i32, i32* %"*self.count", align 4
-  %SUB = sub i32 %"$*self.count", 1
-  %"call.Array<Pollfd>.pop" = call %Pollfd @"Array<Pollfd>.pop"(%"Array<Pollfd>"* %"*self", i32 %SUB)
-  ret %Pollfd %"call.Array<Pollfd>.pop"
-}
-
-define i32 @"Array<Pollfd>.len"(%"Array<Pollfd>"* %0) {
-entry:
-  %self = alloca %"Array<Pollfd>"*, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %self, align 8
-  %"*self" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self", i32 0, i32 1
+  %self = alloca %"Array<net::Socket>"*, align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %self, align 8
+  %"*self" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self", i32 0, i32 1
   %"$*self.count" = load i32, i32* %"*self.count", align 4
   ret i32 %"$*self.count"
 }
 
-define %Pollfd* @"Array<Pollfd>.[]"(%"Array<Pollfd>"* %0, i32 %1) {
+define %"net::Socket"* @"Array<net::Socket>.[]"(%"Array<net::Socket>"* %0, i32 %1) {
 entry:
-  %left = alloca %"Array<Pollfd>"*, align 8
+  %left = alloca %"Array<net::Socket>"*, align 8
   %index = alloca i32, align 4
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %left, align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %left, align 8
   store i32 %1, i32* %index, align 4
-  %"*left" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %left, align 8
-  call void @"Array<Pollfd>.own"(%"Array<Pollfd>"* %"*left")
-  %"*left1" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %left, align 8
-  %"*left.data" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*left1", i32 0, i32 0
-  %"$*left.data" = load %Pollfd*, %Pollfd** %"*left.data", align 8
+  %"*left" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %left, align 8
+  call void @"Array<net::Socket>.own"(%"Array<net::Socket>"* %"*left")
+  %"*left1" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %left, align 8
+  %"*left.data" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*left1", i32 0, i32 0
+  %"$*left.data" = load %"net::Socket"*, %"net::Socket"** %"*left.data", align 8
   %"$index" = load i32, i32* %index, align 4
-  %"*left.data[]" = getelementptr inbounds %Pollfd, %Pollfd* %"$*left.data", i32 %"$index"
-  ret %Pollfd* %"*left.data[]"
+  %"*left.data[]" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"$*left.data", i32 %"$index"
+  ret %"net::Socket"* %"*left.data[]"
 }
 
-define void @"Array<Pollfd>.drop"(%"Array<Pollfd>"* %0) {
+define i1 @"Array<net::Socket>.in"(%"Array<net::Socket>"* %0, i32* %1, %"net::Socket"* %2) {
 entry:
-  %value = alloca %"Array<Pollfd>"*, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %value, align 8
-  %"*value" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %value, align 8
-  call void @"Array<Pollfd>.clear"(%"Array<Pollfd>"* %"*value")
-  br label %if32
+  %left = alloca %"Array<net::Socket>"*, align 8
+  %i = alloca i32*, align 8
+  %x = alloca %"net::Socket"*, align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %left, align 8
+  store i32* %1, i32** %i, align 8
+  store %"net::Socket"* %2, %"net::Socket"** %x, align 8
+  br label %if33
 
-if32:                                             ; preds = %entry
-  %"*value1" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %value, align 8
-  %"*value.cap" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*value1", i32 0, i32 2
+if33:                                             ; preds = %entry
+  %"*i" = load i32*, i32** %i, align 8
+  %"*left" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %left, align 8
+  %"*left.count" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*left", i32 0, i32 1
+  %"$*i" = load i32, i32* %"*i", align 4
+  %"$*left.count" = load i32, i32* %"*left.count", align 4
+  %GE = icmp sge i32 %"$*i", %"$*left.count"
+  br i1 %GE, label %if33.then, label %endif
+
+if33.then:                                        ; preds = %if33
+  ret i1 false
+
+endif:                                            ; preds = %if33
+  %"*x" = load %"net::Socket"*, %"net::Socket"** %x, align 8
+  %"*left1" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %left, align 8
+  %"*left.data" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*left1", i32 0, i32 0
+  %"*i2" = load i32*, i32** %i, align 8
+  %"$*left.data" = load %"net::Socket"*, %"net::Socket"** %"*left.data", align 8
+  %"$*i3" = load i32, i32* %"*i2", align 4
+  %"*left.data[]" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"$*left.data", i32 %"$*i3"
+  %"$*left.data[]" = load %"net::Socket", %"net::Socket"* %"*left.data[]", align 4
+  store %"net::Socket" %"$*left.data[]", %"net::Socket"* %"*x", align 4
+  %"*i4" = load i32*, i32** %i, align 8
+  %"$*i5" = load i32, i32* %"*i4", align 4
+  %ADD = add i32 %"$*i5", 1
+  store i32 %ADD, i32* %"*i4", align 4
+  ret i1 true
+}
+
+define void @"Array<net::Socket>.drop"(%"Array<net::Socket>"* %0) {
+entry:
+  %value = alloca %"Array<net::Socket>"*, align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %value, align 8
+  %"*value" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %value, align 8
+  call void @"Array<net::Socket>.clear"(%"Array<net::Socket>"* %"*value")
+  br label %if34
+
+if34:                                             ; preds = %entry
+  %"*value1" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %value, align 8
+  %"*value.cap" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*value1", i32 0, i32 2
   %"$*value.cap" = load i32, i32* %"*value.cap", align 4
   %GT = icmp sgt i32 %"$*value.cap", 0
-  br i1 %GT, label %if32.then, label %endif
+  br i1 %GT, label %if34.then, label %endif
 
-if32.then:                                        ; preds = %if32
-  %"*value2" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %value, align 8
-  %"*value.data" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*value2", i32 0, i32 0
-  %"$*value.data" = load %Pollfd*, %Pollfd** %"*value.data", align 8
-  call void @"free<Pollfd>"(%Pollfd* %"$*value.data")
+if34.then:                                        ; preds = %if34
+  %"*value2" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %value, align 8
+  %"*value.data" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*value2", i32 0, i32 0
+  %"$*value.data" = load %"net::Socket"*, %"net::Socket"** %"*value.data", align 8
+  call void @"free<net::Socket>"(%"net::Socket"* %"$*value.data")
   br label %endif
 
-endif:                                            ; preds = %if32.then, %if32
+endif:                                            ; preds = %if34.then, %if34
   ret void
 }
 
-define void @watch(%"Array<Pollfd>"* %0, i32 %1) {
+define i16* @"new<i16>"(i32 %0) {
 entry:
-  %fds = alloca %"Array<Pollfd>"*, align 8
-  %fd = alloca i32, align 4
-  %p = alloca %Pollfd, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %fds, align 8
-  store i32 %1, i32* %fd, align 4
-  store %Pollfd zeroinitializer, %Pollfd* %p, align 4
-  %p.fd = getelementptr inbounds %Pollfd, %Pollfd* %p, i32 0, i32 0
-  %"$fd" = load i32, i32* %fd, align 4
-  store i32 %"$fd", i32* %p.fd, align 4
-  %p.events = getelementptr inbounds %Pollfd, %Pollfd* %p, i32 0, i32 1
-  %"$POLLIN" = load i32, i32* @POLLIN, align 4
-  %AS = trunc i32 %"$POLLIN" to i16
-  store i16 %AS, i16* %p.events, align 2
-  %"*fds" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %fds, align 8
-  %"$p" = load %Pollfd, %Pollfd* %p, align 4
-  call void @"Array<Pollfd>.append"(%"Array<Pollfd>"* %"*fds", %Pollfd %"$p")
+  %count = alloca i32, align 4
+  store i32 %0, i32* %count, align 4
+  %"$count" = load i32, i32* %count, align 4
+  %MUL = mul i32 %"$count", ptrtoint (i16* getelementptr (i16, i16* null, i32 1) to i32)
+  %AS = sext i32 %MUL to i64
+  %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  %AS1 = bitcast i8* %call.calloc to i16*
+  ret i16* %AS1
+}
+
+define void @"copy<i16>"(i16* %0, i16* %1, i32 %2) {
+entry:
+  %dst = alloca i16*, align 8
+  %src = alloca i16*, align 8
+  %count = alloca i32, align 4
+  store i16* %0, i16** %dst, align 8
+  store i16* %1, i16** %src, align 8
+  store i32 %2, i32* %count, align 4
+  %"$dst" = load i16*, i16** %dst, align 8
+  %AS = bitcast i16* %"$dst" to i8*
+  %"$src" = load i16*, i16** %src, align 8
+  %AS1 = bitcast i16* %"$src" to i8*
+  %"$count" = load i32, i32* %count, align 4
+  %MUL = mul i32 %"$count", ptrtoint (i16* getelementptr (i16, i16* null, i32 1) to i32)
+  %AS2 = sext i32 %MUL to i64
+  %MUL3 = mul i64 %AS2, sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64)
+  %call.memcpy = call i8* @memcpy(i8* %AS, i8* %AS1, i64 %MUL3)
+  ret void
+}
+
+define void @"free<i16>"(i16* %0) {
+entry:
+  %data = alloca i16*, align 8
+  store i16* %0, i16** %data, align 8
+  %"$data" = load i16*, i16** %data, align 8
+  %AS = bitcast i16* %"$data" to i8*
+  call void @free(i8* %AS)
+  ret void
+}
+
+define void @"Array<i16>.reserve"(%"Array<i16>"* %0, i32 %1) {
+entry:
+  %self = alloca %"Array<i16>"*, align 8
+  %cap = alloca i32, align 4
+  %bigger = alloca i16*, align 8
+  store %"Array<i16>"* %0, %"Array<i16>"** %self, align 8
+  store i32 %1, i32* %cap, align 4
+  br label %if35
+
+if35:                                             ; preds = %entry
+  %"*self" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self", i32 0, i32 1
+  %"$cap" = load i32, i32* %cap, align 4
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %LT = icmp slt i32 %"$cap", %"$*self.count"
+  br i1 %LT, label %if35.then, label %endif
+
+if35.then:                                        ; preds = %if35
+  %"*self3" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  store i32 %"$*self.count5", i32* %cap, align 4
+  br label %endif
+
+endif:                                            ; preds = %if35.then, %if35
+  br label %if36
+
+if36:                                             ; preds = %endif
+  %"*self6" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self6", i32 0, i32 2
+  %"$cap7" = load i32, i32* %cap, align 4
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %LE = icmp sle i32 %"$cap7", %"$*self.cap"
+  br i1 %LE, label %if36.then, label %endif1
+
+if36.then:                                        ; preds = %if36
+  ret void
+
+endif1:                                           ; preds = %if36
+  %"$cap8" = load i32, i32* %cap, align 4
+  %"call.new<i16>" = call i16* @"new<i16>"(i32 %"$cap8")
+  store i16* %"call.new<i16>", i16** %bigger, align 8
+  %"*self9" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self9", i32 0, i32 0
+  %"*self10" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count11" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self10", i32 0, i32 1
+  %"$bigger" = load i16*, i16** %bigger, align 8
+  %"$*self.data" = load i16*, i16** %"*self.data", align 8
+  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
+  call void @"copy<i16>"(i16* %"$bigger", i16* %"$*self.data", i32 %"$*self.count12")
+  br label %if37
+
+if37:                                             ; preds = %endif1
+  %"*self13" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.cap14" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self13", i32 0, i32 2
+  %"$*self.cap15" = load i32, i32* %"*self.cap14", align 4
+  %GT = icmp sgt i32 %"$*self.cap15", 0
+  br i1 %GT, label %if37.then, label %endif2
+
+if37.then:                                        ; preds = %if37
+  %"*self16" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.data17" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self16", i32 0, i32 0
+  %"$*self.data18" = load i16*, i16** %"*self.data17", align 8
+  call void @"free<i16>"(i16* %"$*self.data18")
+  br label %endif2
+
+endif2:                                           ; preds = %if37.then, %if37
+  %"*self19" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.data20" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self19", i32 0, i32 0
+  %"$bigger21" = load i16*, i16** %bigger, align 8
+  store i16* %"$bigger21", i16** %"*self.data20", align 8
+  %"*self22" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.cap23" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self22", i32 0, i32 2
+  %"$cap24" = load i32, i32* %cap, align 4
+  store i32 %"$cap24", i32* %"*self.cap23", align 4
+  ret void
+}
+
+define void @"Array<i16>.own"(%"Array<i16>"* %0) {
+entry:
+  %self = alloca %"Array<i16>"*, align 8
+  store %"Array<i16>"* %0, %"Array<i16>"** %self, align 8
+  br label %if38
+
+if38:                                             ; preds = %entry
+  %"*self" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self", i32 0, i32 2
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %EQ = icmp eq i32 %"$*self.cap", 0
+  %"*self1" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self1", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %GT = icmp sgt i32 %"$*self.count", 0
+  %AND = and i1 %EQ, %GT
+  br i1 %AND, label %if38.then, label %endif
+
+if38.then:                                        ; preds = %if38
+  %"*self2" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self3" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  call void @"Array<i16>.reserve"(%"Array<i16>"* %"*self2", i32 %"$*self.count5")
+  br label %endif
+
+endif:                                            ; preds = %if38.then, %if38
+  ret void
+}
+
+define void @"Array<i16>.clear"(%"Array<i16>"* %0) {
+entry:
+  %self = alloca %"Array<i16>"*, align 8
+  store %"Array<i16>"* %0, %"Array<i16>"** %self, align 8
+  br label %if39
+
+if39:                                             ; preds = %entry
+  %"*self" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self", i32 0, i32 2
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %EQ = icmp eq i32 %"$*self.cap", 0
+  br i1 %EQ, label %if39.then, label %endif
+
+if39.then:                                        ; preds = %if39
+  %"*self1" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self1", i32 0, i32 1
+  store i32 0, i32* %"*self.count", align 4
+  br label %endif
+
+endif:                                            ; preds = %if39.then, %if39
+  br label %while40
+
+while40:                                          ; preds = %while40.then, %endif
+  %"*self2" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count3" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self2", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count3", align 4
+  %GT = icmp sgt i32 %"$*self.count", 0
+  br i1 %GT, label %while40.then, label %endloop
+
+while40.then:                                     ; preds = %while40
+  %"*self4" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count5" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self4", i32 0, i32 1
+  %"$*self.count6" = load i32, i32* %"*self.count5", align 4
+  %SUB = sub i32 %"$*self.count6", 1
+  store i32 %SUB, i32* %"*self.count5", align 4
+  %"*self7" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self7", i32 0, i32 0
+  %"*self8" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count9" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self8", i32 0, i32 1
+  %"$*self.data" = load i16*, i16** %"*self.data", align 8
+  %"$*self.count10" = load i32, i32* %"*self.count9", align 4
+  %"*self.data[]" = getelementptr inbounds i16, i16* %"$*self.data", i32 %"$*self.count10"
+  store i16 0, i16* %"*self.data[]", align 2
+  br label %while40
+
+endloop:                                          ; preds = %while40
+  ret void
+}
+
+define void @"Array<i16>.append"(%"Array<i16>"* %0, i16 %1) {
+entry:
+  %self = alloca %"Array<i16>"*, align 8
+  %value = alloca i16, align 2
+  store %"Array<i16>"* %0, %"Array<i16>"** %self, align 8
+  store i16 %1, i16* %value, align 2
+  br label %if41
+
+if41:                                             ; preds = %entry
+  %"*self" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self", i32 0, i32 1
+  %"*self1" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self1", i32 0, i32 2
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %GE = icmp sge i32 %"$*self.count", %"$*self.cap"
+  br i1 %GE, label %if41.then, label %endif
+
+if41.then:                                        ; preds = %if41
+  %"*self2" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self3" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  %MUL = mul i32 %"$*self.count5", 2
+  %ADD = add i32 %MUL, 4
+  call void @"Array<i16>.reserve"(%"Array<i16>"* %"*self2", i32 %ADD)
+  br label %endif
+
+endif:                                            ; preds = %if41.then, %if41
+  %"*self6" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self6", i32 0, i32 0
+  %"*self7" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count8" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self7", i32 0, i32 1
+  %"$*self.data" = load i16*, i16** %"*self.data", align 8
+  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
+  %"*self.data[]" = getelementptr inbounds i16, i16* %"$*self.data", i32 %"$*self.count9"
+  %"$value" = load i16, i16* %value, align 2
+  store i16 %"$value", i16* %"*self.data[]", align 2
+  %"*self10" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count11" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self10", i32 0, i32 1
+  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
+  %ADD13 = add i32 %"$*self.count12", 1
+  store i32 %ADD13, i32* %"*self.count11", align 4
+  ret void
+}
+
+define i32 @"Array<i16>.len"(%"Array<i16>"* %0) {
+entry:
+  %self = alloca %"Array<i16>"*, align 8
+  store %"Array<i16>"* %0, %"Array<i16>"** %self, align 8
+  %"*self" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  ret i32 %"$*self.count"
+}
+
+define i16* @"Array<i16>.[]"(%"Array<i16>"* %0, i32 %1) {
+entry:
+  %left = alloca %"Array<i16>"*, align 8
+  %index = alloca i32, align 4
+  store %"Array<i16>"* %0, %"Array<i16>"** %left, align 8
+  store i32 %1, i32* %index, align 4
+  %"*left" = load %"Array<i16>"*, %"Array<i16>"** %left, align 8
+  call void @"Array<i16>.own"(%"Array<i16>"* %"*left")
+  %"*left1" = load %"Array<i16>"*, %"Array<i16>"** %left, align 8
+  %"*left.data" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*left1", i32 0, i32 0
+  %"$*left.data" = load i16*, i16** %"*left.data", align 8
+  %"$index" = load i32, i32* %index, align 4
+  %"*left.data[]" = getelementptr inbounds i16, i16* %"$*left.data", i32 %"$index"
+  ret i16* %"*left.data[]"
+}
+
+define void @"Array<i16>.drop"(%"Array<i16>"* %0) {
+entry:
+  %value = alloca %"Array<i16>"*, align 8
+  store %"Array<i16>"* %0, %"Array<i16>"** %value, align 8
+  %"*value" = load %"Array<i16>"*, %"Array<i16>"** %value, align 8
+  call void @"Array<i16>.clear"(%"Array<i16>"* %"*value")
+  br label %if42
+
+if42:                                             ; preds = %entry
+  %"*value1" = load %"Array<i16>"*, %"Array<i16>"** %value, align 8
+  %"*value.cap" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*value1", i32 0, i32 2
+  %"$*value.cap" = load i32, i32* %"*value.cap", align 4
+  %GT = icmp sgt i32 %"$*value.cap", 0
+  br i1 %GT, label %if42.then, label %endif
+
+if42.then:                                        ; preds = %if42
+  %"*value2" = load %"Array<i16>"*, %"Array<i16>"** %value, align 8
+  %"*value.data" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*value2", i32 0, i32 0
+  %"$*value.data" = load i16*, i16** %"*value.data", align 8
+  call void @"free<i16>"(i16* %"$*value.data")
+  br label %endif
+
+endif:                                            ; preds = %if42.then, %if42
+  ret void
+}
+
+define %"cstd::pollfd"* @"new<cstd::pollfd>"(i32 %0) {
+entry:
+  %count = alloca i32, align 4
+  store i32 %0, i32* %count, align 4
+  %"$count" = load i32, i32* %count, align 4
+  %MUL = mul i32 %"$count", ptrtoint (%"cstd::pollfd"* getelementptr (%"cstd::pollfd", %"cstd::pollfd"* null, i32 1) to i32)
+  %AS = sext i32 %MUL to i64
+  %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  %AS1 = bitcast i8* %call.calloc to %"cstd::pollfd"*
+  ret %"cstd::pollfd"* %AS1
+}
+
+define void @"copy<cstd::pollfd>"(%"cstd::pollfd"* %0, %"cstd::pollfd"* %1, i32 %2) {
+entry:
+  %dst = alloca %"cstd::pollfd"*, align 8
+  %src = alloca %"cstd::pollfd"*, align 8
+  %count = alloca i32, align 4
+  store %"cstd::pollfd"* %0, %"cstd::pollfd"** %dst, align 8
+  store %"cstd::pollfd"* %1, %"cstd::pollfd"** %src, align 8
+  store i32 %2, i32* %count, align 4
+  %"$dst" = load %"cstd::pollfd"*, %"cstd::pollfd"** %dst, align 8
+  %AS = bitcast %"cstd::pollfd"* %"$dst" to i8*
+  %"$src" = load %"cstd::pollfd"*, %"cstd::pollfd"** %src, align 8
+  %AS1 = bitcast %"cstd::pollfd"* %"$src" to i8*
+  %"$count" = load i32, i32* %count, align 4
+  %MUL = mul i32 %"$count", ptrtoint (%"cstd::pollfd"* getelementptr (%"cstd::pollfd", %"cstd::pollfd"* null, i32 1) to i32)
+  %AS2 = sext i32 %MUL to i64
+  %MUL3 = mul i64 %AS2, sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64)
+  %call.memcpy = call i8* @memcpy(i8* %AS, i8* %AS1, i64 %MUL3)
+  ret void
+}
+
+define void @"free<cstd::pollfd>"(%"cstd::pollfd"* %0) {
+entry:
+  %data = alloca %"cstd::pollfd"*, align 8
+  store %"cstd::pollfd"* %0, %"cstd::pollfd"** %data, align 8
+  %"$data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %data, align 8
+  %AS = bitcast %"cstd::pollfd"* %"$data" to i8*
+  call void @free(i8* %AS)
+  ret void
+}
+
+define void @"Array<cstd::pollfd>.reserve"(%"Array<cstd::pollfd>"* %0, i32 %1) {
+entry:
+  %self = alloca %"Array<cstd::pollfd>"*, align 8
+  %cap = alloca i32, align 4
+  %bigger = alloca %"cstd::pollfd"*, align 8
+  store %"Array<cstd::pollfd>"* %0, %"Array<cstd::pollfd>"** %self, align 8
+  store i32 %1, i32* %cap, align 4
+  br label %if43
+
+if43:                                             ; preds = %entry
+  %"*self" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self", i32 0, i32 1
+  %"$cap" = load i32, i32* %cap, align 4
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %LT = icmp slt i32 %"$cap", %"$*self.count"
+  br i1 %LT, label %if43.then, label %endif
+
+if43.then:                                        ; preds = %if43
+  %"*self3" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  store i32 %"$*self.count5", i32* %cap, align 4
+  br label %endif
+
+endif:                                            ; preds = %if43.then, %if43
+  br label %if44
+
+if44:                                             ; preds = %endif
+  %"*self6" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self6", i32 0, i32 2
+  %"$cap7" = load i32, i32* %cap, align 4
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %LE = icmp sle i32 %"$cap7", %"$*self.cap"
+  br i1 %LE, label %if44.then, label %endif1
+
+if44.then:                                        ; preds = %if44
+  ret void
+
+endif1:                                           ; preds = %if44
+  %"$cap8" = load i32, i32* %cap, align 4
+  %"call.new<cstd::pollfd>" = call %"cstd::pollfd"* @"new<cstd::pollfd>"(i32 %"$cap8")
+  store %"cstd::pollfd"* %"call.new<cstd::pollfd>", %"cstd::pollfd"** %bigger, align 8
+  %"*self9" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self9", i32 0, i32 0
+  %"*self10" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count11" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self10", i32 0, i32 1
+  %"$bigger" = load %"cstd::pollfd"*, %"cstd::pollfd"** %bigger, align 8
+  %"$*self.data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %"*self.data", align 8
+  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
+  call void @"copy<cstd::pollfd>"(%"cstd::pollfd"* %"$bigger", %"cstd::pollfd"* %"$*self.data", i32 %"$*self.count12")
+  br label %if45
+
+if45:                                             ; preds = %endif1
+  %"*self13" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.cap14" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self13", i32 0, i32 2
+  %"$*self.cap15" = load i32, i32* %"*self.cap14", align 4
+  %GT = icmp sgt i32 %"$*self.cap15", 0
+  br i1 %GT, label %if45.then, label %endif2
+
+if45.then:                                        ; preds = %if45
+  %"*self16" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.data17" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self16", i32 0, i32 0
+  %"$*self.data18" = load %"cstd::pollfd"*, %"cstd::pollfd"** %"*self.data17", align 8
+  call void @"free<cstd::pollfd>"(%"cstd::pollfd"* %"$*self.data18")
+  br label %endif2
+
+endif2:                                           ; preds = %if45.then, %if45
+  %"*self19" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.data20" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self19", i32 0, i32 0
+  %"$bigger21" = load %"cstd::pollfd"*, %"cstd::pollfd"** %bigger, align 8
+  store %"cstd::pollfd"* %"$bigger21", %"cstd::pollfd"** %"*self.data20", align 8
+  %"*self22" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.cap23" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self22", i32 0, i32 2
+  %"$cap24" = load i32, i32* %cap, align 4
+  store i32 %"$cap24", i32* %"*self.cap23", align 4
+  ret void
+}
+
+define void @"Array<cstd::pollfd>.clear"(%"Array<cstd::pollfd>"* %0) {
+entry:
+  %self = alloca %"Array<cstd::pollfd>"*, align 8
+  store %"Array<cstd::pollfd>"* %0, %"Array<cstd::pollfd>"** %self, align 8
+  br label %if46
+
+if46:                                             ; preds = %entry
+  %"*self" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self", i32 0, i32 2
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %EQ = icmp eq i32 %"$*self.cap", 0
+  br i1 %EQ, label %if46.then, label %endif
+
+if46.then:                                        ; preds = %if46
+  %"*self1" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self1", i32 0, i32 1
+  store i32 0, i32* %"*self.count", align 4
+  br label %endif
+
+endif:                                            ; preds = %if46.then, %if46
+  br label %while47
+
+while47:                                          ; preds = %while47.then, %endif
+  %"*self2" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count3" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self2", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count3", align 4
+  %GT = icmp sgt i32 %"$*self.count", 0
+  br i1 %GT, label %while47.then, label %endloop
+
+while47.then:                                     ; preds = %while47
+  %"*self4" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count5" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self4", i32 0, i32 1
+  %"$*self.count6" = load i32, i32* %"*self.count5", align 4
+  %SUB = sub i32 %"$*self.count6", 1
+  store i32 %SUB, i32* %"*self.count5", align 4
+  %"*self7" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self7", i32 0, i32 0
+  %"*self8" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count9" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self8", i32 0, i32 1
+  %"$*self.data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %"*self.data", align 8
+  %"$*self.count10" = load i32, i32* %"*self.count9", align 4
+  %"*self.data[]" = getelementptr inbounds %"cstd::pollfd", %"cstd::pollfd"* %"$*self.data", i32 %"$*self.count10"
+  store %"cstd::pollfd" zeroinitializer, %"cstd::pollfd"* %"*self.data[]", align 4
+  br label %while47
+
+endloop:                                          ; preds = %while47
+  ret void
+}
+
+define void @"Array<cstd::pollfd>.append"(%"Array<cstd::pollfd>"* %0, %"cstd::pollfd" %1) {
+entry:
+  %self = alloca %"Array<cstd::pollfd>"*, align 8
+  %value = alloca %"cstd::pollfd", align 8
+  store %"Array<cstd::pollfd>"* %0, %"Array<cstd::pollfd>"** %self, align 8
+  store %"cstd::pollfd" %1, %"cstd::pollfd"* %value, align 4
+  br label %if48
+
+if48:                                             ; preds = %entry
+  %"*self" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self", i32 0, i32 1
+  %"*self1" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self1", i32 0, i32 2
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %GE = icmp sge i32 %"$*self.count", %"$*self.cap"
+  br i1 %GE, label %if48.then, label %endif
+
+if48.then:                                        ; preds = %if48
+  %"*self2" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self3" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  %MUL = mul i32 %"$*self.count5", 2
+  %ADD = add i32 %MUL, 4
+  call void @"Array<cstd::pollfd>.reserve"(%"Array<cstd::pollfd>"* %"*self2", i32 %ADD)
+  br label %endif
+
+endif:                                            ; preds = %if48.then, %if48
+  %"*self6" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self6", i32 0, i32 0
+  %"*self7" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count8" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self7", i32 0, i32 1
+  %"$*self.data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %"*self.data", align 8
+  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
+  %"*self.data[]" = getelementptr inbounds %"cstd::pollfd", %"cstd::pollfd"* %"$*self.data", i32 %"$*self.count9"
+  %"$value" = load %"cstd::pollfd", %"cstd::pollfd"* %value, align 4
+  store %"cstd::pollfd" %"$value", %"cstd::pollfd"* %"*self.data[]", align 4
+  %"*self10" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count11" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self10", i32 0, i32 1
+  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
+  %ADD13 = add i32 %"$*self.count12", 1
+  store i32 %ADD13, i32* %"*self.count11", align 4
+  ret void
+}
+
+define i32 @"Array<cstd::pollfd>.len"(%"Array<cstd::pollfd>"* %0) {
+entry:
+  %self = alloca %"Array<cstd::pollfd>"*, align 8
+  store %"Array<cstd::pollfd>"* %0, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  ret i32 %"$*self.count"
+}
+
+define i1 @"Array<cstd::pollfd>.in"(%"Array<cstd::pollfd>"* %0, i32* %1, %"cstd::pollfd"* %2) {
+entry:
+  %left = alloca %"Array<cstd::pollfd>"*, align 8
+  %i = alloca i32*, align 8
+  %x = alloca %"cstd::pollfd"*, align 8
+  store %"Array<cstd::pollfd>"* %0, %"Array<cstd::pollfd>"** %left, align 8
+  store i32* %1, i32** %i, align 8
+  store %"cstd::pollfd"* %2, %"cstd::pollfd"** %x, align 8
+  br label %if49
+
+if49:                                             ; preds = %entry
+  %"*i" = load i32*, i32** %i, align 8
+  %"*left" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %left, align 8
+  %"*left.count" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*left", i32 0, i32 1
+  %"$*i" = load i32, i32* %"*i", align 4
+  %"$*left.count" = load i32, i32* %"*left.count", align 4
+  %GE = icmp sge i32 %"$*i", %"$*left.count"
+  br i1 %GE, label %if49.then, label %endif
+
+if49.then:                                        ; preds = %if49
+  ret i1 false
+
+endif:                                            ; preds = %if49
+  %"*x" = load %"cstd::pollfd"*, %"cstd::pollfd"** %x, align 8
+  %"*left1" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %left, align 8
+  %"*left.data" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*left1", i32 0, i32 0
+  %"*i2" = load i32*, i32** %i, align 8
+  %"$*left.data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %"*left.data", align 8
+  %"$*i3" = load i32, i32* %"*i2", align 4
+  %"*left.data[]" = getelementptr inbounds %"cstd::pollfd", %"cstd::pollfd"* %"$*left.data", i32 %"$*i3"
+  %"$*left.data[]" = load %"cstd::pollfd", %"cstd::pollfd"* %"*left.data[]", align 4
+  store %"cstd::pollfd" %"$*left.data[]", %"cstd::pollfd"* %"*x", align 4
+  %"*i4" = load i32*, i32** %i, align 8
+  %"$*i5" = load i32, i32* %"*i4", align 4
+  %ADD = add i32 %"$*i5", 1
+  store i32 %ADD, i32* %"*i4", align 4
+  ret i1 true
+}
+
+define void @"Array<cstd::pollfd>.drop"(%"Array<cstd::pollfd>"* %0) {
+entry:
+  %value = alloca %"Array<cstd::pollfd>"*, align 8
+  store %"Array<cstd::pollfd>"* %0, %"Array<cstd::pollfd>"** %value, align 8
+  %"*value" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %value, align 8
+  call void @"Array<cstd::pollfd>.clear"(%"Array<cstd::pollfd>"* %"*value")
+  br label %if50
+
+if50:                                             ; preds = %entry
+  %"*value1" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %value, align 8
+  %"*value.cap" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*value1", i32 0, i32 2
+  %"$*value.cap" = load i32, i32* %"*value.cap", align 4
+  %GT = icmp sgt i32 %"$*value.cap", 0
+  br i1 %GT, label %if50.then, label %endif
+
+if50.then:                                        ; preds = %if50
+  %"*value2" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %value, align 8
+  %"*value.data" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*value2", i32 0, i32 0
+  %"$*value.data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %"*value.data", align 8
+  call void @"free<cstd::pollfd>"(%"cstd::pollfd"* %"$*value.data")
+  br label %endif
+
+endif:                                            ; preds = %if50.then, %if50
+  ret void
+}
+
+define %"Array<i16>" @"net::poll"(%"Array<net::Socket>"* %0, i16 %1, i32 %2) {
+entry:
+  %sockets = alloca %"Array<net::Socket>"*, align 8
+  %events = alloca i16, align 2
+  %timeout = alloca i32, align 4
+  %entries = alloca %"Array<cstd::pollfd>", align 8
+  %i = alloca i32, align 4
+  %socket = alloca %"net::Socket", align 8
+  %error.at = alloca %Error*, align 8
+  %ready = alloca %"Array<i16>", align 8
+  %i2 = alloca i32, align 4
+  %entry3 = alloca %"cstd::pollfd", align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %sockets, align 8
+  store i16 %1, i16* %events, align 2
+  store i32 %2, i32* %timeout, align 4
+  store %"Array<cstd::pollfd>" zeroinitializer, %"Array<cstd::pollfd>"* %entries, align 8
+  %"*sockets" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %sockets, align 8
+  store i32 0, i32* %i, align 4
+  store %"net::Socket" zeroinitializer, %"net::Socket"* %socket, align 4
+  br label %while51
+
+while51:                                          ; preds = %while51.then, %entry
+  %"call.Array<net::Socket>.in" = call i1 @"Array<net::Socket>.in"(%"Array<net::Socket>"* %"*sockets", i32* %i, %"net::Socket"* %socket)
+  br i1 %"call.Array<net::Socket>.in", label %while51.then, label %endloop
+
+while51.then:                                     ; preds = %while51
+  %socket.fd = getelementptr inbounds %"net::Socket", %"net::Socket"* %socket, i32 0, i32 0
+  %"$socket.fd" = load i32, i32* %socket.fd, align 4
+  %"$events" = load i16, i16* %events, align 2
+  %3 = insertvalue %"cstd::pollfd" zeroinitializer, i32 %"$socket.fd", 0
+  %4 = insertvalue %"cstd::pollfd" %3, i16 %"$events", 1
+  call void @"Array<cstd::pollfd>.append"(%"Array<cstd::pollfd>"* %entries, %"cstd::pollfd" %4)
+  br label %while51
+
+endloop:                                          ; preds = %while51
+  br label %if52
+
+if52:                                             ; preds = %endloop
+  %entries.data = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %entries, i32 0, i32 0
+  %"call.Array<cstd::pollfd>.len" = call i32 @"Array<cstd::pollfd>.len"(%"Array<cstd::pollfd>"* %entries)
+  %"$entries.data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %entries.data, align 8
+  %"$timeout" = load i32, i32* %timeout, align 4
+  %call.poll = call i32 @poll(%"cstd::pollfd"* %"$entries.data", i32 %"call.Array<cstd::pollfd>.len", i32 %"$timeout")
+  %LT = icmp slt i32 %call.poll, 0
+  br i1 %LT, label %if52.then, label %endif
+
+if52.then:                                        ; preds = %if52
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.8, i32 0, i32 0), i32 4, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  call void @"Array<cstd::pollfd>.drop"(%"Array<cstd::pollfd>"* %entries)
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"Array<i16>" zeroinitializer
+
+endif:                                            ; preds = %if52
+  store %"Array<i16>" zeroinitializer, %"Array<i16>"* %ready, align 8
+  store i32 0, i32* %i2, align 4
+  store %"cstd::pollfd" zeroinitializer, %"cstd::pollfd"* %entry3, align 4
+  br label %while53
+
+while53:                                          ; preds = %while53.then, %endif
+  %"call.Array<cstd::pollfd>.in" = call i1 @"Array<cstd::pollfd>.in"(%"Array<cstd::pollfd>"* %entries, i32* %i2, %"cstd::pollfd"* %entry3)
+  br i1 %"call.Array<cstd::pollfd>.in", label %while53.then, label %endloop1
+
+while53.then:                                     ; preds = %while53
+  %entry.revents = getelementptr inbounds %"cstd::pollfd", %"cstd::pollfd"* %entry3, i32 0, i32 2
+  %"$entry.revents" = load i16, i16* %entry.revents, align 2
+  call void @"Array<i16>.append"(%"Array<i16>"* %ready, i16 %"$entry.revents")
+  br label %while53
+
+endloop1:                                         ; preds = %while53
+  %"$ready" = load %"Array<i16>", %"Array<i16>"* %ready, align 8
+  call void @"Array<cstd::pollfd>.drop"(%"Array<cstd::pollfd>"* %entries)
+  ret %"Array<i16>" %"$ready"
+}
+
+define %"net::Server" @"net::Server.create"(i32 %0, i32 %1) {
+entry:
+  %port = alloca i32, align 4
+  %backlog = alloca i32, align 4
+  %server = alloca %"net::Server", align 8
+  %ref = alloca %"net::Socket"*, align 8
+  %ref6 = alloca %"net::Socket"*, align 8
+  store i32 %0, i32* %port, align 4
+  store i32 %1, i32* %backlog, align 4
+  %"$port" = load i32, i32* %port, align 4
+  %"call.net::Address.create" = call %"net::Address" @"net::Address.create"(i32 %"$port")
+  %"call.net::Socket.create" = call %"net::Socket" @"net::Socket.create"()
+  br label %thrown54
+
+thrown54:                                         ; preds = %entry
+  %"$ucg.thrown" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown", label %thrown54.then, label %endthrown
+
+thrown54.then:                                    ; preds = %thrown54
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"net::Server" zeroinitializer
+
+endthrown:                                        ; preds = %thrown54
+  %2 = insertvalue %"net::Server" zeroinitializer, %"net::Socket" %"call.net::Socket.create", 0
+  %3 = insertvalue %"net::Server" %2, %"net::Address" %"call.net::Address.create", 1
+  store %"net::Server" %3, %"net::Server"* %server, align 8
+  %server.socket = getelementptr inbounds %"net::Server", %"net::Server"* %server, i32 0, i32 0
+  %"call.net::Socket.reuse" = call %"net::Socket"* @"net::Socket.reuse"(%"net::Socket"* %server.socket)
+  br label %thrown55
+
+thrown55:                                         ; preds = %endthrown
+  %"$ucg.thrown4" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown4", label %thrown55.then, label %endthrown1
+
+thrown55.then:                                    ; preds = %thrown55
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"net::Server" zeroinitializer
+
+endthrown1:                                       ; preds = %thrown55
+  store %"net::Socket"* %"call.net::Socket.reuse", %"net::Socket"** %ref, align 8
+  %"*ref" = load %"net::Socket"*, %"net::Socket"** %ref, align 8
+  %server.address = getelementptr inbounds %"net::Server", %"net::Server"* %server, i32 0, i32 1
+  %"call.net::Socket.bind" = call %"net::Socket"* @"net::Socket.bind"(%"net::Socket"* %"*ref", %"net::Address"* %server.address)
+  br label %thrown56
+
+thrown56:                                         ; preds = %endthrown1
+  %"$ucg.thrown5" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown5", label %thrown56.then, label %endthrown2
+
+thrown56.then:                                    ; preds = %thrown56
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"net::Server" zeroinitializer
+
+endthrown2:                                       ; preds = %thrown56
+  store %"net::Socket"* %"call.net::Socket.bind", %"net::Socket"** %ref6, align 8
+  %"*ref7" = load %"net::Socket"*, %"net::Socket"** %ref6, align 8
+  %"$backlog" = load i32, i32* %backlog, align 4
+  call void @"net::Socket.listen"(%"net::Socket"* %"*ref7", i32 %"$backlog")
+  br label %thrown57
+
+thrown57:                                         ; preds = %endthrown2
+  %"$ucg.thrown8" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown8", label %thrown57.then, label %endthrown3
+
+thrown57.then:                                    ; preds = %thrown57
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"net::Server" zeroinitializer
+
+endthrown3:                                       ; preds = %thrown57
+  %"$server" = load %"net::Server", %"net::Server"* %server, align 8
+  ret %"net::Server" %"$server"
+}
+
+define %"net::Socket" @"net::Server.accept"(%"net::Server"* %0) {
+entry:
+  %self = alloca %"net::Server"*, align 8
+  store %"net::Server"* %0, %"net::Server"** %self, align 8
+  %"*self" = load %"net::Server"*, %"net::Server"** %self, align 8
+  %"*self.socket" = getelementptr inbounds %"net::Server", %"net::Server"* %"*self", i32 0, i32 0
+  %"call.net::Socket.accept" = call %"net::Socket" @"net::Socket.accept"(%"net::Socket"* %"*self.socket")
+  br label %thrown58
+
+thrown58:                                         ; preds = %entry
+  %"$ucg.thrown" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown", label %thrown58.then, label %endthrown
+
+thrown58.then:                                    ; preds = %thrown58
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"net::Socket" zeroinitializer
+
+endthrown:                                        ; preds = %thrown58
+  ret %"net::Socket" %"call.net::Socket.accept"
+}
+
+define void @"net::Server.close"(%"net::Server"* %0) {
+entry:
+  %self = alloca %"net::Server"*, align 8
+  store %"net::Server"* %0, %"net::Server"** %self, align 8
+  %"*self" = load %"net::Server"*, %"net::Server"** %self, align 8
+  %"*self.socket" = getelementptr inbounds %"net::Server", %"net::Server"* %"*self", i32 0, i32 0
+  call void @"net::Socket.close"(%"net::Socket"* %"*self.socket")
   ret void
 }
 
 define i32 @main() {
 entry:
-  %server = alloca i32, align 4
-  %fds = alloca %"Array<Pollfd>", align 8
-  %buf = alloca %"Array<i8>", align 8
-  %ref = alloca %Pollfd*, align 8
-  %r = alloca i64, align 8
+  %server = alloca %"net::Server", align 8
+  %format.size = alloca i32, align 4
+  %format.text = alloca i8*, align 8
+  %sockets = alloca %"Array<net::Socket>", align 8
+  %ready = alloca %"Array<i16>", align 8
+  %ref = alloca i16*, align 8
+  %line = alloca %String, align 8
+  %tmp = alloca %Range, align 8
   %i = alloca i32, align 4
-  %ref15 = alloca %Pollfd*, align 8
-  %ref22 = alloca %Pollfd*, align 8
-  %client = alloca i32, align 4
+  %i20 = alloca i32, align 4
+  %ref21 = alloca %"net::Socket"*, align 8
+  %format.size23 = alloca i32, align 4
+  %format.text28 = alloca i8*, align 8
+  %ref38 = alloca i16*, align 8
   %j = alloca i32, align 4
-  %ref36 = alloca %Pollfd*, align 8
-  %r45 = alloca i64, align 8
-  %ref48 = alloca %Pollfd*, align 8
-  %ref59 = alloca %Pollfd*, align 8
-  %ref65 = alloca %Pollfd*, align 8
-  %ref69 = alloca %Pollfd*, align 8
-  store i32 1, i32* @POLLIN, align 4
+  %ref47 = alloca i16*, align 8
+  %text = alloca %String, align 8
+  %ref55 = alloca %"net::Socket"*, align 8
+  %ref61 = alloca %"net::Socket"*, align 8
+  %format.size65 = alloca i32, align 4
+  %format.text70 = alloca i8*, align 8
+  %error.at = alloca %Error*, align 8
+  br label %try59
+
+try59:                                            ; preds = %entry
+  br i1 true, label %try59.then, label %endtry
+
+try59.then:                                       ; preds = %try59
+  store i32 0, i32* @"cstd::F_OK", align 4
+  store i32 0, i32* @"cstd::O_RDONLY", align 4
+  store i32 1, i32* @"cstd::O_WRONLY", align 4
+  store i32 2, i32* @"cstd::O_RDWR", align 4
+  store i32 64, i32* @"cstd::O_CREAT", align 4
+  store i32 512, i32* @"cstd::O_TRUNC", align 4
+  store i32 1024, i32* @"cstd::O_APPEND", align 4
+  store i32 1, i32* @"cstd::CLOCK_MONOTONIC", align 4
+  store i32 61440, i32* @"cstd::S_IFMT", align 4
+  store i32 32768, i32* @"cstd::S_IFREG", align 4
+  store i32 16384, i32* @"cstd::S_IFDIR", align 4
+  store i32 448, i32* @"cstd::S_IRWXU", align 4
+  store i32 256, i32* @"cstd::S_IRUSR", align 4
+  store i32 128, i32* @"cstd::S_IWUSR", align 4
+  store i32 2, i32* @"cstd::AF_INET", align 4
+  store i32 1, i32* @"cstd::SOCK_STREAM", align 4
+  store i32 1, i32* @"cstd::SOL_SOCKET", align 4
+  store i32 2, i32* @"cstd::SO_REUSEADDR", align 4
+  store i16 1, i16* @"cstd::POLLIN", align 2
+  store i32 0, i32* @"cstd::INADDR_ANY", align 4
   store i32 8080, i32* @PORT, align 4
+  store i32 16, i32* @BACKLOG, align 4
+  store i32 1024, i32* @CHUNK, align 4
+  store i32 0, i32* @STDIN, align 4
   %"$PORT" = load i32, i32* @PORT, align 4
-  %call.listener = call i32 @listener(i32 %"$PORT")
-  store i32 %call.listener, i32* %server, align 4
-  br label %if33
+  %"$BACKLOG" = load i32, i32* @BACKLOG, align 4
+  %"call.net::Server.create" = call %"net::Server" @"net::Server.create"(i32 %"$PORT", i32 %"$BACKLOG")
+  br label %thrown60
 
-if33:                                             ; preds = %entry
-  %"$server" = load i32, i32* %server, align 4
-  %LT = icmp slt i32 %"$server", 0
-  br i1 %LT, label %if33.then, label %endif
+thrown60:                                         ; preds = %try59.then
+  %"$ucg.thrown" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown", label %thrown60.then, label %endthrown
 
-if33.then:                                        ; preds = %if33
-  call void @"io::err"(%String { i8* getelementptr inbounds ([36 x i8], [36 x i8]* @str, i32 0, i32 0), i32 35, i32 0 })
-  ret i32 1
+thrown60.then:                                    ; preds = %thrown60
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  br label %endtry
 
-endif:                                            ; preds = %if33
-  call void @"io::out"(%String { i8* getelementptr inbounds ([33 x i8], [33 x i8]* @str.2, i32 0, i32 0), i32 32, i32 0 })
-  store %"Array<Pollfd>" zeroinitializer, %"Array<Pollfd>"* %fds, align 8
-  call void @watch(%"Array<Pollfd>"* %fds, i32 0)
-  %"$server9" = load i32, i32* %server, align 4
-  call void @watch(%"Array<Pollfd>"* %fds, i32 %"$server9")
-  store %"Array<i8>" zeroinitializer, %"Array<i8>"* %buf, align 8
-  call void @"Array<i8>.resize"(%"Array<i8>"* %buf, i32 1024)
-  br label %while34
+endthrown:                                        ; preds = %thrown60
+  store %"net::Server" %"call.net::Server.create", %"net::Server"* %server, align 8
+  %"$PORT12" = load i32, i32* @PORT, align 4
+  %call.snprintf = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([31 x i8], [31 x i8]* @str.9, i32 0, i32 0), i32 %"$PORT12")
+  store i32 %call.snprintf, i32* %format.size, align 4
+  %"$format.size" = load i32, i32* %format.size, align 4
+  %ADD = add i32 %"$format.size", 1
+  %AS = sext i32 %ADD to i64
+  %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc, i8** %format.text, align 8
+  %"$format.text" = load i8*, i8** %format.text, align 8
+  %call.snprintf13 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text", i64 %AS, i8* getelementptr inbounds ([31 x i8], [31 x i8]* @str.9, i32 0, i32 0), i32 %"$PORT12")
+  %"$format.size14" = load i32, i32* %format.size, align 4
+  %ADD15 = add i32 %"$format.size14", 1
+  %"$format.text16" = load i8*, i8** %format.text, align 8
+  %"$format.size17" = load i32, i32* %format.size, align 4
+  %0 = insertvalue %String zeroinitializer, i8* %"$format.text16", 0
+  %1 = insertvalue %String %0, i32 %"$format.size17", 1
+  %2 = insertvalue %String %1, i32 %ADD15, 2
+  call void @"io::out"(%String %2)
+  store %"Array<net::Socket>" zeroinitializer, %"Array<net::Socket>"* %sockets, align 8
+  %"$STDIN" = load i32, i32* @STDIN, align 4
+  %3 = insertvalue %"net::Socket" zeroinitializer, i32 %"$STDIN", 0
+  call void @"Array<net::Socket>.append"(%"Array<net::Socket>"* %sockets, %"net::Socket" %3)
+  %server.socket = getelementptr inbounds %"net::Server", %"net::Server"* %server, i32 0, i32 0
+  %"$server.socket" = load %"net::Socket", %"net::Socket"* %server.socket, align 4
+  call void @"Array<net::Socket>.append"(%"Array<net::Socket>"* %sockets, %"net::Socket" %"$server.socket")
+  br label %while61
 
-while34:                                          ; preds = %endloop7, %endif
-  br i1 true, label %while34.then, label %endloop8
+while61:                                          ; preds = %endloop9, %endthrown
+  br i1 true, label %while61.then, label %endloop10
 
-while34.then:                                     ; preds = %while34
-  %fds.data = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %fds, i32 0, i32 0
-  %"$fds.data" = load %Pollfd*, %Pollfd** %fds.data, align 8
-  %AS = bitcast %Pollfd* %"$fds.data" to i8*
-  %"call.Array<Pollfd>.len" = call i32 @"Array<Pollfd>.len"(%"Array<Pollfd>"* %fds)
-  %call.poll = call i32 @poll(i8* %AS, i32 %"call.Array<Pollfd>.len", i32 -1)
-  br label %if35
+while61.then:                                     ; preds = %while61
+  %"$cstd::POLLIN" = load i16, i16* @"cstd::POLLIN", align 2
+  %"call.net::poll" = call %"Array<i16>" @"net::poll"(%"Array<net::Socket>"* %sockets, i16 %"$cstd::POLLIN", i32 -1)
+  br label %thrown62
 
-if35:                                             ; preds = %while34.then
-  %"call.Array<Pollfd>.[]" = call %Pollfd* @"Array<Pollfd>.[]"(%"Array<Pollfd>"* %fds, i32 0)
-  store %Pollfd* %"call.Array<Pollfd>.[]", %Pollfd** %ref, align 8
-  %"*ref" = load %Pollfd*, %Pollfd** %ref, align 8
-  %"*ref.revents" = getelementptr inbounds %Pollfd, %Pollfd* %"*ref", i32 0, i32 2
-  %"$*ref.revents" = load i16, i16* %"*ref.revents", align 2
-  %AS10 = sext i16 %"$*ref.revents" to i32
-  %"$POLLIN" = load i32, i32* @POLLIN, align 4
-  %BAND = and i32 %AS10, %"$POLLIN"
-  %NQ = icmp ne i32 %BAND, 0
-  br i1 %NQ, label %if35.then, label %endif2
+thrown62:                                         ; preds = %while61.then
+  %"$ucg.thrown18" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown18", label %thrown62.then, label %endthrown1
 
-if35.then:                                        ; preds = %if35
-  %buf.data = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %buf, i32 0, i32 0
-  %"$buf.data" = load i8*, i8** %buf.data, align 8
-  %call.read = call i64 @read(i32 0, i8* %"$buf.data", i64 1023)
-  store i64 %call.read, i64* %r, align 8
-  br label %if36
+thrown62.then:                                    ; preds = %thrown62
+  store i1 false, i1* @ucg.thrown, align 1
+  call void @"Array<i16>.drop"(%"Array<i16>"* %ready)
+  call void @"Array<net::Socket>.drop"(%"Array<net::Socket>"* %sockets)
+  store i1 true, i1* @ucg.thrown, align 1
+  br label %endtry
 
-if36:                                             ; preds = %if35.then
-  %"$r" = load i64, i64* %r, align 8
-  %LE = icmp sle i64 %"$r", 0
-  br i1 %LE, label %if36.then, label %endif1
+endthrown1:                                       ; preds = %thrown62
+  store %"Array<i16>" %"call.net::poll", %"Array<i16>"* %ready, align 8
+  br label %if63
 
-if36.then:                                        ; preds = %if36
-  br label %endloop8
+if63:                                             ; preds = %endthrown1
+  %"call.Array<i16>.[]" = call i16* @"Array<i16>.[]"(%"Array<i16>"* %ready, i32 0)
+  store i16* %"call.Array<i16>.[]", i16** %ref, align 8
+  %"*ref" = load i16*, i16** %ref, align 8
+  %"$*ref" = load i16, i16* %"*ref", align 2
+  %"$cstd::POLLIN19" = load i16, i16* @"cstd::POLLIN", align 2
+  %BAND = and i16 %"$*ref", %"$cstd::POLLIN19"
+  %NQ = icmp ne i16 %BAND, 0
+  br i1 %NQ, label %if63.then, label %endif3
 
-endif1:                                           ; preds = %if36
-  store i32 2, i32* %i, align 4
-  br label %while37
+if63.then:                                        ; preds = %if63
+  %"call.io::input" = call %String @"io::input"()
+  store %String %"call.io::input", %String* %line, align 8
+  br label %if64
 
-while37:                                          ; preds = %while37.then, %endif1
-  %"call.Array<Pollfd>.len11" = call i32 @"Array<Pollfd>.len"(%"Array<Pollfd>"* %fds)
-  %"$i" = load i32, i32* %i, align 4
-  %LT12 = icmp slt i32 %"$i", %"call.Array<Pollfd>.len11"
-  br i1 %LT12, label %while37.then, label %endloop
+if64:                                             ; preds = %if63.then
+  %call.String.is_empty = call i1 @String.is_empty(%String* %line)
+  br i1 %call.String.is_empty, label %if64.then, label %endif
 
-while37.then:                                     ; preds = %while37
-  %"$i13" = load i32, i32* %i, align 4
-  %"call.Array<Pollfd>.[]14" = call %Pollfd* @"Array<Pollfd>.[]"(%"Array<Pollfd>"* %fds, i32 %"$i13")
-  store %Pollfd* %"call.Array<Pollfd>.[]14", %Pollfd** %ref15, align 8
-  %"*ref16" = load %Pollfd*, %Pollfd** %ref15, align 8
-  %"*ref.fd" = getelementptr inbounds %Pollfd, %Pollfd* %"*ref16", i32 0, i32 0
-  %buf.data17 = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %buf, i32 0, i32 0
-  %"$*ref.fd" = load i32, i32* %"*ref.fd", align 4
-  %"$buf.data18" = load i8*, i8** %buf.data17, align 8
-  %"$r19" = load i64, i64* %r, align 8
-  %call.write = call i64 @write(i32 %"$*ref.fd", i8* %"$buf.data18", i64 %"$r19")
-  %"$i20" = load i32, i32* %i, align 4
-  %ADD = add i32 %"$i20", 1
-  store i32 %ADD, i32* %i, align 4
-  br label %while37
+if64.then:                                        ; preds = %if64
+  %4 = bitcast %String* %line to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %4)
+  call void @"Array<i16>.drop"(%"Array<i16>"* %ready)
+  br label %endloop10
 
-endloop:                                          ; preds = %while37
-  br label %endif2
+endif:                                            ; preds = %if64
+  %"call.Array<net::Socket>.len" = call i32 @"Array<net::Socket>.len"(%"Array<net::Socket>"* %sockets)
+  %call.Range.create = call %Range @Range.create(i32 2, i32 %"call.Array<net::Socket>.len")
+  store %Range %call.Range.create, %Range* %tmp, align 4
+  store i32 0, i32* %i, align 4
+  store i32 0, i32* %i20, align 4
+  br label %while65
 
-endif2:                                           ; preds = %endloop, %if35
-  br label %if38
+while65:                                          ; preds = %endthrown2, %endif
+  %call.Range.in = call i1 @Range.in(%Range* %tmp, i32* %i, i32* %i20)
+  br i1 %call.Range.in, label %while65.then, label %endloop
 
-if38:                                             ; preds = %endif2
-  %"call.Array<Pollfd>.[]21" = call %Pollfd* @"Array<Pollfd>.[]"(%"Array<Pollfd>"* %fds, i32 1)
-  store %Pollfd* %"call.Array<Pollfd>.[]21", %Pollfd** %ref22, align 8
-  %"*ref23" = load %Pollfd*, %Pollfd** %ref22, align 8
-  %"*ref.revents24" = getelementptr inbounds %Pollfd, %Pollfd* %"*ref23", i32 0, i32 2
-  %"$*ref.revents25" = load i16, i16* %"*ref.revents24", align 2
-  %AS26 = sext i16 %"$*ref.revents25" to i32
-  %"$POLLIN27" = load i32, i32* @POLLIN, align 4
-  %BAND28 = and i32 %AS26, %"$POLLIN27"
-  %NQ29 = icmp ne i32 %BAND28, 0
-  br i1 %NQ29, label %if38.then, label %endif4
+while65.then:                                     ; preds = %while65
+  %"$i" = load i32, i32* %i20, align 4
+  %"call.Array<net::Socket>.[]" = call %"net::Socket"* @"Array<net::Socket>.[]"(%"Array<net::Socket>"* %sockets, i32 %"$i")
+  store %"net::Socket"* %"call.Array<net::Socket>.[]", %"net::Socket"** %ref21, align 8
+  %"*ref22" = load %"net::Socket"*, %"net::Socket"** %ref21, align 8
+  %call.String.chars = call i8* @String.chars(%String* %line)
+  %call.snprintf24 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.10, i32 0, i32 0), i8* %call.String.chars)
+  store i32 %call.snprintf24, i32* %format.size23, align 4
+  %"$format.size25" = load i32, i32* %format.size23, align 4
+  %ADD26 = add i32 %"$format.size25", 1
+  %AS27 = sext i32 %ADD26 to i64
+  %call.calloc29 = call i8* @calloc(i64 %AS27, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc29, i8** %format.text28, align 8
+  %"$format.text30" = load i8*, i8** %format.text28, align 8
+  %call.snprintf31 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text30", i64 %AS27, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.10, i32 0, i32 0), i8* %call.String.chars)
+  %"$format.size32" = load i32, i32* %format.size23, align 4
+  %ADD33 = add i32 %"$format.size32", 1
+  %"$format.text34" = load i8*, i8** %format.text28, align 8
+  %"$format.size35" = load i32, i32* %format.size23, align 4
+  %5 = insertvalue %String zeroinitializer, i8* %"$format.text34", 0
+  %6 = insertvalue %String %5, i32 %"$format.size35", 1
+  %7 = insertvalue %String %6, i32 %ADD33, 2
+  %"call.net::Socket.send" = call i64 @"net::Socket.send"(%"net::Socket"* %"*ref22", %String %7)
+  br label %thrown66
 
-if38.then:                                        ; preds = %if38
-  %"$server30" = load i32, i32* %server, align 4
-  %call.accept = call i32 @accept(i32 %"$server30", i8* null, i8* null)
-  store i32 %call.accept, i32* %client, align 4
-  br label %if39
+thrown66:                                         ; preds = %while65.then
+  %"$ucg.thrown36" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown36", label %thrown66.then, label %endthrown2
 
-if39:                                             ; preds = %if38.then
-  %"$client" = load i32, i32* %client, align 4
-  %GE = icmp sge i32 %"$client", 0
-  br i1 %GE, label %if39.then, label %endif3
+thrown66.then:                                    ; preds = %thrown66
+  store i1 false, i1* @ucg.thrown, align 1
+  %8 = bitcast %String* %line to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %8)
+  call void @"Array<i16>.drop"(%"Array<i16>"* %ready)
+  call void @"Array<net::Socket>.drop"(%"Array<net::Socket>"* %sockets)
+  store i1 true, i1* @ucg.thrown, align 1
+  br label %endtry
 
-if39.then:                                        ; preds = %if39
-  %"$client31" = load i32, i32* %client, align 4
-  call void @watch(%"Array<Pollfd>"* %fds, i32 %"$client31")
-  call void @"io::out"(%String { i8* getelementptr inbounds ([27 x i8], [27 x i8]* @str.3, i32 0, i32 0), i32 26, i32 0 })
+endthrown2:                                       ; preds = %thrown66
+  br label %while65
+
+endloop:                                          ; preds = %while65
+  %9 = bitcast %String* %line to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %9)
   br label %endif3
 
-endif3:                                           ; preds = %if39.then, %if39
-  br label %endif4
+endif3:                                           ; preds = %endloop, %if63
+  br label %if67
 
-endif4:                                           ; preds = %endif3, %if38
-  store i32 2, i32* %j, align 4
-  br label %while40
+if67:                                             ; preds = %endif3
+  %"call.Array<i16>.[]37" = call i16* @"Array<i16>.[]"(%"Array<i16>"* %ready, i32 1)
+  store i16* %"call.Array<i16>.[]37", i16** %ref38, align 8
+  %"*ref39" = load i16*, i16** %ref38, align 8
+  %"$*ref40" = load i16, i16* %"*ref39", align 2
+  %"$cstd::POLLIN41" = load i16, i16* @"cstd::POLLIN", align 2
+  %BAND42 = and i16 %"$*ref40", %"$cstd::POLLIN41"
+  %NQ43 = icmp ne i16 %BAND42, 0
+  br i1 %NQ43, label %if67.then, label %endif5
 
-while40:                                          ; preds = %endif6, %if42.then, %if41.then, %endif4
-  %"call.Array<Pollfd>.len32" = call i32 @"Array<Pollfd>.len"(%"Array<Pollfd>"* %fds)
+if67.then:                                        ; preds = %if67
+  %"call.net::Server.accept" = call %"net::Socket" @"net::Server.accept"(%"net::Server"* %server)
+  br label %thrown68
+
+thrown68:                                         ; preds = %if67.then
+  %"$ucg.thrown44" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown44", label %thrown68.then, label %endthrown4
+
+thrown68.then:                                    ; preds = %thrown68
+  store i1 false, i1* @ucg.thrown, align 1
+  call void @"Array<i16>.drop"(%"Array<i16>"* %ready)
+  call void @"Array<net::Socket>.drop"(%"Array<net::Socket>"* %sockets)
+  store i1 true, i1* @ucg.thrown, align 1
+  br label %endtry
+
+endthrown4:                                       ; preds = %thrown68
+  call void @"Array<net::Socket>.append"(%"Array<net::Socket>"* %sockets, %"net::Socket" %"call.net::Server.accept")
+  call void @"io::out"(%String { i8* getelementptr inbounds ([27 x i8], [27 x i8]* @str.11, i32 0, i32 0), i32 26, i32 0 })
+  br label %endif5
+
+endif5:                                           ; preds = %endthrown4, %if67
+  %"call.Array<i16>.len" = call i32 @"Array<i16>.len"(%"Array<i16>"* %ready)
+  %SUB = sub i32 %"call.Array<i16>.len", 1
+  store i32 %SUB, i32* %j, align 4
+  br label %while69
+
+while69:                                          ; preds = %endif8, %endif5
   %"$j" = load i32, i32* %j, align 4
-  %LT33 = icmp slt i32 %"$j", %"call.Array<Pollfd>.len32"
-  br i1 %LT33, label %while40.then, label %endloop7
+  %GE = icmp sge i32 %"$j", 2
+  br i1 %GE, label %while69.then, label %endloop9
 
-while40.then:                                     ; preds = %while40
-  br label %if41
+while69.then:                                     ; preds = %while69
+  br label %if70
 
-if41:                                             ; preds = %while40.then
-  %"$j34" = load i32, i32* %j, align 4
-  %"call.Array<Pollfd>.[]35" = call %Pollfd* @"Array<Pollfd>.[]"(%"Array<Pollfd>"* %fds, i32 %"$j34")
-  store %Pollfd* %"call.Array<Pollfd>.[]35", %Pollfd** %ref36, align 8
-  %"*ref37" = load %Pollfd*, %Pollfd** %ref36, align 8
-  %"*ref.revents38" = getelementptr inbounds %Pollfd, %Pollfd* %"*ref37", i32 0, i32 2
-  %"$*ref.revents39" = load i16, i16* %"*ref.revents38", align 2
-  %AS40 = sext i16 %"$*ref.revents39" to i32
-  %"$POLLIN41" = load i32, i32* @POLLIN, align 4
-  %BAND42 = and i32 %AS40, %"$POLLIN41"
-  %EQ = icmp eq i32 %BAND42, 0
-  br i1 %EQ, label %if41.then, label %endif5
+if70:                                             ; preds = %while69.then
+  %"$j45" = load i32, i32* %j, align 4
+  %"call.Array<i16>.[]46" = call i16* @"Array<i16>.[]"(%"Array<i16>"* %ready, i32 %"$j45")
+  store i16* %"call.Array<i16>.[]46", i16** %ref47, align 8
+  %"*ref48" = load i16*, i16** %ref47, align 8
+  %"$*ref49" = load i16, i16* %"*ref48", align 2
+  %"$cstd::POLLIN50" = load i16, i16* @"cstd::POLLIN", align 2
+  %BAND51 = and i16 %"$*ref49", %"$cstd::POLLIN50"
+  %NQ52 = icmp ne i16 %BAND51, 0
+  br i1 %NQ52, label %if70.then, label %endif8
 
-if41.then:                                        ; preds = %if41
-  %"$j43" = load i32, i32* %j, align 4
-  %ADD44 = add i32 %"$j43", 1
-  store i32 %ADD44, i32* %j, align 4
-  br label %while40
+if70.then:                                        ; preds = %if70
+  %"$j53" = load i32, i32* %j, align 4
+  %"call.Array<net::Socket>.[]54" = call %"net::Socket"* @"Array<net::Socket>.[]"(%"Array<net::Socket>"* %sockets, i32 %"$j53")
+  store %"net::Socket"* %"call.Array<net::Socket>.[]54", %"net::Socket"** %ref55, align 8
+  %"*ref56" = load %"net::Socket"*, %"net::Socket"** %ref55, align 8
+  %"$CHUNK" = load i32, i32* @CHUNK, align 4
+  %"call.net::Socket.recv" = call %String @"net::Socket.recv"(%"net::Socket"* %"*ref56", i32 %"$CHUNK")
+  br label %thrown71
 
-endif5:                                           ; preds = %if41
-  %"$j46" = load i32, i32* %j, align 4
-  %"call.Array<Pollfd>.[]47" = call %Pollfd* @"Array<Pollfd>.[]"(%"Array<Pollfd>"* %fds, i32 %"$j46")
-  store %Pollfd* %"call.Array<Pollfd>.[]47", %Pollfd** %ref48, align 8
-  %"*ref49" = load %Pollfd*, %Pollfd** %ref48, align 8
-  %"*ref.fd50" = getelementptr inbounds %Pollfd, %Pollfd* %"*ref49", i32 0, i32 0
-  %buf.data51 = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %buf, i32 0, i32 0
-  %"$*ref.fd52" = load i32, i32* %"*ref.fd50", align 4
-  %"$buf.data53" = load i8*, i8** %buf.data51, align 8
-  %call.read54 = call i64 @read(i32 %"$*ref.fd52", i8* %"$buf.data53", i64 1023)
-  store i64 %call.read54, i64* %r45, align 8
-  br label %if42
+thrown71:                                         ; preds = %if70.then
+  %"$ucg.thrown57" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown57", label %thrown71.then, label %endthrown6
 
-if42:                                             ; preds = %endif5
-  %"$r55" = load i64, i64* %r45, align 8
-  %LE56 = icmp sle i64 %"$r55", 0
-  br i1 %LE56, label %if42.then, label %endif6
+thrown71.then:                                    ; preds = %thrown71
+  store i1 false, i1* @ucg.thrown, align 1
+  %10 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %10)
+  call void @"Array<i16>.drop"(%"Array<i16>"* %ready)
+  call void @"Array<net::Socket>.drop"(%"Array<net::Socket>"* %sockets)
+  store i1 true, i1* @ucg.thrown, align 1
+  br label %endtry
 
-if42.then:                                        ; preds = %if42
-  %"$j57" = load i32, i32* %j, align 4
-  %"call.Array<Pollfd>.[]58" = call %Pollfd* @"Array<Pollfd>.[]"(%"Array<Pollfd>"* %fds, i32 %"$j57")
-  store %Pollfd* %"call.Array<Pollfd>.[]58", %Pollfd** %ref59, align 8
-  %"*ref60" = load %Pollfd*, %Pollfd** %ref59, align 8
-  %"*ref.fd61" = getelementptr inbounds %Pollfd, %Pollfd* %"*ref60", i32 0, i32 0
-  %"$*ref.fd62" = load i32, i32* %"*ref.fd61", align 4
-  %call.close = call i32 @close(i32 %"$*ref.fd62")
+endthrown6:                                       ; preds = %thrown71
+  store %String %"call.net::Socket.recv", %String* %text, align 8
+  br label %if72
+
+if72:                                             ; preds = %endthrown6
+  %call.String.is_empty58 = call i1 @String.is_empty(%String* %text)
+  br i1 %call.String.is_empty58, label %if72.then, label %else73
+
+if72.then:                                        ; preds = %if72
+  %"$j59" = load i32, i32* %j, align 4
+  %"call.Array<net::Socket>.[]60" = call %"net::Socket"* @"Array<net::Socket>.[]"(%"Array<net::Socket>"* %sockets, i32 %"$j59")
+  store %"net::Socket"* %"call.Array<net::Socket>.[]60", %"net::Socket"** %ref61, align 8
+  %"*ref62" = load %"net::Socket"*, %"net::Socket"** %ref61, align 8
+  call void @"net::Socket.close"(%"net::Socket"* %"*ref62")
   %"$j63" = load i32, i32* %j, align 4
-  %"call.Array<Pollfd>.[]64" = call %Pollfd* @"Array<Pollfd>.[]"(%"Array<Pollfd>"* %fds, i32 %"$j63")
-  store %Pollfd* %"call.Array<Pollfd>.[]64", %Pollfd** %ref65, align 8
-  %"*ref66" = load %Pollfd*, %Pollfd** %ref65, align 8
-  %"call.Array<Pollfd>.len67" = call i32 @"Array<Pollfd>.len"(%"Array<Pollfd>"* %fds)
-  %SUB = sub i32 %"call.Array<Pollfd>.len67", 1
-  %"call.Array<Pollfd>.[]68" = call %Pollfd* @"Array<Pollfd>.[]"(%"Array<Pollfd>"* %fds, i32 %SUB)
-  store %Pollfd* %"call.Array<Pollfd>.[]68", %Pollfd** %ref69, align 8
-  %"*ref70" = load %Pollfd*, %Pollfd** %ref69, align 8
-  %"$*ref" = load %Pollfd, %Pollfd* %"*ref70", align 4
-  store %Pollfd %"$*ref", %Pollfd* %"*ref66", align 4
-  %"call.Array<Pollfd>.pop" = call %Pollfd @"Array<Pollfd>.pop.1"(%"Array<Pollfd>"* %fds)
-  call void @"io::out"(%String { i8* getelementptr inbounds ([30 x i8], [30 x i8]* @str.4, i32 0, i32 0), i32 29, i32 0 })
-  br label %while40
+  %"call.Array<net::Socket>.pop" = call %"net::Socket" @"Array<net::Socket>.pop"(%"Array<net::Socket>"* %sockets, i32 %"$j63")
+  call void @"io::out"(%String { i8* getelementptr inbounds ([30 x i8], [30 x i8]* @str.12, i32 0, i32 0), i32 29, i32 0 })
+  br label %endif7
 
-endif6:                                           ; preds = %if42
-  call void @"io::out"(%String { i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.5, i32 0, i32 0), i32 9, i32 0 })
-  %buf.data71 = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %buf, i32 0, i32 0
-  %"$buf.data72" = load i8*, i8** %buf.data71, align 8
-  %"$r73" = load i64, i64* %r45, align 8
-  %call.write74 = call i64 @write(i32 1, i8* %"$buf.data72", i64 %"$r73")
-  %"$j75" = load i32, i32* %j, align 4
-  %ADD76 = add i32 %"$j75", 1
-  store i32 %ADD76, i32* %j, align 4
-  br label %while40
+else73:                                           ; preds = %if72
+  %call.String.chars64 = call i8* @String.chars(%String* %text)
+  %call.snprintf66 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @str.13, i32 0, i32 0), i8* %call.String.chars64)
+  store i32 %call.snprintf66, i32* %format.size65, align 4
+  %"$format.size67" = load i32, i32* %format.size65, align 4
+  %ADD68 = add i32 %"$format.size67", 1
+  %AS69 = sext i32 %ADD68 to i64
+  %call.calloc71 = call i8* @calloc(i64 %AS69, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc71, i8** %format.text70, align 8
+  %"$format.text72" = load i8*, i8** %format.text70, align 8
+  %call.snprintf73 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text72", i64 %AS69, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @str.13, i32 0, i32 0), i8* %call.String.chars64)
+  %"$format.size74" = load i32, i32* %format.size65, align 4
+  %ADD75 = add i32 %"$format.size74", 1
+  %"$format.text76" = load i8*, i8** %format.text70, align 8
+  %"$format.size77" = load i32, i32* %format.size65, align 4
+  %11 = insertvalue %String zeroinitializer, i8* %"$format.text76", 0
+  %12 = insertvalue %String %11, i32 %"$format.size77", 1
+  %13 = insertvalue %String %12, i32 %ADD75, 2
+  call void @"io::out"(%String %13)
+  br label %endif7
 
-endloop7:                                         ; preds = %while40
-  br label %while34
+endif7:                                           ; preds = %else73, %if72.then
+  %14 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %14)
+  br label %endif8
 
-endloop8:                                         ; preds = %if36.then, %while34
-  %"$server77" = load i32, i32* %server, align 4
-  %call.close78 = call i32 @close(i32 %"$server77")
-  call void @"Array<i8>.drop"(%"Array<i8>"* %buf)
-  call void @"Array<Pollfd>.drop"(%"Array<Pollfd>"* %fds)
+endif8:                                           ; preds = %endif7, %if70
+  %"$j78" = load i32, i32* %j, align 4
+  %SUB79 = sub i32 %"$j78", 1
+  store i32 %SUB79, i32* %j, align 4
+  br label %while69
+
+endloop9:                                         ; preds = %while69
+  call void @"Array<i16>.drop"(%"Array<i16>"* %ready)
+  br label %while61
+
+endloop10:                                        ; preds = %if64.then, %while61
+  call void @"net::Server.close"(%"net::Server"* %server)
+  call void @"Array<net::Socket>.drop"(%"Array<net::Socket>"* %sockets)
+  ret i32 0
+
+endtry:                                           ; preds = %thrown71.then, %thrown68.then, %thrown66.then, %thrown62.then, %thrown60.then, %try59
+  br label %catch74
+
+catch74:                                          ; preds = %endtry
+  %"$ucg.error_type" = load i32, i32* @ucg.error_type, align 4
+  %EQ = icmp eq i32 %"$ucg.error_type", 1
+  %"$ucg.thrown80" = load i1, i1* @ucg.thrown, align 1
+  %AND = and i1 %"$ucg.thrown80", %EQ
+  br i1 %AND, label %catch74.then, label %endcatch
+
+catch74.then:                                     ; preds = %catch74
+  store i1 false, i1* @ucg.thrown, align 1
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  %call.uncaught = call i32 @uncaught(%Error* %"*error.at")
+  ret i32 %call.uncaught
+
+endcatch:                                         ; preds = %catch74
+  br label %if75
+
+if75:                                             ; preds = %endcatch
+  %"$ucg.thrown81" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown81", label %if75.then, label %endif11
+
+if75.then:                                        ; preds = %if75
+  ret i32 1
+
+endif11:                                          ; preds = %if75
   ret i32 0
 }
 
@@ -5870,23 +7023,64 @@ declare i8* @calloc(i64, i64)
 declare i8* @memcpy(i8*, i8*, i64)
 
 declare void @free(i8*)
+
+declare i32 @snprintf(i8*, i64, i8*, ...)
 ```
 
 ## 028 — project: net client
 
 ```llvm
-%"Array<i8>" = type { i8*, i32, i32 }
 %String = type { i8*, i32, i32 }
-%Range = type { i32, i32, i32 }
-%Pollfd = type { i32, i16, i16 }
-%"Array<Pollfd>" = type { %Pollfd*, i32, i32 }
+%"Array<i8>" = type { i8*, i32, i32 }
+%Error = type { %String }
+%"cstd::sockaddr_in" = type { i16, i16, %"cstd::in_addr", i64 }
+%"cstd::in_addr" = type { i32 }
+%"cstd::pollfd" = type { i32, i16, i16 }
+%"net::Address" = type { %"cstd::sockaddr_in" }
+%"net::Socket" = type { i32 }
+%"Array<net::Socket>" = type { %"net::Socket"*, i32, i32 }
+%"Array<i16>" = type { i16*, i32, i32 }
+%"Array<cstd::pollfd>" = type { %"cstd::pollfd"*, i32, i32 }
 
-@POLLIN = global i32 0
+@ucg.thrown = global i1 false
+@"cstd::F_OK" = global i32 0
+@"cstd::O_RDONLY" = global i32 0
+@"cstd::O_WRONLY" = global i32 0
+@"cstd::O_RDWR" = global i32 0
+@"cstd::O_CREAT" = global i32 0
+@"cstd::O_TRUNC" = global i32 0
+@"cstd::O_APPEND" = global i32 0
+@"cstd::CLOCK_MONOTONIC" = global i32 0
+@"cstd::S_IFMT" = global i32 0
+@"cstd::S_IFREG" = global i32 0
+@"cstd::S_IFDIR" = global i32 0
+@"cstd::S_IRWXU" = global i32 0
+@"cstd::S_IRUSR" = global i32 0
+@"cstd::S_IWUSR" = global i32 0
+@"cstd::AF_INET" = global i32 0
+@"cstd::SOCK_STREAM" = global i32 0
+@"cstd::SOL_SOCKET" = global i32 0
+@"cstd::SO_REUSEADDR" = global i32 0
+@"cstd::POLLIN" = global i16 0
+@"cstd::INADDR_ANY" = global i32 0
+@HOST = global %String zeroinitializer
 @PORT = global i32 0
-@str = private unnamed_addr constant [37 x i8] c"[client] can't reach 127.0.0.1:8080\0A\00", align 1
-@str.1 = private unnamed_addr constant [38 x i8] c"[client] connected to 127.0.0.1:8080\0A\00", align 1
-@str.2 = private unnamed_addr constant [43 x i8] c"[client] the server closed the connection\0A\00", align 1
-@str.3 = private unnamed_addr constant [10 x i8] c"[server] \00", align 1
+@CHUNK = global i32 0
+@STDIN = global i32 0
+@ucg.error = global [2 x i64] zeroinitializer
+@ucg.error_type = global i32 0
+@str = private unnamed_addr constant [8 x i8] c"%s: %s\0A\00", align 1
+@str.2 = private unnamed_addr constant [13 x i8] c"inet_pton %s\00", align 1
+@str.3 = private unnamed_addr constant [7 x i8] c"socket\00", align 1
+@str.4 = private unnamed_addr constant [8 x i8] c"connect\00", align 1
+@str.5 = private unnamed_addr constant [5 x i8] c"send\00", align 1
+@str.6 = private unnamed_addr constant [5 x i8] c"recv\00", align 1
+@str.7 = private unnamed_addr constant [5 x i8] c"poll\00", align 1
+@str.8 = private unnamed_addr constant [10 x i8] c"127.0.0.1\00", align 1
+@str.9 = private unnamed_addr constant [29 x i8] c"[client] connected to %s:%d\0A\00", align 1
+@str.10 = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1
+@str.11 = private unnamed_addr constant [43 x i8] c"[client] the server closed the connection\0A\00", align 1
+@str.12 = private unnamed_addr constant [12 x i8] c"[server] %s\00", align 1
 
 define i8* @"new<i8>"(i32 %0) {
 entry:
@@ -6004,79 +7198,36 @@ endif2:                                           ; preds = %if2.then, %if2
   ret void
 }
 
-define void @"Array<i8>.resize"(%"Array<i8>"* %0, i32 %1) {
-entry:
-  %self = alloca %"Array<i8>"*, align 8
-  %size = alloca i32, align 4
-  store %"Array<i8>"* %0, %"Array<i8>"** %self, align 8
-  store i32 %1, i32* %size, align 4
-  %"*self" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"$size" = load i32, i32* %size, align 4
-  call void @"Array<i8>.reserve"(%"Array<i8>"* %"*self", i32 %"$size")
-  br label %while3
-
-while3:                                           ; preds = %while3.then, %entry
-  %"*self1" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self1", i32 0, i32 1
-  %"$*self.count" = load i32, i32* %"*self.count", align 4
-  %"$size2" = load i32, i32* %size, align 4
-  %GT = icmp sgt i32 %"$*self.count", %"$size2"
-  br i1 %GT, label %while3.then, label %endloop
-
-while3.then:                                      ; preds = %while3
-  %"*self3" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count4" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self3", i32 0, i32 1
-  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
-  %SUB = sub i32 %"$*self.count5", 1
-  store i32 %SUB, i32* %"*self.count4", align 4
-  %"*self6" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self6", i32 0, i32 0
-  %"*self7" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count8" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self7", i32 0, i32 1
-  %"$*self.data" = load i8*, i8** %"*self.data", align 8
-  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
-  %"*self.data[]" = getelementptr inbounds i8, i8* %"$*self.data", i32 %"$*self.count9"
-  store i8 0, i8* %"*self.data[]", align 1
-  br label %while3
-
-endloop:                                          ; preds = %while3
-  %"*self10" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count11" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self10", i32 0, i32 1
-  %"$size12" = load i32, i32* %size, align 4
-  store i32 %"$size12", i32* %"*self.count11", align 4
-  ret void
-}
-
 define void @"Array<i8>.clear"(%"Array<i8>"* %0) {
 entry:
   %self = alloca %"Array<i8>"*, align 8
   store %"Array<i8>"* %0, %"Array<i8>"** %self, align 8
-  br label %if4
+  br label %if3
 
-if4:                                              ; preds = %entry
+if3:                                              ; preds = %entry
   %"*self" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
   %"*self.cap" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self", i32 0, i32 2
   %"$*self.cap" = load i32, i32* %"*self.cap", align 4
   %EQ = icmp eq i32 %"$*self.cap", 0
-  br i1 %EQ, label %if4.then, label %endif
+  br i1 %EQ, label %if3.then, label %endif
 
-if4.then:                                         ; preds = %if4
+if3.then:                                         ; preds = %if3
   %"*self1" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
   %"*self.count" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self1", i32 0, i32 1
   store i32 0, i32* %"*self.count", align 4
   br label %endif
 
-endif:                                            ; preds = %if4.then, %if4
-  br label %while5
+endif:                                            ; preds = %if3.then, %if3
+  br label %while4
 
-while5:                                           ; preds = %while5.then, %endif
+while4:                                           ; preds = %while4.then, %endif
   %"*self2" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
   %"*self.count3" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self2", i32 0, i32 1
   %"$*self.count" = load i32, i32* %"*self.count3", align 4
   %GT = icmp sgt i32 %"$*self.count", 0
-  br i1 %GT, label %while5.then, label %endloop
+  br i1 %GT, label %while4.then, label %endloop
 
-while5.then:                                      ; preds = %while5
+while4.then:                                      ; preds = %while4
   %"*self4" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
   %"*self.count5" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self4", i32 0, i32 1
   %"$*self.count6" = load i32, i32* %"*self.count5", align 4
@@ -6090,55 +7241,62 @@ while5.then:                                      ; preds = %while5
   %"$*self.count10" = load i32, i32* %"*self.count9", align 4
   %"*self.data[]" = getelementptr inbounds i8, i8* %"$*self.data", i32 %"$*self.count10"
   store i8 0, i8* %"*self.data[]", align 1
-  br label %while5
+  br label %while4
 
-endloop:                                          ; preds = %while5
+endloop:                                          ; preds = %while4
   ret void
 }
 
-define void @"Array<i8>.append"(%"Array<i8>"* %0, i8 %1) {
+define void @"Array<i8>.="(%"Array<i8>"* %0, %"Array<i8>"* %1) {
 entry:
-  %self = alloca %"Array<i8>"*, align 8
-  %value = alloca i8, align 1
-  store %"Array<i8>"* %0, %"Array<i8>"** %self, align 8
-  store i8 %1, i8* %value, align 1
-  br label %if6
+  %left = alloca %"Array<i8>"*, align 8
+  %right = alloca %"Array<i8>"*, align 8
+  %i = alloca i32, align 4
+  store %"Array<i8>"* %0, %"Array<i8>"** %left, align 8
+  store %"Array<i8>"* %1, %"Array<i8>"** %right, align 8
+  %"*left" = load %"Array<i8>"*, %"Array<i8>"** %left, align 8
+  call void @"Array<i8>.clear"(%"Array<i8>"* %"*left")
+  %"*left1" = load %"Array<i8>"*, %"Array<i8>"** %left, align 8
+  %"*right" = load %"Array<i8>"*, %"Array<i8>"** %right, align 8
+  %"*right.count" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*right", i32 0, i32 1
+  %"$*right.count" = load i32, i32* %"*right.count", align 4
+  call void @"Array<i8>.reserve"(%"Array<i8>"* %"*left1", i32 %"$*right.count")
+  store i32 0, i32* %i, align 4
+  br label %while5
 
-if6:                                              ; preds = %entry
-  %"*self" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self", i32 0, i32 1
-  %"*self1" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self1", i32 0, i32 2
-  %"$*self.count" = load i32, i32* %"*self.count", align 4
-  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
-  %GE = icmp sge i32 %"$*self.count", %"$*self.cap"
-  br i1 %GE, label %if6.then, label %endif
+while5:                                           ; preds = %while5.then, %entry
+  %"*right2" = load %"Array<i8>"*, %"Array<i8>"** %right, align 8
+  %"*right.count3" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*right2", i32 0, i32 1
+  %"$i" = load i32, i32* %i, align 4
+  %"$*right.count4" = load i32, i32* %"*right.count3", align 4
+  %LT = icmp slt i32 %"$i", %"$*right.count4"
+  br i1 %LT, label %while5.then, label %endloop
 
-if6.then:                                         ; preds = %if6
-  %"*self2" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self3" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count4" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self3", i32 0, i32 1
-  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
-  %MUL = mul i32 %"$*self.count5", 2
-  %ADD = add i32 %MUL, 4
-  call void @"Array<i8>.reserve"(%"Array<i8>"* %"*self2", i32 %ADD)
-  br label %endif
+while5.then:                                      ; preds = %while5
+  %"*left5" = load %"Array<i8>"*, %"Array<i8>"** %left, align 8
+  %"*left.data" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*left5", i32 0, i32 0
+  %"$*left.data" = load i8*, i8** %"*left.data", align 8
+  %"$i6" = load i32, i32* %i, align 4
+  %"*left.data[]" = getelementptr inbounds i8, i8* %"$*left.data", i32 %"$i6"
+  %"*right7" = load %"Array<i8>"*, %"Array<i8>"** %right, align 8
+  %"*right.data" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*right7", i32 0, i32 0
+  %"$*right.data" = load i8*, i8** %"*right.data", align 8
+  %"$i8" = load i32, i32* %i, align 4
+  %"*right.data[]" = getelementptr inbounds i8, i8* %"$*right.data", i32 %"$i8"
+  %"$*right.data[]" = load i8, i8* %"*right.data[]", align 1
+  store i8 %"$*right.data[]", i8* %"*left.data[]", align 1
+  %"$i9" = load i32, i32* %i, align 4
+  %ADD = add i32 %"$i9", 1
+  store i32 %ADD, i32* %i, align 4
+  br label %while5
 
-endif:                                            ; preds = %if6.then, %if6
-  %"*self6" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self6", i32 0, i32 0
-  %"*self7" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count8" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self7", i32 0, i32 1
-  %"$*self.data" = load i8*, i8** %"*self.data", align 8
-  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
-  %"*self.data[]" = getelementptr inbounds i8, i8* %"$*self.data", i32 %"$*self.count9"
-  %"$value" = load i8, i8* %value, align 1
-  store i8 %"$value", i8* %"*self.data[]", align 1
-  %"*self10" = load %"Array<i8>"*, %"Array<i8>"** %self, align 8
-  %"*self.count11" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*self10", i32 0, i32 1
-  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
-  %ADD13 = add i32 %"$*self.count12", 1
-  store i32 %ADD13, i32* %"*self.count11", align 4
+endloop:                                          ; preds = %while5
+  %"*left10" = load %"Array<i8>"*, %"Array<i8>"** %left, align 8
+  %"*left.count" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*left10", i32 0, i32 1
+  %"*right11" = load %"Array<i8>"*, %"Array<i8>"** %right, align 8
+  %"*right.count12" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*right11", i32 0, i32 1
+  %"$*right.count13" = load i32, i32* %"*right.count12", align 4
+  store i32 %"$*right.count13", i32* %"*left.count", align 4
   ret void
 }
 
@@ -6148,23 +7306,23 @@ entry:
   store %"Array<i8>"* %0, %"Array<i8>"** %value, align 8
   %"*value" = load %"Array<i8>"*, %"Array<i8>"** %value, align 8
   call void @"Array<i8>.clear"(%"Array<i8>"* %"*value")
-  br label %if7
+  br label %if6
 
-if7:                                              ; preds = %entry
+if6:                                              ; preds = %entry
   %"*value1" = load %"Array<i8>"*, %"Array<i8>"** %value, align 8
   %"*value.cap" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*value1", i32 0, i32 2
   %"$*value.cap" = load i32, i32* %"*value.cap", align 4
   %GT = icmp sgt i32 %"$*value.cap", 0
-  br i1 %GT, label %if7.then, label %endif
+  br i1 %GT, label %if6.then, label %endif
 
-if7.then:                                         ; preds = %if7
+if6.then:                                         ; preds = %if6
   %"*value2" = load %"Array<i8>"*, %"Array<i8>"** %value, align 8
   %"*value.data" = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %"*value2", i32 0, i32 0
   %"$*value.data" = load i8*, i8** %"*value.data", align 8
   call void @"free<i8>"(i8* %"$*value.data")
   br label %endif
 
-endif:                                            ; preds = %if7.then, %if7
+endif:                                            ; preds = %if6.then, %if6
   ret void
 }
 
@@ -6175,38 +7333,38 @@ entry:
   %bigger = alloca i8*, align 8
   store %String* %0, %String** %self, align 8
   store i32 %1, i32* %cap, align 4
-  br label %if8
+  br label %if7
 
-if8:                                              ; preds = %entry
+if7:                                              ; preds = %entry
   %"*self" = load %String*, %String** %self, align 8
   %"*self.count" = getelementptr inbounds %String, %String* %"*self", i32 0, i32 1
   %"$cap" = load i32, i32* %cap, align 4
   %"$*self.count" = load i32, i32* %"*self.count", align 4
   %LT = icmp slt i32 %"$cap", %"$*self.count"
-  br i1 %LT, label %if8.then, label %endif
+  br i1 %LT, label %if7.then, label %endif
 
-if8.then:                                         ; preds = %if8
+if7.then:                                         ; preds = %if7
   %"*self3" = load %String*, %String** %self, align 8
   %"*self.count4" = getelementptr inbounds %String, %String* %"*self3", i32 0, i32 1
   %"$*self.count5" = load i32, i32* %"*self.count4", align 4
   store i32 %"$*self.count5", i32* %cap, align 4
   br label %endif
 
-endif:                                            ; preds = %if8.then, %if8
-  br label %if9
+endif:                                            ; preds = %if7.then, %if7
+  br label %if8
 
-if9:                                              ; preds = %endif
+if8:                                              ; preds = %endif
   %"*self6" = load %String*, %String** %self, align 8
   %"*self.cap" = getelementptr inbounds %String, %String* %"*self6", i32 0, i32 2
   %"$cap7" = load i32, i32* %cap, align 4
   %"$*self.cap" = load i32, i32* %"*self.cap", align 4
   %LE = icmp sle i32 %"$cap7", %"$*self.cap"
-  br i1 %LE, label %if9.then, label %endif1
+  br i1 %LE, label %if8.then, label %endif1
 
-if9.then:                                         ; preds = %if9
+if8.then:                                         ; preds = %if8
   ret void
 
-endif1:                                           ; preds = %if9
+endif1:                                           ; preds = %if8
   %"$cap8" = load i32, i32* %cap, align 4
   %"call.new<i8>" = call i8* @"new<i8>"(i32 %"$cap8")
   store i8* %"call.new<i8>", i8** %bigger, align 8
@@ -6218,23 +7376,23 @@ endif1:                                           ; preds = %if9
   %"$*self.data" = load i8*, i8** %"*self.data", align 8
   %"$*self.count12" = load i32, i32* %"*self.count11", align 4
   call void @"copy<i8>"(i8* %"$bigger", i8* %"$*self.data", i32 %"$*self.count12")
-  br label %if10
+  br label %if9
 
-if10:                                             ; preds = %endif1
+if9:                                              ; preds = %endif1
   %"*self13" = load %String*, %String** %self, align 8
   %"*self.cap14" = getelementptr inbounds %String, %String* %"*self13", i32 0, i32 2
   %"$*self.cap15" = load i32, i32* %"*self.cap14", align 4
   %GT = icmp sgt i32 %"$*self.cap15", 0
-  br i1 %GT, label %if10.then, label %endif2
+  br i1 %GT, label %if9.then, label %endif2
 
-if10.then:                                        ; preds = %if10
+if9.then:                                         ; preds = %if9
   %"*self16" = load %String*, %String** %self, align 8
   %"*self.data17" = getelementptr inbounds %String, %String* %"*self16", i32 0, i32 0
   %"$*self.data18" = load i8*, i8** %"*self.data17", align 8
   call void @"free<i8>"(i8* %"$*self.data18")
   br label %endif2
 
-endif2:                                           ; preds = %if10.then, %if10
+endif2:                                           ; preds = %if9.then, %if9
   %"*self19" = load %String*, %String** %self, align 8
   %"*self.data20" = getelementptr inbounds %String, %String* %"*self19", i32 0, i32 0
   %"$bigger21" = load i8*, i8** %bigger, align 8
@@ -6246,6 +7404,95 @@ endif2:                                           ; preds = %if10.then, %if10
   ret void
 }
 
+define void @String.resize(%String* %0, i32 %1) {
+entry:
+  %self = alloca %String*, align 8
+  %size = alloca i32, align 4
+  store %String* %0, %String** %self, align 8
+  store i32 %1, i32* %size, align 4
+  %"*self" = load %String*, %String** %self, align 8
+  %"$size" = load i32, i32* %size, align 4
+  call void @String.reserve(%String* %"*self", i32 %"$size")
+  br label %while10
+
+while10:                                          ; preds = %while10.then, %entry
+  %"*self1" = load %String*, %String** %self, align 8
+  %"*self.count" = getelementptr inbounds %String, %String* %"*self1", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %"$size2" = load i32, i32* %size, align 4
+  %GT = icmp sgt i32 %"$*self.count", %"$size2"
+  br i1 %GT, label %while10.then, label %endloop
+
+while10.then:                                     ; preds = %while10
+  %"*self3" = load %String*, %String** %self, align 8
+  %"*self.count4" = getelementptr inbounds %String, %String* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  %SUB = sub i32 %"$*self.count5", 1
+  store i32 %SUB, i32* %"*self.count4", align 4
+  %"*self6" = load %String*, %String** %self, align 8
+  %"*self.data" = getelementptr inbounds %String, %String* %"*self6", i32 0, i32 0
+  %"*self7" = load %String*, %String** %self, align 8
+  %"*self.count8" = getelementptr inbounds %String, %String* %"*self7", i32 0, i32 1
+  %"$*self.data" = load i8*, i8** %"*self.data", align 8
+  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
+  %"*self.data[]" = getelementptr inbounds i8, i8* %"$*self.data", i32 %"$*self.count9"
+  store i8 0, i8* %"*self.data[]", align 1
+  br label %while10
+
+endloop:                                          ; preds = %while10
+  %"*self10" = load %String*, %String** %self, align 8
+  %"*self.count11" = getelementptr inbounds %String, %String* %"*self10", i32 0, i32 1
+  %"$size12" = load i32, i32* %size, align 4
+  store i32 %"$size12", i32* %"*self.count11", align 4
+  ret void
+}
+
+define void @String.append(%String* %0, i8 %1) {
+entry:
+  %self = alloca %String*, align 8
+  %value = alloca i8, align 1
+  store %String* %0, %String** %self, align 8
+  store i8 %1, i8* %value, align 1
+  br label %if11
+
+if11:                                             ; preds = %entry
+  %"*self" = load %String*, %String** %self, align 8
+  %"*self.count" = getelementptr inbounds %String, %String* %"*self", i32 0, i32 1
+  %"*self1" = load %String*, %String** %self, align 8
+  %"*self.cap" = getelementptr inbounds %String, %String* %"*self1", i32 0, i32 2
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %GE = icmp sge i32 %"$*self.count", %"$*self.cap"
+  br i1 %GE, label %if11.then, label %endif
+
+if11.then:                                        ; preds = %if11
+  %"*self2" = load %String*, %String** %self, align 8
+  %"*self3" = load %String*, %String** %self, align 8
+  %"*self.count4" = getelementptr inbounds %String, %String* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  %MUL = mul i32 %"$*self.count5", 2
+  %ADD = add i32 %MUL, 4
+  call void @String.reserve(%String* %"*self2", i32 %ADD)
+  br label %endif
+
+endif:                                            ; preds = %if11.then, %if11
+  %"*self6" = load %String*, %String** %self, align 8
+  %"*self.data" = getelementptr inbounds %String, %String* %"*self6", i32 0, i32 0
+  %"*self7" = load %String*, %String** %self, align 8
+  %"*self.count8" = getelementptr inbounds %String, %String* %"*self7", i32 0, i32 1
+  %"$*self.data" = load i8*, i8** %"*self.data", align 8
+  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
+  %"*self.data[]" = getelementptr inbounds i8, i8* %"$*self.data", i32 %"$*self.count9"
+  %"$value" = load i8, i8* %value, align 1
+  store i8 %"$value", i8* %"*self.data[]", align 1
+  %"*self10" = load %String*, %String** %self, align 8
+  %"*self.count11" = getelementptr inbounds %String, %String* %"*self10", i32 0, i32 1
+  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
+  %ADD13 = add i32 %"$*self.count12", 1
+  store i32 %ADD13, i32* %"*self.count11", align 4
+  ret void
+}
+
 define i32 @String.len(%String* %0) {
 entry:
   %self = alloca %String*, align 8
@@ -6254,6 +7501,63 @@ entry:
   %"*self.count" = getelementptr inbounds %String, %String* %"*self", i32 0, i32 1
   %"$*self.count" = load i32, i32* %"*self.count", align 4
   ret i32 %"$*self.count"
+}
+
+define i1 @String.is_empty(%String* %0) {
+entry:
+  %self = alloca %String*, align 8
+  store %String* %0, %String** %self, align 8
+  %"*self" = load %String*, %String** %self, align 8
+  %"*self.count" = getelementptr inbounds %String, %String* %"*self", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %EQ = icmp eq i32 %"$*self.count", 0
+  ret i1 %EQ
+}
+
+define %String @String.create(i8* %0) {
+entry:
+  %text = alloca i8*, align 8
+  %res = alloca %String, align 8
+  store i8* %0, i8** %text, align 8
+  store %String zeroinitializer, %String* %res, align 8
+  %"$text" = load i8*, i8** %text, align 8
+  call void @String.join(%String* %res, i8* %"$text")
+  %"$res" = load %String, %String* %res, align 8
+  ret %String %"$res"
+}
+
+define void @String.join(%String* %0, i8* %1) {
+entry:
+  %self = alloca %String*, align 8
+  %text = alloca i8*, align 8
+  %i = alloca i32, align 4
+  store %String* %0, %String** %self, align 8
+  store i8* %1, i8** %text, align 8
+  store i32 0, i32* %i, align 4
+  br label %while12
+
+while12:                                          ; preds = %while12.then, %entry
+  %"$text" = load i8*, i8** %text, align 8
+  %"$i" = load i32, i32* %i, align 4
+  %"text[]" = getelementptr inbounds i8, i8* %"$text", i32 %"$i"
+  %"$text[]" = load i8, i8* %"text[]", align 1
+  %NQ = icmp ne i8 %"$text[]", 0
+  br i1 %NQ, label %while12.then, label %endloop
+
+while12.then:                                     ; preds = %while12
+  %"*self" = load %String*, %String** %self, align 8
+  %"$text1" = load i8*, i8** %text, align 8
+  %"$i2" = load i32, i32* %i, align 4
+  %"text[]3" = getelementptr inbounds i8, i8* %"$text1", i32 %"$i2"
+  %"$text[]4" = load i8, i8* %"text[]3", align 1
+  call void @String.append(%String* %"*self", i8 %"$text[]4")
+  %"$i5" = load i32, i32* %i, align 4
+  %ADD = add i32 %"$i5", 1
+  store i32 %ADD, i32* %i, align 4
+  br label %while12
+
+endloop:                                          ; preds = %while12
+  ret void
 }
 
 define i8* @String.chars(%String* %0) {
@@ -6280,100 +7584,36 @@ entry:
   ret i8* %"$*self.data8"
 }
 
-define %Range @Range.create(i32 %0, i32 %1) {
+define %Error @Error.create(%String %0) {
 entry:
-  %start = alloca i32, align 4
-  %stop = alloca i32, align 4
-  %r = alloca %Range, align 8
-  store i32 %0, i32* %start, align 4
-  store i32 %1, i32* %stop, align 4
-  store %Range zeroinitializer, %Range* %r, align 4
-  %r.start = getelementptr inbounds %Range, %Range* %r, i32 0, i32 0
-  %"$start" = load i32, i32* %start, align 4
-  store i32 %"$start", i32* %r.start, align 4
-  %r.stop = getelementptr inbounds %Range, %Range* %r, i32 0, i32 1
-  %"$stop" = load i32, i32* %stop, align 4
-  store i32 %"$stop", i32* %r.stop, align 4
-  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 1, i32* %r.step, align 4
-  br label %if11
-
-if11:                                             ; preds = %entry
-  %"$stop1" = load i32, i32* %stop, align 4
-  %"$start2" = load i32, i32* %start, align 4
-  %LT = icmp slt i32 %"$stop1", %"$start2"
-  br i1 %LT, label %if11.then, label %endif
-
-if11.then:                                        ; preds = %if11
-  %r.step3 = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 -1, i32* %r.step3, align 4
-  br label %endif
-
-endif:                                            ; preds = %if11.then, %if11
-  %"$r" = load %Range, %Range* %r, align 4
-  ret %Range %"$r"
+  %message = alloca %String, align 8
+  %copy = alloca %String, align 8
+  store %String %0, %String* %message, align 8
+  store %String zeroinitializer, %String* %copy, align 8
+  %1 = bitcast %String* %copy to %"Array<i8>"*
+  %2 = bitcast %String* %message to %"Array<i8>"*
+  call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
+  %"$copy" = load %String, %String* %copy, align 8
+  %3 = insertvalue %Error zeroinitializer, %String %"$copy", 0
+  %4 = bitcast %String* %message to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %4)
+  ret %Error %3
 }
 
-define i1 @Range.in(%Range* %0, i32* %1, i32* %2) {
+define i32 @uncaught(%Error* %0) {
 entry:
-  %range = alloca %Range*, align 8
-  %i = alloca i32*, align 8
-  %x = alloca i32*, align 8
-  %done = alloca i1, align 1
-  store %Range* %0, %Range** %range, align 8
-  store i32* %1, i32** %i, align 8
-  store i32* %2, i32** %x, align 8
-  %"*x" = load i32*, i32** %x, align 8
-  %"*range" = load %Range*, %Range** %range, align 8
-  %"*range.start" = getelementptr inbounds %Range, %Range* %"*range", i32 0, i32 0
-  %"*i" = load i32*, i32** %i, align 8
-  %"*range1" = load %Range*, %Range** %range, align 8
-  %"*range.step" = getelementptr inbounds %Range, %Range* %"*range1", i32 0, i32 2
-  %"$*i" = load i32, i32* %"*i", align 4
-  %"$*range.step" = load i32, i32* %"*range.step", align 4
-  %MUL = mul i32 %"$*i", %"$*range.step"
-  %"$*range.start" = load i32, i32* %"*range.start", align 4
-  %ADD = add i32 %"$*range.start", %MUL
-  store i32 %ADD, i32* %"*x", align 4
-  %"*range2" = load %Range*, %Range** %range, align 8
-  %"*range.step3" = getelementptr inbounds %Range, %Range* %"*range2", i32 0, i32 2
-  %"$*range.step4" = load i32, i32* %"*range.step3", align 4
-  %GT = icmp sgt i32 %"$*range.step4", 0
-  %"*x5" = load i32*, i32** %x, align 8
-  %"*range6" = load %Range*, %Range** %range, align 8
-  %"*range.stop" = getelementptr inbounds %Range, %Range* %"*range6", i32 0, i32 1
-  %"$*x" = load i32, i32* %"*x5", align 4
-  %"$*range.stop" = load i32, i32* %"*range.stop", align 4
-  %GE = icmp sge i32 %"$*x", %"$*range.stop"
-  %AND = and i1 %GT, %GE
-  %"*range7" = load %Range*, %Range** %range, align 8
-  %"*range.step8" = getelementptr inbounds %Range, %Range* %"*range7", i32 0, i32 2
-  %"$*range.step9" = load i32, i32* %"*range.step8", align 4
-  %LT = icmp slt i32 %"$*range.step9", 0
-  %"*x10" = load i32*, i32** %x, align 8
-  %"*range11" = load %Range*, %Range** %range, align 8
-  %"*range.stop12" = getelementptr inbounds %Range, %Range* %"*range11", i32 0, i32 1
-  %"$*x13" = load i32, i32* %"*x10", align 4
-  %"$*range.stop14" = load i32, i32* %"*range.stop12", align 4
-  %LE = icmp sle i32 %"$*x13", %"$*range.stop14"
-  %AND15 = and i1 %LT, %LE
-  %OR = or i1 %AND, %AND15
-  store i1 %OR, i1* %done, align 1
-  br label %if12
-
-if12:                                             ; preds = %entry
-  %"$done" = load i1, i1* %done, align 1
-  br i1 %"$done", label %if12.then, label %endif
-
-if12.then:                                        ; preds = %if12
-  ret i1 false
-
-endif:                                            ; preds = %if12
-  %"*i16" = load i32*, i32** %i, align 8
-  %"$*i17" = load i32, i32* %"*i16", align 4
-  %ADD18 = add i32 %"$*i17", 1
-  store i32 %ADD18, i32* %"*i16", align 4
-  ret i1 true
+  %error = alloca %Error*, align 8
+  %copy = alloca %String, align 8
+  store %Error* %0, %Error** %error, align 8
+  store %String zeroinitializer, %String* %copy, align 8
+  %"*error" = load %Error*, %Error** %error, align 8
+  %"*error.message" = getelementptr inbounds %Error, %Error* %"*error", i32 0, i32 0
+  %1 = bitcast %String* %copy to %"Array<i8>"*
+  %2 = bitcast %String* %"*error.message" to %"Array<i8>"*
+  call void @"Array<i8>.="(%"Array<i8>"* %1, %"Array<i8>"* %2)
+  %"$copy" = load %String, %String* %copy, align 8
+  call void @"io::err"(%String %"$copy")
+  ret i32 1
 }
 
 declare i64 @write(i32, i8*, i64)
@@ -6406,514 +7646,1628 @@ entry:
   ret void
 }
 
-declare i32 @socket(i32, i32, i32)
-
-declare i32 @connect(i32, i8*, i32)
-
-declare i32 @poll(i8*, i32, i32)
-
-declare i32 @close(i32)
-
-define %"Array<i8>" @address(i32 %0) {
+define %String @"io::input"() {
 entry:
-  %port = alloca i32, align 4
-  %data = alloca %"Array<i8>", align 8
-  %tmp = alloca %Range, align 8
-  %i = alloca i32, align 4
-  %i3 = alloca i32, align 4
-  store i32 %0, i32* %port, align 4
-  store %"Array<i8>" zeroinitializer, %"Array<i8>"* %data, align 8
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 2)
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 0)
-  %"$port" = load i32, i32* %port, align 4
-  %RSHIFT = ashr i32 %"$port", 8
-  %AS = trunc i32 %RSHIFT to i8
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 %AS)
-  %"$port1" = load i32, i32* %port, align 4
-  %BAND = and i32 %"$port1", 255
-  %AS2 = trunc i32 %BAND to i8
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 %AS2)
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 127)
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 0)
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 0)
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 1)
-  %call.Range.create = call %Range @Range.create(i32 0, i32 8)
-  store %Range %call.Range.create, %Range* %tmp, align 4
-  store i32 0, i32* %i, align 4
-  store i32 0, i32* %i3, align 4
+  %line = alloca %String, align 8
+  %c = alloca i8, align 1
+  store %String zeroinitializer, %String* %line, align 8
+  store i8 0, i8* %c, align 1
   br label %while13
 
 while13:                                          ; preds = %while13.then, %entry
-  %call.Range.in = call i1 @Range.in(%Range* %tmp, i32* %i, i32* %i3)
-  br i1 %call.Range.in, label %while13.then, label %endloop
+  %call.read = call i64 @read(i32 0, i8* %c, i64 1)
+  %EQ = icmp eq i64 %call.read, 1
+  %"$c" = load i8, i8* %c, align 1
+  %NQ = icmp ne i8 %"$c", 10
+  %AND = and i1 %EQ, %NQ
+  br i1 %AND, label %while13.then, label %endloop
 
 while13.then:                                     ; preds = %while13
-  call void @"Array<i8>.append"(%"Array<i8>"* %data, i8 0)
+  %"$c1" = load i8, i8* %c, align 1
+  call void @String.append(%String* %line, i8 %"$c1")
   br label %while13
 
 endloop:                                          ; preds = %while13
-  %"$data" = load %"Array<i8>", %"Array<i8>"* %data, align 8
-  ret %"Array<i8>" %"$data"
+  %"$line" = load %String, %String* %line, align 8
+  ret %String %"$line"
 }
 
-define %Pollfd* @"new<Pollfd>"(i32 %0) {
+declare i32* @__errno_location()
+
+define i32 @"cstd::errno"() {
+entry:
+  %ref = alloca i32*, align 8
+  %call.__errno_location = call i32* @__errno_location()
+  store i32* %call.__errno_location, i32** %ref, align 8
+  %"*ref" = load i32*, i32** %ref, align 8
+  %"$*ref" = load i32, i32* %"*ref", align 4
+  ret i32 %"$*ref"
+}
+
+declare i8* @strerror(i32)
+
+declare i32 @close(i32)
+
+declare i32 @socket(i32, i32, i32)
+
+declare i32 @connect(i32, %"cstd::sockaddr_in"*, i32)
+
+declare i64 @send(i32, i8*, i64, i32)
+
+declare i64 @recv(i32, i8*, i64, i32)
+
+declare i16 @htons(i16)
+
+declare i32 @inet_pton(i32, i8*, %"cstd::in_addr"*)
+
+declare i32 @poll(%"cstd::pollfd"*, i32, i32)
+
+define %Error @"net::fail"(%String %0) {
+entry:
+  %call = alloca %String, align 8
+  %reason = alloca %String, align 8
+  %format.size = alloca i32, align 4
+  %format.text = alloca i8*, align 8
+  store %String %0, %String* %call, align 8
+  %"call.cstd::errno" = call i32 @"cstd::errno"()
+  %call.strerror = call i8* @strerror(i32 %"call.cstd::errno")
+  %call.String.create = call %String @String.create(i8* %call.strerror)
+  store %String %call.String.create, %String* %reason, align 8
+  %call.String.chars = call i8* @String.chars(%String* %call)
+  %call.String.chars1 = call i8* @String.chars(%String* %reason)
+  %call.snprintf = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @str, i32 0, i32 0), i8* %call.String.chars, i8* %call.String.chars1)
+  store i32 %call.snprintf, i32* %format.size, align 4
+  %"$format.size" = load i32, i32* %format.size, align 4
+  %ADD = add i32 %"$format.size", 1
+  %AS = sext i32 %ADD to i64
+  %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc, i8** %format.text, align 8
+  %"$format.text" = load i8*, i8** %format.text, align 8
+  %call.snprintf2 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text", i64 %AS, i8* getelementptr inbounds ([8 x i8], [8 x i8]* @str, i32 0, i32 0), i8* %call.String.chars, i8* %call.String.chars1)
+  %"$format.size3" = load i32, i32* %format.size, align 4
+  %ADD4 = add i32 %"$format.size3", 1
+  %"$format.text5" = load i8*, i8** %format.text, align 8
+  %"$format.size6" = load i32, i32* %format.size, align 4
+  %1 = insertvalue %String zeroinitializer, i8* %"$format.text5", 0
+  %2 = insertvalue %String %1, i32 %"$format.size6", 1
+  %3 = insertvalue %String %2, i32 %ADD4, 2
+  %call.Error.create = call %Error @Error.create(%String %3)
+  %4 = bitcast %String* %reason to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %4)
+  %5 = bitcast %String* %call to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %5)
+  ret %Error %call.Error.create
+}
+
+define %"net::Address" @"net::Address.create"(i32 %0) {
+entry:
+  %port = alloca i32, align 4
+  %address = alloca %"net::Address", align 8
+  store i32 %0, i32* %port, align 4
+  %"$cstd::AF_INET" = load i32, i32* @"cstd::AF_INET", align 4
+  %AS = trunc i32 %"$cstd::AF_INET" to i16
+  %"$port" = load i32, i32* %port, align 4
+  %AS1 = trunc i32 %"$port" to i16
+  %call.htons = call i16 @htons(i16 %AS1)
+  %"$cstd::INADDR_ANY" = load i32, i32* @"cstd::INADDR_ANY", align 4
+  %1 = insertvalue %"cstd::in_addr" zeroinitializer, i32 %"$cstd::INADDR_ANY", 0
+  %2 = insertvalue %"cstd::sockaddr_in" zeroinitializer, i16 %AS, 0
+  %3 = insertvalue %"cstd::sockaddr_in" %2, i16 %call.htons, 1
+  %4 = insertvalue %"cstd::sockaddr_in" %3, %"cstd::in_addr" %1, 2
+  %5 = insertvalue %"net::Address" zeroinitializer, %"cstd::sockaddr_in" %4, 0
+  store %"net::Address" %5, %"net::Address"* %address, align 8
+  %"$address" = load %"net::Address", %"net::Address"* %address, align 8
+  ret %"net::Address" %"$address"
+}
+
+define %"net::Address" @"net::Address.create.1"(%String %0, i32 %1) {
+entry:
+  %ip = alloca %String, align 8
+  %port = alloca i32, align 4
+  %address = alloca %"net::Address", align 8
+  %format.size = alloca i32, align 4
+  %format.text = alloca i8*, align 8
+  %error.at = alloca %Error*, align 8
+  store %String %0, %String* %ip, align 8
+  store i32 %1, i32* %port, align 4
+  %"$port" = load i32, i32* %port, align 4
+  %"call.net::Address.create" = call %"net::Address" @"net::Address.create"(i32 %"$port")
+  store %"net::Address" %"call.net::Address.create", %"net::Address"* %address, align 8
+  br label %if14
+
+if14:                                             ; preds = %entry
+  %call.String.chars = call i8* @String.chars(%String* %ip)
+  %address.raw = getelementptr inbounds %"net::Address", %"net::Address"* %address, i32 0, i32 0
+  %address.raw.sin_addr = getelementptr inbounds %"cstd::sockaddr_in", %"cstd::sockaddr_in"* %address.raw, i32 0, i32 2
+  %"$cstd::AF_INET" = load i32, i32* @"cstd::AF_INET", align 4
+  %call.inet_pton = call i32 @inet_pton(i32 %"$cstd::AF_INET", i8* %call.String.chars, %"cstd::in_addr"* %address.raw.sin_addr)
+  %NQ = icmp ne i32 %call.inet_pton, 1
+  br i1 %NQ, label %if14.then, label %endif
+
+if14.then:                                        ; preds = %if14
+  %call.String.chars1 = call i8* @String.chars(%String* %ip)
+  %call.snprintf = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @str.2, i32 0, i32 0), i8* %call.String.chars1)
+  store i32 %call.snprintf, i32* %format.size, align 4
+  %"$format.size" = load i32, i32* %format.size, align 4
+  %ADD = add i32 %"$format.size", 1
+  %AS = sext i32 %ADD to i64
+  %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc, i8** %format.text, align 8
+  %"$format.text" = load i8*, i8** %format.text, align 8
+  %call.snprintf2 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text", i64 %AS, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @str.2, i32 0, i32 0), i8* %call.String.chars1)
+  %"$format.size3" = load i32, i32* %format.size, align 4
+  %ADD4 = add i32 %"$format.size3", 1
+  %"$format.text5" = load i8*, i8** %format.text, align 8
+  %"$format.size6" = load i32, i32* %format.size, align 4
+  %2 = insertvalue %String zeroinitializer, i8* %"$format.text5", 0
+  %3 = insertvalue %String %2, i32 %"$format.size6", 1
+  %4 = insertvalue %String %3, i32 %ADD4, 2
+  %"call.net::fail" = call %Error @"net::fail"(%String %4)
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  %5 = bitcast %String* %ip to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %5)
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"net::Address" zeroinitializer
+
+endif:                                            ; preds = %if14
+  %"$address" = load %"net::Address", %"net::Address"* %address, align 8
+  %6 = bitcast %String* %ip to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %6)
+  ret %"net::Address" %"$address"
+}
+
+define %"net::Socket" @"net::Socket.create"() {
+entry:
+  %socket = alloca %"net::Socket", align 8
+  %error.at = alloca %Error*, align 8
+  %"$cstd::AF_INET" = load i32, i32* @"cstd::AF_INET", align 4
+  %"$cstd::SOCK_STREAM" = load i32, i32* @"cstd::SOCK_STREAM", align 4
+  %call.socket = call i32 @socket(i32 %"$cstd::AF_INET", i32 %"$cstd::SOCK_STREAM", i32 0)
+  %0 = insertvalue %"net::Socket" zeroinitializer, i32 %call.socket, 0
+  store %"net::Socket" %0, %"net::Socket"* %socket, align 4
+  br label %if15
+
+if15:                                             ; preds = %entry
+  %socket.fd = getelementptr inbounds %"net::Socket", %"net::Socket"* %socket, i32 0, i32 0
+  %"$socket.fd" = load i32, i32* %socket.fd, align 4
+  %LT = icmp slt i32 %"$socket.fd", 0
+  br i1 %LT, label %if15.then, label %endif
+
+if15.then:                                        ; preds = %if15
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @str.3, i32 0, i32 0), i32 6, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"net::Socket" zeroinitializer
+
+endif:                                            ; preds = %if15
+  %"$socket" = load %"net::Socket", %"net::Socket"* %socket, align 4
+  ret %"net::Socket" %"$socket"
+}
+
+define %"net::Socket"* @"net::Socket.connect"(%"net::Socket"* %0, %"net::Address"* %1) {
+entry:
+  %self = alloca %"net::Socket"*, align 8
+  %address = alloca %"net::Address"*, align 8
+  %size = alloca i32, align 4
+  %error.at = alloca %Error*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %self, align 8
+  store %"net::Address"* %1, %"net::Address"** %address, align 8
+  store i32 ptrtoint (%"cstd::sockaddr_in"* getelementptr (%"cstd::sockaddr_in", %"cstd::sockaddr_in"* null, i32 1) to i32), i32* %size, align 4
+  br label %if16
+
+if16:                                             ; preds = %entry
+  %"*self" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self", i32 0, i32 0
+  %"*address" = load %"net::Address"*, %"net::Address"** %address, align 8
+  %"*address.raw" = getelementptr inbounds %"net::Address", %"net::Address"* %"*address", i32 0, i32 0
+  %"$*self.fd" = load i32, i32* %"*self.fd", align 4
+  %"$size" = load i32, i32* %size, align 4
+  %call.connect = call i32 @connect(i32 %"$*self.fd", %"cstd::sockaddr_in"* %"*address.raw", i32 %"$size")
+  %LT = icmp slt i32 %call.connect, 0
+  br i1 %LT, label %if16.then, label %endif
+
+if16.then:                                        ; preds = %if16
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([8 x i8], [8 x i8]* @str.4, i32 0, i32 0), i32 7, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"net::Socket"* null
+
+endif:                                            ; preds = %if16
+  %"*self1" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  ret %"net::Socket"* %"*self1"
+}
+
+define i64 @"net::Socket.send"(%"net::Socket"* %0, %String %1) {
+entry:
+  %self = alloca %"net::Socket"*, align 8
+  %text = alloca %String, align 8
+  %count = alloca i64, align 8
+  %error.at = alloca %Error*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %self, align 8
+  store %String %1, %String* %text, align 8
+  %"*self" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self", i32 0, i32 0
+  %text.data = getelementptr inbounds %String, %String* %text, i32 0, i32 0
+  %text.count = getelementptr inbounds %String, %String* %text, i32 0, i32 1
+  %"$text.count" = load i32, i32* %text.count, align 4
+  %AS = sext i32 %"$text.count" to i64
+  %"$*self.fd" = load i32, i32* %"*self.fd", align 4
+  %"$text.data" = load i8*, i8** %text.data, align 8
+  %call.send = call i64 @send(i32 %"$*self.fd", i8* %"$text.data", i64 %AS, i32 0)
+  store i64 %call.send, i64* %count, align 8
+  br label %if17
+
+if17:                                             ; preds = %entry
+  %"$count" = load i64, i64* %count, align 8
+  %LT = icmp slt i64 %"$count", 0
+  br i1 %LT, label %if17.then, label %endif
+
+if17.then:                                        ; preds = %if17
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.5, i32 0, i32 0), i32 4, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  %2 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %2)
+  store i1 true, i1* @ucg.thrown, align 1
+  ret i64 0
+
+endif:                                            ; preds = %if17
+  %"$count1" = load i64, i64* %count, align 8
+  %3 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %3)
+  ret i64 %"$count1"
+}
+
+define %String @"net::Socket.recv"(%"net::Socket"* %0, i32 %1) {
+entry:
+  %self = alloca %"net::Socket"*, align 8
+  %size = alloca i32, align 4
+  %text = alloca %String, align 8
+  %count = alloca i64, align 8
+  %error.at = alloca %Error*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %self, align 8
+  store i32 %1, i32* %size, align 4
+  store %String zeroinitializer, %String* %text, align 8
+  %"$size" = load i32, i32* %size, align 4
+  call void @String.resize(%String* %text, i32 %"$size")
+  %"*self" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self", i32 0, i32 0
+  %text.data = getelementptr inbounds %String, %String* %text, i32 0, i32 0
+  %"$size1" = load i32, i32* %size, align 4
+  %AS = sext i32 %"$size1" to i64
+  %"$*self.fd" = load i32, i32* %"*self.fd", align 4
+  %"$text.data" = load i8*, i8** %text.data, align 8
+  %call.recv = call i64 @recv(i32 %"$*self.fd", i8* %"$text.data", i64 %AS, i32 0)
+  store i64 %call.recv, i64* %count, align 8
+  br label %if18
+
+if18:                                             ; preds = %entry
+  %"$count" = load i64, i64* %count, align 8
+  %LT = icmp slt i64 %"$count", 0
+  br i1 %LT, label %if18.then, label %endif
+
+if18.then:                                        ; preds = %if18
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.6, i32 0, i32 0), i32 4, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  %2 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %2)
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %String zeroinitializer
+
+endif:                                            ; preds = %if18
+  %"$count2" = load i64, i64* %count, align 8
+  %AS3 = trunc i64 %"$count2" to i32
+  call void @String.resize(%String* %text, i32 %AS3)
+  %"$text" = load %String, %String* %text, align 8
+  ret %String %"$text"
+}
+
+define void @"net::Socket.close"(%"net::Socket"* %0) {
+entry:
+  %self = alloca %"net::Socket"*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %self, align 8
+  br label %if19
+
+if19:                                             ; preds = %entry
+  %"*self" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self", i32 0, i32 0
+  %"$*self.fd" = load i32, i32* %"*self.fd", align 4
+  %LT = icmp slt i32 %"$*self.fd", 0
+  br i1 %LT, label %if19.then, label %endif
+
+if19.then:                                        ; preds = %if19
+  ret void
+
+endif:                                            ; preds = %if19
+  %"*self1" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd2" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self1", i32 0, i32 0
+  %"$*self.fd3" = load i32, i32* %"*self.fd2", align 4
+  %call.close = call i32 @close(i32 %"$*self.fd3")
+  %"*self4" = load %"net::Socket"*, %"net::Socket"** %self, align 8
+  %"*self.fd5" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"*self4", i32 0, i32 0
+  store i32 -1, i32* %"*self.fd5", align 4
+  ret void
+}
+
+define %"net::Socket"* @"new<net::Socket>"(i32 %0) {
 entry:
   %count = alloca i32, align 4
   store i32 %0, i32* %count, align 4
   %"$count" = load i32, i32* %count, align 4
-  %MUL = mul i32 %"$count", ptrtoint (%Pollfd* getelementptr (%Pollfd, %Pollfd* null, i32 1) to i32)
+  %MUL = mul i32 %"$count", ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i32)
   %AS = sext i32 %MUL to i64
   %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
-  %AS1 = bitcast i8* %call.calloc to %Pollfd*
-  ret %Pollfd* %AS1
+  %AS1 = bitcast i8* %call.calloc to %"net::Socket"*
+  ret %"net::Socket"* %AS1
 }
 
-define void @"copy<Pollfd>"(%Pollfd* %0, %Pollfd* %1, i32 %2) {
+define void @"copy<net::Socket>"(%"net::Socket"* %0, %"net::Socket"* %1, i32 %2) {
 entry:
-  %dst = alloca %Pollfd*, align 8
-  %src = alloca %Pollfd*, align 8
+  %dst = alloca %"net::Socket"*, align 8
+  %src = alloca %"net::Socket"*, align 8
   %count = alloca i32, align 4
-  store %Pollfd* %0, %Pollfd** %dst, align 8
-  store %Pollfd* %1, %Pollfd** %src, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %dst, align 8
+  store %"net::Socket"* %1, %"net::Socket"** %src, align 8
   store i32 %2, i32* %count, align 4
-  %"$dst" = load %Pollfd*, %Pollfd** %dst, align 8
-  %AS = bitcast %Pollfd* %"$dst" to i8*
-  %"$src" = load %Pollfd*, %Pollfd** %src, align 8
-  %AS1 = bitcast %Pollfd* %"$src" to i8*
+  %"$dst" = load %"net::Socket"*, %"net::Socket"** %dst, align 8
+  %AS = bitcast %"net::Socket"* %"$dst" to i8*
+  %"$src" = load %"net::Socket"*, %"net::Socket"** %src, align 8
+  %AS1 = bitcast %"net::Socket"* %"$src" to i8*
   %"$count" = load i32, i32* %count, align 4
-  %MUL = mul i32 %"$count", ptrtoint (%Pollfd* getelementptr (%Pollfd, %Pollfd* null, i32 1) to i32)
+  %MUL = mul i32 %"$count", ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i32)
   %AS2 = sext i32 %MUL to i64
   %MUL3 = mul i64 %AS2, sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64)
   %call.memcpy = call i8* @memcpy(i8* %AS, i8* %AS1, i64 %MUL3)
   ret void
 }
 
-define void @"free<Pollfd>"(%Pollfd* %0) {
+define void @"free<net::Socket>"(%"net::Socket"* %0) {
 entry:
-  %data = alloca %Pollfd*, align 8
-  store %Pollfd* %0, %Pollfd** %data, align 8
-  %"$data" = load %Pollfd*, %Pollfd** %data, align 8
-  %AS = bitcast %Pollfd* %"$data" to i8*
+  %data = alloca %"net::Socket"*, align 8
+  store %"net::Socket"* %0, %"net::Socket"** %data, align 8
+  %"$data" = load %"net::Socket"*, %"net::Socket"** %data, align 8
+  %AS = bitcast %"net::Socket"* %"$data" to i8*
   call void @free(i8* %AS)
   ret void
 }
 
-define void @"Array<Pollfd>.reserve"(%"Array<Pollfd>"* %0, i32 %1) {
+define void @"Array<net::Socket>.reserve"(%"Array<net::Socket>"* %0, i32 %1) {
 entry:
-  %self = alloca %"Array<Pollfd>"*, align 8
+  %self = alloca %"Array<net::Socket>"*, align 8
   %cap = alloca i32, align 4
-  %bigger = alloca %Pollfd*, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %self, align 8
+  %bigger = alloca %"net::Socket"*, align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %self, align 8
   store i32 %1, i32* %cap, align 4
-  br label %if14
+  br label %if20
 
-if14:                                             ; preds = %entry
-  %"*self" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self", i32 0, i32 1
+if20:                                             ; preds = %entry
+  %"*self" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self", i32 0, i32 1
   %"$cap" = load i32, i32* %cap, align 4
   %"$*self.count" = load i32, i32* %"*self.count", align 4
   %LT = icmp slt i32 %"$cap", %"$*self.count"
-  br i1 %LT, label %if14.then, label %endif
+  br i1 %LT, label %if20.then, label %endif
 
-if14.then:                                        ; preds = %if14
-  %"*self3" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count4" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self3", i32 0, i32 1
+if20.then:                                        ; preds = %if20
+  %"*self3" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self3", i32 0, i32 1
   %"$*self.count5" = load i32, i32* %"*self.count4", align 4
   store i32 %"$*self.count5", i32* %cap, align 4
   br label %endif
 
-endif:                                            ; preds = %if14.then, %if14
-  br label %if15
+endif:                                            ; preds = %if20.then, %if20
+  br label %if21
 
-if15:                                             ; preds = %endif
-  %"*self6" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self6", i32 0, i32 2
+if21:                                             ; preds = %endif
+  %"*self6" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self6", i32 0, i32 2
   %"$cap7" = load i32, i32* %cap, align 4
   %"$*self.cap" = load i32, i32* %"*self.cap", align 4
   %LE = icmp sle i32 %"$cap7", %"$*self.cap"
-  br i1 %LE, label %if15.then, label %endif1
+  br i1 %LE, label %if21.then, label %endif1
 
-if15.then:                                        ; preds = %if15
+if21.then:                                        ; preds = %if21
   ret void
 
-endif1:                                           ; preds = %if15
+endif1:                                           ; preds = %if21
   %"$cap8" = load i32, i32* %cap, align 4
-  %"call.new<Pollfd>" = call %Pollfd* @"new<Pollfd>"(i32 %"$cap8")
-  store %Pollfd* %"call.new<Pollfd>", %Pollfd** %bigger, align 8
-  %"*self9" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self9", i32 0, i32 0
-  %"*self10" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count11" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self10", i32 0, i32 1
-  %"$bigger" = load %Pollfd*, %Pollfd** %bigger, align 8
-  %"$*self.data" = load %Pollfd*, %Pollfd** %"*self.data", align 8
+  %"call.new<net::Socket>" = call %"net::Socket"* @"new<net::Socket>"(i32 %"$cap8")
+  store %"net::Socket"* %"call.new<net::Socket>", %"net::Socket"** %bigger, align 8
+  %"*self9" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self9", i32 0, i32 0
+  %"*self10" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count11" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self10", i32 0, i32 1
+  %"$bigger" = load %"net::Socket"*, %"net::Socket"** %bigger, align 8
+  %"$*self.data" = load %"net::Socket"*, %"net::Socket"** %"*self.data", align 8
   %"$*self.count12" = load i32, i32* %"*self.count11", align 4
-  call void @"copy<Pollfd>"(%Pollfd* %"$bigger", %Pollfd* %"$*self.data", i32 %"$*self.count12")
-  br label %if16
+  call void @"copy<net::Socket>"(%"net::Socket"* %"$bigger", %"net::Socket"* %"$*self.data", i32 %"$*self.count12")
+  br label %if22
 
-if16:                                             ; preds = %endif1
-  %"*self13" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.cap14" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self13", i32 0, i32 2
+if22:                                             ; preds = %endif1
+  %"*self13" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.cap14" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self13", i32 0, i32 2
   %"$*self.cap15" = load i32, i32* %"*self.cap14", align 4
   %GT = icmp sgt i32 %"$*self.cap15", 0
-  br i1 %GT, label %if16.then, label %endif2
+  br i1 %GT, label %if22.then, label %endif2
 
-if16.then:                                        ; preds = %if16
-  %"*self16" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data17" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self16", i32 0, i32 0
-  %"$*self.data18" = load %Pollfd*, %Pollfd** %"*self.data17", align 8
-  call void @"free<Pollfd>"(%Pollfd* %"$*self.data18")
+if22.then:                                        ; preds = %if22
+  %"*self16" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data17" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self16", i32 0, i32 0
+  %"$*self.data18" = load %"net::Socket"*, %"net::Socket"** %"*self.data17", align 8
+  call void @"free<net::Socket>"(%"net::Socket"* %"$*self.data18")
   br label %endif2
 
-endif2:                                           ; preds = %if16.then, %if16
-  %"*self19" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data20" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self19", i32 0, i32 0
-  %"$bigger21" = load %Pollfd*, %Pollfd** %bigger, align 8
-  store %Pollfd* %"$bigger21", %Pollfd** %"*self.data20", align 8
-  %"*self22" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.cap23" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self22", i32 0, i32 2
+endif2:                                           ; preds = %if22.then, %if22
+  %"*self19" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data20" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self19", i32 0, i32 0
+  %"$bigger21" = load %"net::Socket"*, %"net::Socket"** %bigger, align 8
+  store %"net::Socket"* %"$bigger21", %"net::Socket"** %"*self.data20", align 8
+  %"*self22" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.cap23" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self22", i32 0, i32 2
   %"$cap24" = load i32, i32* %cap, align 4
   store i32 %"$cap24", i32* %"*self.cap23", align 4
   ret void
 }
 
-define void @"Array<Pollfd>.own"(%"Array<Pollfd>"* %0) {
+define void @"Array<net::Socket>.clear"(%"Array<net::Socket>"* %0) {
 entry:
-  %self = alloca %"Array<Pollfd>"*, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %self, align 8
-  br label %if17
+  %self = alloca %"Array<net::Socket>"*, align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %self, align 8
+  br label %if23
 
-if17:                                             ; preds = %entry
-  %"*self" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self", i32 0, i32 2
+if23:                                             ; preds = %entry
+  %"*self" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self", i32 0, i32 2
   %"$*self.cap" = load i32, i32* %"*self.cap", align 4
   %EQ = icmp eq i32 %"$*self.cap", 0
-  %"*self1" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self1", i32 0, i32 1
-  %"$*self.count" = load i32, i32* %"*self.count", align 4
-  %GT = icmp sgt i32 %"$*self.count", 0
-  %AND = and i1 %EQ, %GT
-  br i1 %AND, label %if17.then, label %endif
+  br i1 %EQ, label %if23.then, label %endif
 
-if17.then:                                        ; preds = %if17
-  %"*self2" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self3" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count4" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self3", i32 0, i32 1
-  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
-  call void @"Array<Pollfd>.reserve"(%"Array<Pollfd>"* %"*self2", i32 %"$*self.count5")
-  br label %endif
-
-endif:                                            ; preds = %if17.then, %if17
-  ret void
-}
-
-define void @"Array<Pollfd>.clear"(%"Array<Pollfd>"* %0) {
-entry:
-  %self = alloca %"Array<Pollfd>"*, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %self, align 8
-  br label %if18
-
-if18:                                             ; preds = %entry
-  %"*self" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self", i32 0, i32 2
-  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
-  %EQ = icmp eq i32 %"$*self.cap", 0
-  br i1 %EQ, label %if18.then, label %endif
-
-if18.then:                                        ; preds = %if18
-  %"*self1" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self1", i32 0, i32 1
+if23.then:                                        ; preds = %if23
+  %"*self1" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self1", i32 0, i32 1
   store i32 0, i32* %"*self.count", align 4
   br label %endif
 
-endif:                                            ; preds = %if18.then, %if18
-  br label %while19
+endif:                                            ; preds = %if23.then, %if23
+  br label %while24
 
-while19:                                          ; preds = %while19.then, %endif
-  %"*self2" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count3" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self2", i32 0, i32 1
+while24:                                          ; preds = %while24.then, %endif
+  %"*self2" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count3" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self2", i32 0, i32 1
   %"$*self.count" = load i32, i32* %"*self.count3", align 4
   %GT = icmp sgt i32 %"$*self.count", 0
-  br i1 %GT, label %while19.then, label %endloop
+  br i1 %GT, label %while24.then, label %endloop
 
-while19.then:                                     ; preds = %while19
-  %"*self4" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count5" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self4", i32 0, i32 1
+while24.then:                                     ; preds = %while24
+  %"*self4" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count5" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self4", i32 0, i32 1
   %"$*self.count6" = load i32, i32* %"*self.count5", align 4
   %SUB = sub i32 %"$*self.count6", 1
   store i32 %SUB, i32* %"*self.count5", align 4
-  %"*self7" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self7", i32 0, i32 0
-  %"*self8" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count9" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self8", i32 0, i32 1
-  %"$*self.data" = load %Pollfd*, %Pollfd** %"*self.data", align 8
+  %"*self7" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self7", i32 0, i32 0
+  %"*self8" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count9" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self8", i32 0, i32 1
+  %"$*self.data" = load %"net::Socket"*, %"net::Socket"** %"*self.data", align 8
   %"$*self.count10" = load i32, i32* %"*self.count9", align 4
-  %"*self.data[]" = getelementptr inbounds %Pollfd, %Pollfd* %"$*self.data", i32 %"$*self.count10"
-  store %Pollfd zeroinitializer, %Pollfd* %"*self.data[]", align 4
-  br label %while19
+  %"*self.data[]" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"$*self.data", i32 %"$*self.count10"
+  store %"net::Socket" zeroinitializer, %"net::Socket"* %"*self.data[]", align 4
+  br label %while24
 
-endloop:                                          ; preds = %while19
+endloop:                                          ; preds = %while24
   ret void
 }
 
-define void @"Array<Pollfd>.append"(%"Array<Pollfd>"* %0, %Pollfd %1) {
+define void @"Array<net::Socket>.append"(%"Array<net::Socket>"* %0, %"net::Socket" %1) {
 entry:
-  %self = alloca %"Array<Pollfd>"*, align 8
-  %value = alloca %Pollfd, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %self, align 8
-  store %Pollfd %1, %Pollfd* %value, align 4
-  br label %if20
+  %self = alloca %"Array<net::Socket>"*, align 8
+  %value = alloca %"net::Socket", align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %self, align 8
+  store %"net::Socket" %1, %"net::Socket"* %value, align 4
+  br label %if25
 
-if20:                                             ; preds = %entry
-  %"*self" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self", i32 0, i32 1
-  %"*self1" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.cap" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self1", i32 0, i32 2
+if25:                                             ; preds = %entry
+  %"*self" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self", i32 0, i32 1
+  %"*self1" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self1", i32 0, i32 2
   %"$*self.count" = load i32, i32* %"*self.count", align 4
   %"$*self.cap" = load i32, i32* %"*self.cap", align 4
   %GE = icmp sge i32 %"$*self.count", %"$*self.cap"
-  br i1 %GE, label %if20.then, label %endif
+  br i1 %GE, label %if25.then, label %endif
 
-if20.then:                                        ; preds = %if20
-  %"*self2" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self3" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count4" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self3", i32 0, i32 1
+if25.then:                                        ; preds = %if25
+  %"*self2" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self3" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self3", i32 0, i32 1
   %"$*self.count5" = load i32, i32* %"*self.count4", align 4
   %MUL = mul i32 %"$*self.count5", 2
   %ADD = add i32 %MUL, 4
-  call void @"Array<Pollfd>.reserve"(%"Array<Pollfd>"* %"*self2", i32 %ADD)
+  call void @"Array<net::Socket>.reserve"(%"Array<net::Socket>"* %"*self2", i32 %ADD)
   br label %endif
 
-endif:                                            ; preds = %if20.then, %if20
-  %"*self6" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.data" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self6", i32 0, i32 0
-  %"*self7" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count8" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self7", i32 0, i32 1
-  %"$*self.data" = load %Pollfd*, %Pollfd** %"*self.data", align 8
+endif:                                            ; preds = %if25.then, %if25
+  %"*self6" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self6", i32 0, i32 0
+  %"*self7" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count8" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self7", i32 0, i32 1
+  %"$*self.data" = load %"net::Socket"*, %"net::Socket"** %"*self.data", align 8
   %"$*self.count9" = load i32, i32* %"*self.count8", align 4
-  %"*self.data[]" = getelementptr inbounds %Pollfd, %Pollfd* %"$*self.data", i32 %"$*self.count9"
-  %"$value" = load %Pollfd, %Pollfd* %value, align 4
-  store %Pollfd %"$value", %Pollfd* %"*self.data[]", align 4
-  %"*self10" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count11" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self10", i32 0, i32 1
+  %"*self.data[]" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"$*self.data", i32 %"$*self.count9"
+  %"$value" = load %"net::Socket", %"net::Socket"* %value, align 4
+  store %"net::Socket" %"$value", %"net::Socket"* %"*self.data[]", align 4
+  %"*self10" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %self, align 8
+  %"*self.count11" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*self10", i32 0, i32 1
   %"$*self.count12" = load i32, i32* %"*self.count11", align 4
   %ADD13 = add i32 %"$*self.count12", 1
   store i32 %ADD13, i32* %"*self.count11", align 4
   ret void
 }
 
-define i32 @"Array<Pollfd>.len"(%"Array<Pollfd>"* %0) {
+define i1 @"Array<net::Socket>.in"(%"Array<net::Socket>"* %0, i32* %1, %"net::Socket"* %2) {
 entry:
-  %self = alloca %"Array<Pollfd>"*, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %self, align 8
-  %"*self" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %self, align 8
-  %"*self.count" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*self", i32 0, i32 1
+  %left = alloca %"Array<net::Socket>"*, align 8
+  %i = alloca i32*, align 8
+  %x = alloca %"net::Socket"*, align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %left, align 8
+  store i32* %1, i32** %i, align 8
+  store %"net::Socket"* %2, %"net::Socket"** %x, align 8
+  br label %if26
+
+if26:                                             ; preds = %entry
+  %"*i" = load i32*, i32** %i, align 8
+  %"*left" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %left, align 8
+  %"*left.count" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*left", i32 0, i32 1
+  %"$*i" = load i32, i32* %"*i", align 4
+  %"$*left.count" = load i32, i32* %"*left.count", align 4
+  %GE = icmp sge i32 %"$*i", %"$*left.count"
+  br i1 %GE, label %if26.then, label %endif
+
+if26.then:                                        ; preds = %if26
+  ret i1 false
+
+endif:                                            ; preds = %if26
+  %"*x" = load %"net::Socket"*, %"net::Socket"** %x, align 8
+  %"*left1" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %left, align 8
+  %"*left.data" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*left1", i32 0, i32 0
+  %"*i2" = load i32*, i32** %i, align 8
+  %"$*left.data" = load %"net::Socket"*, %"net::Socket"** %"*left.data", align 8
+  %"$*i3" = load i32, i32* %"*i2", align 4
+  %"*left.data[]" = getelementptr inbounds %"net::Socket", %"net::Socket"* %"$*left.data", i32 %"$*i3"
+  %"$*left.data[]" = load %"net::Socket", %"net::Socket"* %"*left.data[]", align 4
+  store %"net::Socket" %"$*left.data[]", %"net::Socket"* %"*x", align 4
+  %"*i4" = load i32*, i32** %i, align 8
+  %"$*i5" = load i32, i32* %"*i4", align 4
+  %ADD = add i32 %"$*i5", 1
+  store i32 %ADD, i32* %"*i4", align 4
+  ret i1 true
+}
+
+define void @"Array<net::Socket>.drop"(%"Array<net::Socket>"* %0) {
+entry:
+  %value = alloca %"Array<net::Socket>"*, align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %value, align 8
+  %"*value" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %value, align 8
+  call void @"Array<net::Socket>.clear"(%"Array<net::Socket>"* %"*value")
+  br label %if27
+
+if27:                                             ; preds = %entry
+  %"*value1" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %value, align 8
+  %"*value.cap" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*value1", i32 0, i32 2
+  %"$*value.cap" = load i32, i32* %"*value.cap", align 4
+  %GT = icmp sgt i32 %"$*value.cap", 0
+  br i1 %GT, label %if27.then, label %endif
+
+if27.then:                                        ; preds = %if27
+  %"*value2" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %value, align 8
+  %"*value.data" = getelementptr inbounds %"Array<net::Socket>", %"Array<net::Socket>"* %"*value2", i32 0, i32 0
+  %"$*value.data" = load %"net::Socket"*, %"net::Socket"** %"*value.data", align 8
+  call void @"free<net::Socket>"(%"net::Socket"* %"$*value.data")
+  br label %endif
+
+endif:                                            ; preds = %if27.then, %if27
+  ret void
+}
+
+define i16* @"new<i16>"(i32 %0) {
+entry:
+  %count = alloca i32, align 4
+  store i32 %0, i32* %count, align 4
+  %"$count" = load i32, i32* %count, align 4
+  %MUL = mul i32 %"$count", ptrtoint (i16* getelementptr (i16, i16* null, i32 1) to i32)
+  %AS = sext i32 %MUL to i64
+  %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  %AS1 = bitcast i8* %call.calloc to i16*
+  ret i16* %AS1
+}
+
+define void @"copy<i16>"(i16* %0, i16* %1, i32 %2) {
+entry:
+  %dst = alloca i16*, align 8
+  %src = alloca i16*, align 8
+  %count = alloca i32, align 4
+  store i16* %0, i16** %dst, align 8
+  store i16* %1, i16** %src, align 8
+  store i32 %2, i32* %count, align 4
+  %"$dst" = load i16*, i16** %dst, align 8
+  %AS = bitcast i16* %"$dst" to i8*
+  %"$src" = load i16*, i16** %src, align 8
+  %AS1 = bitcast i16* %"$src" to i8*
+  %"$count" = load i32, i32* %count, align 4
+  %MUL = mul i32 %"$count", ptrtoint (i16* getelementptr (i16, i16* null, i32 1) to i32)
+  %AS2 = sext i32 %MUL to i64
+  %MUL3 = mul i64 %AS2, sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64)
+  %call.memcpy = call i8* @memcpy(i8* %AS, i8* %AS1, i64 %MUL3)
+  ret void
+}
+
+define void @"free<i16>"(i16* %0) {
+entry:
+  %data = alloca i16*, align 8
+  store i16* %0, i16** %data, align 8
+  %"$data" = load i16*, i16** %data, align 8
+  %AS = bitcast i16* %"$data" to i8*
+  call void @free(i8* %AS)
+  ret void
+}
+
+define void @"Array<i16>.reserve"(%"Array<i16>"* %0, i32 %1) {
+entry:
+  %self = alloca %"Array<i16>"*, align 8
+  %cap = alloca i32, align 4
+  %bigger = alloca i16*, align 8
+  store %"Array<i16>"* %0, %"Array<i16>"** %self, align 8
+  store i32 %1, i32* %cap, align 4
+  br label %if28
+
+if28:                                             ; preds = %entry
+  %"*self" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self", i32 0, i32 1
+  %"$cap" = load i32, i32* %cap, align 4
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %LT = icmp slt i32 %"$cap", %"$*self.count"
+  br i1 %LT, label %if28.then, label %endif
+
+if28.then:                                        ; preds = %if28
+  %"*self3" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  store i32 %"$*self.count5", i32* %cap, align 4
+  br label %endif
+
+endif:                                            ; preds = %if28.then, %if28
+  br label %if29
+
+if29:                                             ; preds = %endif
+  %"*self6" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self6", i32 0, i32 2
+  %"$cap7" = load i32, i32* %cap, align 4
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %LE = icmp sle i32 %"$cap7", %"$*self.cap"
+  br i1 %LE, label %if29.then, label %endif1
+
+if29.then:                                        ; preds = %if29
+  ret void
+
+endif1:                                           ; preds = %if29
+  %"$cap8" = load i32, i32* %cap, align 4
+  %"call.new<i16>" = call i16* @"new<i16>"(i32 %"$cap8")
+  store i16* %"call.new<i16>", i16** %bigger, align 8
+  %"*self9" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self9", i32 0, i32 0
+  %"*self10" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count11" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self10", i32 0, i32 1
+  %"$bigger" = load i16*, i16** %bigger, align 8
+  %"$*self.data" = load i16*, i16** %"*self.data", align 8
+  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
+  call void @"copy<i16>"(i16* %"$bigger", i16* %"$*self.data", i32 %"$*self.count12")
+  br label %if30
+
+if30:                                             ; preds = %endif1
+  %"*self13" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.cap14" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self13", i32 0, i32 2
+  %"$*self.cap15" = load i32, i32* %"*self.cap14", align 4
+  %GT = icmp sgt i32 %"$*self.cap15", 0
+  br i1 %GT, label %if30.then, label %endif2
+
+if30.then:                                        ; preds = %if30
+  %"*self16" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.data17" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self16", i32 0, i32 0
+  %"$*self.data18" = load i16*, i16** %"*self.data17", align 8
+  call void @"free<i16>"(i16* %"$*self.data18")
+  br label %endif2
+
+endif2:                                           ; preds = %if30.then, %if30
+  %"*self19" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.data20" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self19", i32 0, i32 0
+  %"$bigger21" = load i16*, i16** %bigger, align 8
+  store i16* %"$bigger21", i16** %"*self.data20", align 8
+  %"*self22" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.cap23" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self22", i32 0, i32 2
+  %"$cap24" = load i32, i32* %cap, align 4
+  store i32 %"$cap24", i32* %"*self.cap23", align 4
+  ret void
+}
+
+define void @"Array<i16>.own"(%"Array<i16>"* %0) {
+entry:
+  %self = alloca %"Array<i16>"*, align 8
+  store %"Array<i16>"* %0, %"Array<i16>"** %self, align 8
+  br label %if31
+
+if31:                                             ; preds = %entry
+  %"*self" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self", i32 0, i32 2
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %EQ = icmp eq i32 %"$*self.cap", 0
+  %"*self1" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self1", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %GT = icmp sgt i32 %"$*self.count", 0
+  %AND = and i1 %EQ, %GT
+  br i1 %AND, label %if31.then, label %endif
+
+if31.then:                                        ; preds = %if31
+  %"*self2" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self3" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  call void @"Array<i16>.reserve"(%"Array<i16>"* %"*self2", i32 %"$*self.count5")
+  br label %endif
+
+endif:                                            ; preds = %if31.then, %if31
+  ret void
+}
+
+define void @"Array<i16>.clear"(%"Array<i16>"* %0) {
+entry:
+  %self = alloca %"Array<i16>"*, align 8
+  store %"Array<i16>"* %0, %"Array<i16>"** %self, align 8
+  br label %if32
+
+if32:                                             ; preds = %entry
+  %"*self" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self", i32 0, i32 2
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %EQ = icmp eq i32 %"$*self.cap", 0
+  br i1 %EQ, label %if32.then, label %endif
+
+if32.then:                                        ; preds = %if32
+  %"*self1" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self1", i32 0, i32 1
+  store i32 0, i32* %"*self.count", align 4
+  br label %endif
+
+endif:                                            ; preds = %if32.then, %if32
+  br label %while33
+
+while33:                                          ; preds = %while33.then, %endif
+  %"*self2" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count3" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self2", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count3", align 4
+  %GT = icmp sgt i32 %"$*self.count", 0
+  br i1 %GT, label %while33.then, label %endloop
+
+while33.then:                                     ; preds = %while33
+  %"*self4" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count5" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self4", i32 0, i32 1
+  %"$*self.count6" = load i32, i32* %"*self.count5", align 4
+  %SUB = sub i32 %"$*self.count6", 1
+  store i32 %SUB, i32* %"*self.count5", align 4
+  %"*self7" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self7", i32 0, i32 0
+  %"*self8" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count9" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self8", i32 0, i32 1
+  %"$*self.data" = load i16*, i16** %"*self.data", align 8
+  %"$*self.count10" = load i32, i32* %"*self.count9", align 4
+  %"*self.data[]" = getelementptr inbounds i16, i16* %"$*self.data", i32 %"$*self.count10"
+  store i16 0, i16* %"*self.data[]", align 2
+  br label %while33
+
+endloop:                                          ; preds = %while33
+  ret void
+}
+
+define void @"Array<i16>.append"(%"Array<i16>"* %0, i16 %1) {
+entry:
+  %self = alloca %"Array<i16>"*, align 8
+  %value = alloca i16, align 2
+  store %"Array<i16>"* %0, %"Array<i16>"** %self, align 8
+  store i16 %1, i16* %value, align 2
+  br label %if34
+
+if34:                                             ; preds = %entry
+  %"*self" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self", i32 0, i32 1
+  %"*self1" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self1", i32 0, i32 2
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %GE = icmp sge i32 %"$*self.count", %"$*self.cap"
+  br i1 %GE, label %if34.then, label %endif
+
+if34.then:                                        ; preds = %if34
+  %"*self2" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self3" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  %MUL = mul i32 %"$*self.count5", 2
+  %ADD = add i32 %MUL, 4
+  call void @"Array<i16>.reserve"(%"Array<i16>"* %"*self2", i32 %ADD)
+  br label %endif
+
+endif:                                            ; preds = %if34.then, %if34
+  %"*self6" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self6", i32 0, i32 0
+  %"*self7" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count8" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self7", i32 0, i32 1
+  %"$*self.data" = load i16*, i16** %"*self.data", align 8
+  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
+  %"*self.data[]" = getelementptr inbounds i16, i16* %"$*self.data", i32 %"$*self.count9"
+  %"$value" = load i16, i16* %value, align 2
+  store i16 %"$value", i16* %"*self.data[]", align 2
+  %"*self10" = load %"Array<i16>"*, %"Array<i16>"** %self, align 8
+  %"*self.count11" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*self10", i32 0, i32 1
+  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
+  %ADD13 = add i32 %"$*self.count12", 1
+  store i32 %ADD13, i32* %"*self.count11", align 4
+  ret void
+}
+
+define i16* @"Array<i16>.[]"(%"Array<i16>"* %0, i32 %1) {
+entry:
+  %left = alloca %"Array<i16>"*, align 8
+  %index = alloca i32, align 4
+  store %"Array<i16>"* %0, %"Array<i16>"** %left, align 8
+  store i32 %1, i32* %index, align 4
+  %"*left" = load %"Array<i16>"*, %"Array<i16>"** %left, align 8
+  call void @"Array<i16>.own"(%"Array<i16>"* %"*left")
+  %"*left1" = load %"Array<i16>"*, %"Array<i16>"** %left, align 8
+  %"*left.data" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*left1", i32 0, i32 0
+  %"$*left.data" = load i16*, i16** %"*left.data", align 8
+  %"$index" = load i32, i32* %index, align 4
+  %"*left.data[]" = getelementptr inbounds i16, i16* %"$*left.data", i32 %"$index"
+  ret i16* %"*left.data[]"
+}
+
+define void @"Array<i16>.drop"(%"Array<i16>"* %0) {
+entry:
+  %value = alloca %"Array<i16>"*, align 8
+  store %"Array<i16>"* %0, %"Array<i16>"** %value, align 8
+  %"*value" = load %"Array<i16>"*, %"Array<i16>"** %value, align 8
+  call void @"Array<i16>.clear"(%"Array<i16>"* %"*value")
+  br label %if35
+
+if35:                                             ; preds = %entry
+  %"*value1" = load %"Array<i16>"*, %"Array<i16>"** %value, align 8
+  %"*value.cap" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*value1", i32 0, i32 2
+  %"$*value.cap" = load i32, i32* %"*value.cap", align 4
+  %GT = icmp sgt i32 %"$*value.cap", 0
+  br i1 %GT, label %if35.then, label %endif
+
+if35.then:                                        ; preds = %if35
+  %"*value2" = load %"Array<i16>"*, %"Array<i16>"** %value, align 8
+  %"*value.data" = getelementptr inbounds %"Array<i16>", %"Array<i16>"* %"*value2", i32 0, i32 0
+  %"$*value.data" = load i16*, i16** %"*value.data", align 8
+  call void @"free<i16>"(i16* %"$*value.data")
+  br label %endif
+
+endif:                                            ; preds = %if35.then, %if35
+  ret void
+}
+
+define %"cstd::pollfd"* @"new<cstd::pollfd>"(i32 %0) {
+entry:
+  %count = alloca i32, align 4
+  store i32 %0, i32* %count, align 4
+  %"$count" = load i32, i32* %count, align 4
+  %MUL = mul i32 %"$count", ptrtoint (%"cstd::pollfd"* getelementptr (%"cstd::pollfd", %"cstd::pollfd"* null, i32 1) to i32)
+  %AS = sext i32 %MUL to i64
+  %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  %AS1 = bitcast i8* %call.calloc to %"cstd::pollfd"*
+  ret %"cstd::pollfd"* %AS1
+}
+
+define void @"copy<cstd::pollfd>"(%"cstd::pollfd"* %0, %"cstd::pollfd"* %1, i32 %2) {
+entry:
+  %dst = alloca %"cstd::pollfd"*, align 8
+  %src = alloca %"cstd::pollfd"*, align 8
+  %count = alloca i32, align 4
+  store %"cstd::pollfd"* %0, %"cstd::pollfd"** %dst, align 8
+  store %"cstd::pollfd"* %1, %"cstd::pollfd"** %src, align 8
+  store i32 %2, i32* %count, align 4
+  %"$dst" = load %"cstd::pollfd"*, %"cstd::pollfd"** %dst, align 8
+  %AS = bitcast %"cstd::pollfd"* %"$dst" to i8*
+  %"$src" = load %"cstd::pollfd"*, %"cstd::pollfd"** %src, align 8
+  %AS1 = bitcast %"cstd::pollfd"* %"$src" to i8*
+  %"$count" = load i32, i32* %count, align 4
+  %MUL = mul i32 %"$count", ptrtoint (%"cstd::pollfd"* getelementptr (%"cstd::pollfd", %"cstd::pollfd"* null, i32 1) to i32)
+  %AS2 = sext i32 %MUL to i64
+  %MUL3 = mul i64 %AS2, sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64)
+  %call.memcpy = call i8* @memcpy(i8* %AS, i8* %AS1, i64 %MUL3)
+  ret void
+}
+
+define void @"free<cstd::pollfd>"(%"cstd::pollfd"* %0) {
+entry:
+  %data = alloca %"cstd::pollfd"*, align 8
+  store %"cstd::pollfd"* %0, %"cstd::pollfd"** %data, align 8
+  %"$data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %data, align 8
+  %AS = bitcast %"cstd::pollfd"* %"$data" to i8*
+  call void @free(i8* %AS)
+  ret void
+}
+
+define void @"Array<cstd::pollfd>.reserve"(%"Array<cstd::pollfd>"* %0, i32 %1) {
+entry:
+  %self = alloca %"Array<cstd::pollfd>"*, align 8
+  %cap = alloca i32, align 4
+  %bigger = alloca %"cstd::pollfd"*, align 8
+  store %"Array<cstd::pollfd>"* %0, %"Array<cstd::pollfd>"** %self, align 8
+  store i32 %1, i32* %cap, align 4
+  br label %if36
+
+if36:                                             ; preds = %entry
+  %"*self" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self", i32 0, i32 1
+  %"$cap" = load i32, i32* %cap, align 4
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %LT = icmp slt i32 %"$cap", %"$*self.count"
+  br i1 %LT, label %if36.then, label %endif
+
+if36.then:                                        ; preds = %if36
+  %"*self3" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  store i32 %"$*self.count5", i32* %cap, align 4
+  br label %endif
+
+endif:                                            ; preds = %if36.then, %if36
+  br label %if37
+
+if37:                                             ; preds = %endif
+  %"*self6" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self6", i32 0, i32 2
+  %"$cap7" = load i32, i32* %cap, align 4
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %LE = icmp sle i32 %"$cap7", %"$*self.cap"
+  br i1 %LE, label %if37.then, label %endif1
+
+if37.then:                                        ; preds = %if37
+  ret void
+
+endif1:                                           ; preds = %if37
+  %"$cap8" = load i32, i32* %cap, align 4
+  %"call.new<cstd::pollfd>" = call %"cstd::pollfd"* @"new<cstd::pollfd>"(i32 %"$cap8")
+  store %"cstd::pollfd"* %"call.new<cstd::pollfd>", %"cstd::pollfd"** %bigger, align 8
+  %"*self9" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self9", i32 0, i32 0
+  %"*self10" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count11" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self10", i32 0, i32 1
+  %"$bigger" = load %"cstd::pollfd"*, %"cstd::pollfd"** %bigger, align 8
+  %"$*self.data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %"*self.data", align 8
+  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
+  call void @"copy<cstd::pollfd>"(%"cstd::pollfd"* %"$bigger", %"cstd::pollfd"* %"$*self.data", i32 %"$*self.count12")
+  br label %if38
+
+if38:                                             ; preds = %endif1
+  %"*self13" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.cap14" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self13", i32 0, i32 2
+  %"$*self.cap15" = load i32, i32* %"*self.cap14", align 4
+  %GT = icmp sgt i32 %"$*self.cap15", 0
+  br i1 %GT, label %if38.then, label %endif2
+
+if38.then:                                        ; preds = %if38
+  %"*self16" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.data17" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self16", i32 0, i32 0
+  %"$*self.data18" = load %"cstd::pollfd"*, %"cstd::pollfd"** %"*self.data17", align 8
+  call void @"free<cstd::pollfd>"(%"cstd::pollfd"* %"$*self.data18")
+  br label %endif2
+
+endif2:                                           ; preds = %if38.then, %if38
+  %"*self19" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.data20" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self19", i32 0, i32 0
+  %"$bigger21" = load %"cstd::pollfd"*, %"cstd::pollfd"** %bigger, align 8
+  store %"cstd::pollfd"* %"$bigger21", %"cstd::pollfd"** %"*self.data20", align 8
+  %"*self22" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.cap23" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self22", i32 0, i32 2
+  %"$cap24" = load i32, i32* %cap, align 4
+  store i32 %"$cap24", i32* %"*self.cap23", align 4
+  ret void
+}
+
+define void @"Array<cstd::pollfd>.clear"(%"Array<cstd::pollfd>"* %0) {
+entry:
+  %self = alloca %"Array<cstd::pollfd>"*, align 8
+  store %"Array<cstd::pollfd>"* %0, %"Array<cstd::pollfd>"** %self, align 8
+  br label %if39
+
+if39:                                             ; preds = %entry
+  %"*self" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self", i32 0, i32 2
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %EQ = icmp eq i32 %"$*self.cap", 0
+  br i1 %EQ, label %if39.then, label %endif
+
+if39.then:                                        ; preds = %if39
+  %"*self1" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self1", i32 0, i32 1
+  store i32 0, i32* %"*self.count", align 4
+  br label %endif
+
+endif:                                            ; preds = %if39.then, %if39
+  br label %while40
+
+while40:                                          ; preds = %while40.then, %endif
+  %"*self2" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count3" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self2", i32 0, i32 1
+  %"$*self.count" = load i32, i32* %"*self.count3", align 4
+  %GT = icmp sgt i32 %"$*self.count", 0
+  br i1 %GT, label %while40.then, label %endloop
+
+while40.then:                                     ; preds = %while40
+  %"*self4" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count5" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self4", i32 0, i32 1
+  %"$*self.count6" = load i32, i32* %"*self.count5", align 4
+  %SUB = sub i32 %"$*self.count6", 1
+  store i32 %SUB, i32* %"*self.count5", align 4
+  %"*self7" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self7", i32 0, i32 0
+  %"*self8" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count9" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self8", i32 0, i32 1
+  %"$*self.data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %"*self.data", align 8
+  %"$*self.count10" = load i32, i32* %"*self.count9", align 4
+  %"*self.data[]" = getelementptr inbounds %"cstd::pollfd", %"cstd::pollfd"* %"$*self.data", i32 %"$*self.count10"
+  store %"cstd::pollfd" zeroinitializer, %"cstd::pollfd"* %"*self.data[]", align 4
+  br label %while40
+
+endloop:                                          ; preds = %while40
+  ret void
+}
+
+define void @"Array<cstd::pollfd>.append"(%"Array<cstd::pollfd>"* %0, %"cstd::pollfd" %1) {
+entry:
+  %self = alloca %"Array<cstd::pollfd>"*, align 8
+  %value = alloca %"cstd::pollfd", align 8
+  store %"Array<cstd::pollfd>"* %0, %"Array<cstd::pollfd>"** %self, align 8
+  store %"cstd::pollfd" %1, %"cstd::pollfd"* %value, align 4
+  br label %if41
+
+if41:                                             ; preds = %entry
+  %"*self" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self", i32 0, i32 1
+  %"*self1" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.cap" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self1", i32 0, i32 2
+  %"$*self.count" = load i32, i32* %"*self.count", align 4
+  %"$*self.cap" = load i32, i32* %"*self.cap", align 4
+  %GE = icmp sge i32 %"$*self.count", %"$*self.cap"
+  br i1 %GE, label %if41.then, label %endif
+
+if41.then:                                        ; preds = %if41
+  %"*self2" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self3" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count4" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self3", i32 0, i32 1
+  %"$*self.count5" = load i32, i32* %"*self.count4", align 4
+  %MUL = mul i32 %"$*self.count5", 2
+  %ADD = add i32 %MUL, 4
+  call void @"Array<cstd::pollfd>.reserve"(%"Array<cstd::pollfd>"* %"*self2", i32 %ADD)
+  br label %endif
+
+endif:                                            ; preds = %if41.then, %if41
+  %"*self6" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.data" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self6", i32 0, i32 0
+  %"*self7" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count8" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self7", i32 0, i32 1
+  %"$*self.data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %"*self.data", align 8
+  %"$*self.count9" = load i32, i32* %"*self.count8", align 4
+  %"*self.data[]" = getelementptr inbounds %"cstd::pollfd", %"cstd::pollfd"* %"$*self.data", i32 %"$*self.count9"
+  %"$value" = load %"cstd::pollfd", %"cstd::pollfd"* %value, align 4
+  store %"cstd::pollfd" %"$value", %"cstd::pollfd"* %"*self.data[]", align 4
+  %"*self10" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count11" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self10", i32 0, i32 1
+  %"$*self.count12" = load i32, i32* %"*self.count11", align 4
+  %ADD13 = add i32 %"$*self.count12", 1
+  store i32 %ADD13, i32* %"*self.count11", align 4
+  ret void
+}
+
+define i32 @"Array<cstd::pollfd>.len"(%"Array<cstd::pollfd>"* %0) {
+entry:
+  %self = alloca %"Array<cstd::pollfd>"*, align 8
+  store %"Array<cstd::pollfd>"* %0, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %self, align 8
+  %"*self.count" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*self", i32 0, i32 1
   %"$*self.count" = load i32, i32* %"*self.count", align 4
   ret i32 %"$*self.count"
 }
 
-define %Pollfd* @"Array<Pollfd>.[]"(%"Array<Pollfd>"* %0, i32 %1) {
+define i1 @"Array<cstd::pollfd>.in"(%"Array<cstd::pollfd>"* %0, i32* %1, %"cstd::pollfd"* %2) {
 entry:
-  %left = alloca %"Array<Pollfd>"*, align 8
-  %index = alloca i32, align 4
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %left, align 8
-  store i32 %1, i32* %index, align 4
-  %"*left" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %left, align 8
-  call void @"Array<Pollfd>.own"(%"Array<Pollfd>"* %"*left")
-  %"*left1" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %left, align 8
-  %"*left.data" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*left1", i32 0, i32 0
-  %"$*left.data" = load %Pollfd*, %Pollfd** %"*left.data", align 8
-  %"$index" = load i32, i32* %index, align 4
-  %"*left.data[]" = getelementptr inbounds %Pollfd, %Pollfd* %"$*left.data", i32 %"$index"
-  ret %Pollfd* %"*left.data[]"
+  %left = alloca %"Array<cstd::pollfd>"*, align 8
+  %i = alloca i32*, align 8
+  %x = alloca %"cstd::pollfd"*, align 8
+  store %"Array<cstd::pollfd>"* %0, %"Array<cstd::pollfd>"** %left, align 8
+  store i32* %1, i32** %i, align 8
+  store %"cstd::pollfd"* %2, %"cstd::pollfd"** %x, align 8
+  br label %if42
+
+if42:                                             ; preds = %entry
+  %"*i" = load i32*, i32** %i, align 8
+  %"*left" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %left, align 8
+  %"*left.count" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*left", i32 0, i32 1
+  %"$*i" = load i32, i32* %"*i", align 4
+  %"$*left.count" = load i32, i32* %"*left.count", align 4
+  %GE = icmp sge i32 %"$*i", %"$*left.count"
+  br i1 %GE, label %if42.then, label %endif
+
+if42.then:                                        ; preds = %if42
+  ret i1 false
+
+endif:                                            ; preds = %if42
+  %"*x" = load %"cstd::pollfd"*, %"cstd::pollfd"** %x, align 8
+  %"*left1" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %left, align 8
+  %"*left.data" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*left1", i32 0, i32 0
+  %"*i2" = load i32*, i32** %i, align 8
+  %"$*left.data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %"*left.data", align 8
+  %"$*i3" = load i32, i32* %"*i2", align 4
+  %"*left.data[]" = getelementptr inbounds %"cstd::pollfd", %"cstd::pollfd"* %"$*left.data", i32 %"$*i3"
+  %"$*left.data[]" = load %"cstd::pollfd", %"cstd::pollfd"* %"*left.data[]", align 4
+  store %"cstd::pollfd" %"$*left.data[]", %"cstd::pollfd"* %"*x", align 4
+  %"*i4" = load i32*, i32** %i, align 8
+  %"$*i5" = load i32, i32* %"*i4", align 4
+  %ADD = add i32 %"$*i5", 1
+  store i32 %ADD, i32* %"*i4", align 4
+  ret i1 true
 }
 
-define void @"Array<Pollfd>.drop"(%"Array<Pollfd>"* %0) {
+define void @"Array<cstd::pollfd>.drop"(%"Array<cstd::pollfd>"* %0) {
 entry:
-  %value = alloca %"Array<Pollfd>"*, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %value, align 8
-  %"*value" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %value, align 8
-  call void @"Array<Pollfd>.clear"(%"Array<Pollfd>"* %"*value")
-  br label %if21
+  %value = alloca %"Array<cstd::pollfd>"*, align 8
+  store %"Array<cstd::pollfd>"* %0, %"Array<cstd::pollfd>"** %value, align 8
+  %"*value" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %value, align 8
+  call void @"Array<cstd::pollfd>.clear"(%"Array<cstd::pollfd>"* %"*value")
+  br label %if43
 
-if21:                                             ; preds = %entry
-  %"*value1" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %value, align 8
-  %"*value.cap" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*value1", i32 0, i32 2
+if43:                                             ; preds = %entry
+  %"*value1" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %value, align 8
+  %"*value.cap" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*value1", i32 0, i32 2
   %"$*value.cap" = load i32, i32* %"*value.cap", align 4
   %GT = icmp sgt i32 %"$*value.cap", 0
-  br i1 %GT, label %if21.then, label %endif
+  br i1 %GT, label %if43.then, label %endif
 
-if21.then:                                        ; preds = %if21
-  %"*value2" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %value, align 8
-  %"*value.data" = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %"*value2", i32 0, i32 0
-  %"$*value.data" = load %Pollfd*, %Pollfd** %"*value.data", align 8
-  call void @"free<Pollfd>"(%Pollfd* %"$*value.data")
+if43.then:                                        ; preds = %if43
+  %"*value2" = load %"Array<cstd::pollfd>"*, %"Array<cstd::pollfd>"** %value, align 8
+  %"*value.data" = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %"*value2", i32 0, i32 0
+  %"$*value.data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %"*value.data", align 8
+  call void @"free<cstd::pollfd>"(%"cstd::pollfd"* %"$*value.data")
   br label %endif
 
-endif:                                            ; preds = %if21.then, %if21
+endif:                                            ; preds = %if43.then, %if43
   ret void
 }
 
-define void @watch(%"Array<Pollfd>"* %0, i32 %1) {
+define %"Array<i16>" @"net::poll"(%"Array<net::Socket>"* %0, i16 %1, i32 %2) {
 entry:
-  %fds = alloca %"Array<Pollfd>"*, align 8
-  %fd = alloca i32, align 4
-  %p = alloca %Pollfd, align 8
-  store %"Array<Pollfd>"* %0, %"Array<Pollfd>"** %fds, align 8
-  store i32 %1, i32* %fd, align 4
-  store %Pollfd zeroinitializer, %Pollfd* %p, align 4
-  %p.fd = getelementptr inbounds %Pollfd, %Pollfd* %p, i32 0, i32 0
-  %"$fd" = load i32, i32* %fd, align 4
-  store i32 %"$fd", i32* %p.fd, align 4
-  %p.events = getelementptr inbounds %Pollfd, %Pollfd* %p, i32 0, i32 1
-  %"$POLLIN" = load i32, i32* @POLLIN, align 4
-  %AS = trunc i32 %"$POLLIN" to i16
-  store i16 %AS, i16* %p.events, align 2
-  %"*fds" = load %"Array<Pollfd>"*, %"Array<Pollfd>"** %fds, align 8
-  %"$p" = load %Pollfd, %Pollfd* %p, align 4
-  call void @"Array<Pollfd>.append"(%"Array<Pollfd>"* %"*fds", %Pollfd %"$p")
-  ret void
+  %sockets = alloca %"Array<net::Socket>"*, align 8
+  %events = alloca i16, align 2
+  %timeout = alloca i32, align 4
+  %entries = alloca %"Array<cstd::pollfd>", align 8
+  %i = alloca i32, align 4
+  %socket = alloca %"net::Socket", align 8
+  %error.at = alloca %Error*, align 8
+  %ready = alloca %"Array<i16>", align 8
+  %i2 = alloca i32, align 4
+  %entry3 = alloca %"cstd::pollfd", align 8
+  store %"Array<net::Socket>"* %0, %"Array<net::Socket>"** %sockets, align 8
+  store i16 %1, i16* %events, align 2
+  store i32 %2, i32* %timeout, align 4
+  store %"Array<cstd::pollfd>" zeroinitializer, %"Array<cstd::pollfd>"* %entries, align 8
+  %"*sockets" = load %"Array<net::Socket>"*, %"Array<net::Socket>"** %sockets, align 8
+  store i32 0, i32* %i, align 4
+  store %"net::Socket" zeroinitializer, %"net::Socket"* %socket, align 4
+  br label %while44
+
+while44:                                          ; preds = %while44.then, %entry
+  %"call.Array<net::Socket>.in" = call i1 @"Array<net::Socket>.in"(%"Array<net::Socket>"* %"*sockets", i32* %i, %"net::Socket"* %socket)
+  br i1 %"call.Array<net::Socket>.in", label %while44.then, label %endloop
+
+while44.then:                                     ; preds = %while44
+  %socket.fd = getelementptr inbounds %"net::Socket", %"net::Socket"* %socket, i32 0, i32 0
+  %"$socket.fd" = load i32, i32* %socket.fd, align 4
+  %"$events" = load i16, i16* %events, align 2
+  %3 = insertvalue %"cstd::pollfd" zeroinitializer, i32 %"$socket.fd", 0
+  %4 = insertvalue %"cstd::pollfd" %3, i16 %"$events", 1
+  call void @"Array<cstd::pollfd>.append"(%"Array<cstd::pollfd>"* %entries, %"cstd::pollfd" %4)
+  br label %while44
+
+endloop:                                          ; preds = %while44
+  br label %if45
+
+if45:                                             ; preds = %endloop
+  %entries.data = getelementptr inbounds %"Array<cstd::pollfd>", %"Array<cstd::pollfd>"* %entries, i32 0, i32 0
+  %"call.Array<cstd::pollfd>.len" = call i32 @"Array<cstd::pollfd>.len"(%"Array<cstd::pollfd>"* %entries)
+  %"$entries.data" = load %"cstd::pollfd"*, %"cstd::pollfd"** %entries.data, align 8
+  %"$timeout" = load i32, i32* %timeout, align 4
+  %call.poll = call i32 @poll(%"cstd::pollfd"* %"$entries.data", i32 %"call.Array<cstd::pollfd>.len", i32 %"$timeout")
+  %LT = icmp slt i32 %call.poll, 0
+  br i1 %LT, label %if45.then, label %endif
+
+if45.then:                                        ; preds = %if45
+  %"call.net::fail" = call %Error @"net::fail"(%String { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @str.7, i32 0, i32 0), i32 4, i32 0 })
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  store %Error %"call.net::fail", %Error* %"*error.at", align 8
+  store i32 1, i32* @ucg.error_type, align 4
+  store i1 false, i1* @ucg.thrown, align 1
+  call void @"Array<cstd::pollfd>.drop"(%"Array<cstd::pollfd>"* %entries)
+  store i1 true, i1* @ucg.thrown, align 1
+  ret %"Array<i16>" zeroinitializer
+
+endif:                                            ; preds = %if45
+  store %"Array<i16>" zeroinitializer, %"Array<i16>"* %ready, align 8
+  store i32 0, i32* %i2, align 4
+  store %"cstd::pollfd" zeroinitializer, %"cstd::pollfd"* %entry3, align 4
+  br label %while46
+
+while46:                                          ; preds = %while46.then, %endif
+  %"call.Array<cstd::pollfd>.in" = call i1 @"Array<cstd::pollfd>.in"(%"Array<cstd::pollfd>"* %entries, i32* %i2, %"cstd::pollfd"* %entry3)
+  br i1 %"call.Array<cstd::pollfd>.in", label %while46.then, label %endloop1
+
+while46.then:                                     ; preds = %while46
+  %entry.revents = getelementptr inbounds %"cstd::pollfd", %"cstd::pollfd"* %entry3, i32 0, i32 2
+  %"$entry.revents" = load i16, i16* %entry.revents, align 2
+  call void @"Array<i16>.append"(%"Array<i16>"* %ready, i16 %"$entry.revents")
+  br label %while46
+
+endloop1:                                         ; preds = %while46
+  %"$ready" = load %"Array<i16>", %"Array<i16>"* %ready, align 8
+  call void @"Array<cstd::pollfd>.drop"(%"Array<cstd::pollfd>"* %entries)
+  ret %"Array<i16>" %"$ready"
 }
 
 define i32 @main() {
 entry:
-  %fd = alloca i32, align 4
-  %addr = alloca %"Array<i8>", align 8
-  %fds = alloca %"Array<Pollfd>", align 8
-  %buf = alloca %"Array<i8>", align 8
-  %ref = alloca %Pollfd*, align 8
-  %r = alloca i64, align 8
-  %ref14 = alloca %Pollfd*, align 8
-  %r22 = alloca i64, align 8
-  store i32 1, i32* @POLLIN, align 4
+  %address = alloca %"net::Address", align 8
+  %copy = alloca %String, align 8
+  %socket = alloca %"net::Socket", align 8
+  %ref = alloca %"net::Socket"*, align 8
+  %format.size = alloca i32, align 4
+  %format.text = alloca i8*, align 8
+  %sockets = alloca %"Array<net::Socket>", align 8
+  %ready = alloca %"Array<i16>", align 8
+  %ref19 = alloca i16*, align 8
+  %line = alloca %String, align 8
+  %format.size23 = alloca i32, align 4
+  %format.text28 = alloca i8*, align 8
+  %ref38 = alloca i16*, align 8
+  %text = alloca %String, align 8
+  %format.size47 = alloca i32, align 4
+  %format.text52 = alloca i8*, align 8
+  %error.at = alloca %Error*, align 8
+  br label %try47
+
+try47:                                            ; preds = %entry
+  br i1 true, label %try47.then, label %endtry
+
+try47.then:                                       ; preds = %try47
+  store i32 0, i32* @"cstd::F_OK", align 4
+  store i32 0, i32* @"cstd::O_RDONLY", align 4
+  store i32 1, i32* @"cstd::O_WRONLY", align 4
+  store i32 2, i32* @"cstd::O_RDWR", align 4
+  store i32 64, i32* @"cstd::O_CREAT", align 4
+  store i32 512, i32* @"cstd::O_TRUNC", align 4
+  store i32 1024, i32* @"cstd::O_APPEND", align 4
+  store i32 1, i32* @"cstd::CLOCK_MONOTONIC", align 4
+  store i32 61440, i32* @"cstd::S_IFMT", align 4
+  store i32 32768, i32* @"cstd::S_IFREG", align 4
+  store i32 16384, i32* @"cstd::S_IFDIR", align 4
+  store i32 448, i32* @"cstd::S_IRWXU", align 4
+  store i32 256, i32* @"cstd::S_IRUSR", align 4
+  store i32 128, i32* @"cstd::S_IWUSR", align 4
+  store i32 2, i32* @"cstd::AF_INET", align 4
+  store i32 1, i32* @"cstd::SOCK_STREAM", align 4
+  store i32 1, i32* @"cstd::SOL_SOCKET", align 4
+  store i32 2, i32* @"cstd::SO_REUSEADDR", align 4
+  store i16 1, i16* @"cstd::POLLIN", align 2
+  store i32 0, i32* @"cstd::INADDR_ANY", align 4
+  store %String { i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.8, i32 0, i32 0), i32 9, i32 0 }, %String* @HOST, align 8
   store i32 8080, i32* @PORT, align 4
-  %call.socket = call i32 @socket(i32 2, i32 1, i32 0)
-  store i32 %call.socket, i32* %fd, align 4
+  store i32 1024, i32* @CHUNK, align 4
+  store i32 0, i32* @STDIN, align 4
+  store %String zeroinitializer, %String* %copy, align 8
+  %0 = bitcast %String* %copy to %"Array<i8>"*
+  call void @"Array<i8>.="(%"Array<i8>"* %0, %"Array<i8>"* bitcast (%String* @HOST to %"Array<i8>"*))
+  %"$copy" = load %String, %String* %copy, align 8
   %"$PORT" = load i32, i32* @PORT, align 4
-  %call.address = call %"Array<i8>" @address(i32 %"$PORT")
-  store %"Array<i8>" %call.address, %"Array<i8>"* %addr, align 8
-  br label %if22
+  %"call.net::Address.create" = call %"net::Address" @"net::Address.create.1"(%String %"$copy", i32 %"$PORT")
+  br label %thrown48
 
-if22:                                             ; preds = %entry
-  %"$fd" = load i32, i32* %fd, align 4
-  %LT = icmp slt i32 %"$fd", 0
-  %addr.data = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %addr, i32 0, i32 0
-  %"$fd5" = load i32, i32* %fd, align 4
-  %"$addr.data" = load i8*, i8** %addr.data, align 8
-  %call.connect = call i32 @connect(i32 %"$fd5", i8* %"$addr.data", i32 16)
-  %NQ = icmp ne i32 %call.connect, 0
-  %OR = or i1 %LT, %NQ
-  br i1 %OR, label %if22.then, label %endif
+thrown48:                                         ; preds = %try47.then
+  %"$ucg.thrown" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown", label %thrown48.then, label %endthrown
 
-if22.then:                                        ; preds = %if22
-  call void @"io::err"(%String { i8* getelementptr inbounds ([37 x i8], [37 x i8]* @str, i32 0, i32 0), i32 36, i32 0 })
-  call void @"Array<i8>.drop"(%"Array<i8>"* %addr)
+thrown48.then:                                    ; preds = %thrown48
+  store i1 false, i1* @ucg.thrown, align 1
+  call void @"Array<i8>.drop"(%"Array<i8>"* bitcast (%String* @HOST to %"Array<i8>"*))
+  store i1 true, i1* @ucg.thrown, align 1
+  br label %endtry
+
+endthrown:                                        ; preds = %thrown48
+  store %"net::Address" %"call.net::Address.create", %"net::Address"* %address, align 8
+  %"call.net::Socket.create" = call %"net::Socket" @"net::Socket.create"()
+  br label %thrown49
+
+thrown49:                                         ; preds = %endthrown
+  %"$ucg.thrown10" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown10", label %thrown49.then, label %endthrown1
+
+thrown49.then:                                    ; preds = %thrown49
+  store i1 false, i1* @ucg.thrown, align 1
+  call void @"Array<i8>.drop"(%"Array<i8>"* bitcast (%String* @HOST to %"Array<i8>"*))
+  store i1 true, i1* @ucg.thrown, align 1
+  br label %endtry
+
+endthrown1:                                       ; preds = %thrown49
+  store %"net::Socket" %"call.net::Socket.create", %"net::Socket"* %socket, align 4
+  %"call.net::Socket.connect" = call %"net::Socket"* @"net::Socket.connect"(%"net::Socket"* %socket, %"net::Address"* %address)
+  br label %thrown50
+
+thrown50:                                         ; preds = %endthrown1
+  %"$ucg.thrown11" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown11", label %thrown50.then, label %endthrown2
+
+thrown50.then:                                    ; preds = %thrown50
+  store i1 false, i1* @ucg.thrown, align 1
+  call void @"Array<i8>.drop"(%"Array<i8>"* bitcast (%String* @HOST to %"Array<i8>"*))
+  store i1 true, i1* @ucg.thrown, align 1
+  br label %endtry
+
+endthrown2:                                       ; preds = %thrown50
+  store %"net::Socket"* %"call.net::Socket.connect", %"net::Socket"** %ref, align 8
+  %"*ref" = load %"net::Socket"*, %"net::Socket"** %ref, align 8
+  %call.String.chars = call i8* @String.chars(%String* @HOST)
+  %"$PORT12" = load i32, i32* @PORT, align 4
+  %call.snprintf = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @str.9, i32 0, i32 0), i8* %call.String.chars, i32 %"$PORT12")
+  store i32 %call.snprintf, i32* %format.size, align 4
+  %"$format.size" = load i32, i32* %format.size, align 4
+  %ADD = add i32 %"$format.size", 1
+  %AS = sext i32 %ADD to i64
+  %call.calloc = call i8* @calloc(i64 %AS, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc, i8** %format.text, align 8
+  %"$format.text" = load i8*, i8** %format.text, align 8
+  %call.snprintf13 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text", i64 %AS, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @str.9, i32 0, i32 0), i8* %call.String.chars, i32 %"$PORT12")
+  %"$format.size14" = load i32, i32* %format.size, align 4
+  %ADD15 = add i32 %"$format.size14", 1
+  %"$format.text16" = load i8*, i8** %format.text, align 8
+  %"$format.size17" = load i32, i32* %format.size, align 4
+  %1 = insertvalue %String zeroinitializer, i8* %"$format.text16", 0
+  %2 = insertvalue %String %1, i32 %"$format.size17", 1
+  %3 = insertvalue %String %2, i32 %ADD15, 2
+  call void @"io::out"(%String %3)
+  store %"Array<net::Socket>" zeroinitializer, %"Array<net::Socket>"* %sockets, align 8
+  %"$STDIN" = load i32, i32* @STDIN, align 4
+  %4 = insertvalue %"net::Socket" zeroinitializer, i32 %"$STDIN", 0
+  call void @"Array<net::Socket>.append"(%"Array<net::Socket>"* %sockets, %"net::Socket" %4)
+  %"$socket" = load %"net::Socket", %"net::Socket"* %socket, align 4
+  call void @"Array<net::Socket>.append"(%"Array<net::Socket>"* %sockets, %"net::Socket" %"$socket")
+  br label %while51
+
+while51:                                          ; preds = %endif8, %endthrown2
+  br i1 true, label %while51.then, label %endloop
+
+while51.then:                                     ; preds = %while51
+  %"$cstd::POLLIN" = load i16, i16* @"cstd::POLLIN", align 2
+  %"call.net::poll" = call %"Array<i16>" @"net::poll"(%"Array<net::Socket>"* %sockets, i16 %"$cstd::POLLIN", i32 -1)
+  br label %thrown52
+
+thrown52:                                         ; preds = %while51.then
+  %"$ucg.thrown18" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown18", label %thrown52.then, label %endthrown3
+
+thrown52.then:                                    ; preds = %thrown52
+  store i1 false, i1* @ucg.thrown, align 1
+  call void @"Array<i16>.drop"(%"Array<i16>"* %ready)
+  call void @"Array<net::Socket>.drop"(%"Array<net::Socket>"* %sockets)
+  call void @"Array<i8>.drop"(%"Array<i8>"* bitcast (%String* @HOST to %"Array<i8>"*))
+  store i1 true, i1* @ucg.thrown, align 1
+  br label %endtry
+
+endthrown3:                                       ; preds = %thrown52
+  store %"Array<i16>" %"call.net::poll", %"Array<i16>"* %ready, align 8
+  br label %if53
+
+if53:                                             ; preds = %endthrown3
+  %"call.Array<i16>.[]" = call i16* @"Array<i16>.[]"(%"Array<i16>"* %ready, i32 0)
+  store i16* %"call.Array<i16>.[]", i16** %ref19, align 8
+  %"*ref20" = load i16*, i16** %ref19, align 8
+  %"$*ref" = load i16, i16* %"*ref20", align 2
+  %"$cstd::POLLIN21" = load i16, i16* @"cstd::POLLIN", align 2
+  %BAND = and i16 %"$*ref", %"$cstd::POLLIN21"
+  %NQ = icmp ne i16 %BAND, 0
+  br i1 %NQ, label %if53.then, label %endif5
+
+if53.then:                                        ; preds = %if53
+  %"call.io::input" = call %String @"io::input"()
+  store %String %"call.io::input", %String* %line, align 8
+  br label %if54
+
+if54:                                             ; preds = %if53.then
+  %call.String.is_empty = call i1 @String.is_empty(%String* %line)
+  br i1 %call.String.is_empty, label %if54.then, label %endif
+
+if54.then:                                        ; preds = %if54
+  %5 = bitcast %String* %line to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %5)
+  call void @"Array<i16>.drop"(%"Array<i16>"* %ready)
+  br label %endloop
+
+endif:                                            ; preds = %if54
+  %call.String.chars22 = call i8* @String.chars(%String* %line)
+  %call.snprintf24 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.10, i32 0, i32 0), i8* %call.String.chars22)
+  store i32 %call.snprintf24, i32* %format.size23, align 4
+  %"$format.size25" = load i32, i32* %format.size23, align 4
+  %ADD26 = add i32 %"$format.size25", 1
+  %AS27 = sext i32 %ADD26 to i64
+  %call.calloc29 = call i8* @calloc(i64 %AS27, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc29, i8** %format.text28, align 8
+  %"$format.text30" = load i8*, i8** %format.text28, align 8
+  %call.snprintf31 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text30", i64 %AS27, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @str.10, i32 0, i32 0), i8* %call.String.chars22)
+  %"$format.size32" = load i32, i32* %format.size23, align 4
+  %ADD33 = add i32 %"$format.size32", 1
+  %"$format.text34" = load i8*, i8** %format.text28, align 8
+  %"$format.size35" = load i32, i32* %format.size23, align 4
+  %6 = insertvalue %String zeroinitializer, i8* %"$format.text34", 0
+  %7 = insertvalue %String %6, i32 %"$format.size35", 1
+  %8 = insertvalue %String %7, i32 %ADD33, 2
+  %"call.net::Socket.send" = call i64 @"net::Socket.send"(%"net::Socket"* %socket, %String %8)
+  br label %thrown55
+
+thrown55:                                         ; preds = %endif
+  %"$ucg.thrown36" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown36", label %thrown55.then, label %endthrown4
+
+thrown55.then:                                    ; preds = %thrown55
+  store i1 false, i1* @ucg.thrown, align 1
+  %9 = bitcast %String* %line to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %9)
+  call void @"Array<i16>.drop"(%"Array<i16>"* %ready)
+  call void @"Array<net::Socket>.drop"(%"Array<net::Socket>"* %sockets)
+  call void @"Array<i8>.drop"(%"Array<i8>"* bitcast (%String* @HOST to %"Array<i8>"*))
+  store i1 true, i1* @ucg.thrown, align 1
+  br label %endtry
+
+endthrown4:                                       ; preds = %thrown55
+  %10 = bitcast %String* %line to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %10)
+  br label %endif5
+
+endif5:                                           ; preds = %endthrown4, %if53
+  br label %if56
+
+if56:                                             ; preds = %endif5
+  %"call.Array<i16>.[]37" = call i16* @"Array<i16>.[]"(%"Array<i16>"* %ready, i32 1)
+  store i16* %"call.Array<i16>.[]37", i16** %ref38, align 8
+  %"*ref39" = load i16*, i16** %ref38, align 8
+  %"$*ref40" = load i16, i16* %"*ref39", align 2
+  %"$cstd::POLLIN41" = load i16, i16* @"cstd::POLLIN", align 2
+  %BAND42 = and i16 %"$*ref40", %"$cstd::POLLIN41"
+  %NQ43 = icmp ne i16 %BAND42, 0
+  br i1 %NQ43, label %if56.then, label %endif8
+
+if56.then:                                        ; preds = %if56
+  %"$CHUNK" = load i32, i32* @CHUNK, align 4
+  %"call.net::Socket.recv" = call %String @"net::Socket.recv"(%"net::Socket"* %socket, i32 %"$CHUNK")
+  br label %thrown57
+
+thrown57:                                         ; preds = %if56.then
+  %"$ucg.thrown44" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown44", label %thrown57.then, label %endthrown6
+
+thrown57.then:                                    ; preds = %thrown57
+  store i1 false, i1* @ucg.thrown, align 1
+  %11 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %11)
+  call void @"Array<i16>.drop"(%"Array<i16>"* %ready)
+  call void @"Array<net::Socket>.drop"(%"Array<net::Socket>"* %sockets)
+  call void @"Array<i8>.drop"(%"Array<i8>"* bitcast (%String* @HOST to %"Array<i8>"*))
+  store i1 true, i1* @ucg.thrown, align 1
+  br label %endtry
+
+endthrown6:                                       ; preds = %thrown57
+  store %String %"call.net::Socket.recv", %String* %text, align 8
+  br label %if58
+
+if58:                                             ; preds = %endthrown6
+  %call.String.is_empty45 = call i1 @String.is_empty(%String* %text)
+  br i1 %call.String.is_empty45, label %if58.then, label %endif7
+
+if58.then:                                        ; preds = %if58
+  call void @"io::out"(%String { i8* getelementptr inbounds ([43 x i8], [43 x i8]* @str.11, i32 0, i32 0), i32 42, i32 0 })
+  %12 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %12)
+  call void @"Array<i16>.drop"(%"Array<i16>"* %ready)
+  br label %endloop
+
+endif7:                                           ; preds = %if58
+  %call.String.chars46 = call i8* @String.chars(%String* %text)
+  %call.snprintf48 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* null, i64 0, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @str.12, i32 0, i32 0), i8* %call.String.chars46)
+  store i32 %call.snprintf48, i32* %format.size47, align 4
+  %"$format.size49" = load i32, i32* %format.size47, align 4
+  %ADD50 = add i32 %"$format.size49", 1
+  %AS51 = sext i32 %ADD50 to i64
+  %call.calloc53 = call i8* @calloc(i64 %AS51, i64 sext (i32 ptrtoint (i8* getelementptr (i8, i8* null, i32 1) to i32) to i64))
+  store i8* %call.calloc53, i8** %format.text52, align 8
+  %"$format.text54" = load i8*, i8** %format.text52, align 8
+  %call.snprintf55 = call i32 (i8*, i64, i8*, ...) @snprintf(i8* %"$format.text54", i64 %AS51, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @str.12, i32 0, i32 0), i8* %call.String.chars46)
+  %"$format.size56" = load i32, i32* %format.size47, align 4
+  %ADD57 = add i32 %"$format.size56", 1
+  %"$format.text58" = load i8*, i8** %format.text52, align 8
+  %"$format.size59" = load i32, i32* %format.size47, align 4
+  %13 = insertvalue %String zeroinitializer, i8* %"$format.text58", 0
+  %14 = insertvalue %String %13, i32 %"$format.size59", 1
+  %15 = insertvalue %String %14, i32 %ADD57, 2
+  call void @"io::out"(%String %15)
+  %16 = bitcast %String* %text to %"Array<i8>"*
+  call void @"Array<i8>.drop"(%"Array<i8>"* %16)
+  br label %endif8
+
+endif8:                                           ; preds = %endif7, %if56
+  call void @"Array<i16>.drop"(%"Array<i16>"* %ready)
+  br label %while51
+
+endloop:                                          ; preds = %if58.then, %if54.then, %while51
+  call void @"net::Socket.close"(%"net::Socket"* %socket)
+  call void @"Array<net::Socket>.drop"(%"Array<net::Socket>"* %sockets)
+  call void @"Array<i8>.drop"(%"Array<i8>"* bitcast (%String* @HOST to %"Array<i8>"*))
+  ret i32 0
+
+endtry:                                           ; preds = %thrown57.then, %thrown55.then, %thrown52.then, %thrown50.then, %thrown49.then, %thrown48.then, %try47
+  br label %catch59
+
+catch59:                                          ; preds = %endtry
+  %"$ucg.error_type" = load i32, i32* @ucg.error_type, align 4
+  %EQ = icmp eq i32 %"$ucg.error_type", 1
+  %"$ucg.thrown60" = load i1, i1* @ucg.thrown, align 1
+  %AND = and i1 %"$ucg.thrown60", %EQ
+  br i1 %AND, label %catch59.then, label %endcatch
+
+catch59.then:                                     ; preds = %catch59
+  store i1 false, i1* @ucg.thrown, align 1
+  store %Error* bitcast ([2 x i64]* @ucg.error to %Error*), %Error** %error.at, align 8
+  %"*error.at" = load %Error*, %Error** %error.at, align 8
+  %call.uncaught = call i32 @uncaught(%Error* %"*error.at")
+  ret i32 %call.uncaught
+
+endcatch:                                         ; preds = %catch59
+  br label %if60
+
+if60:                                             ; preds = %endcatch
+  %"$ucg.thrown61" = load i1, i1* @ucg.thrown, align 1
+  br i1 %"$ucg.thrown61", label %if60.then, label %endif9
+
+if60.then:                                        ; preds = %if60
   ret i32 1
 
-endif:                                            ; preds = %if22
-  call void @"io::out"(%String { i8* getelementptr inbounds ([38 x i8], [38 x i8]* @str.1, i32 0, i32 0), i32 37, i32 0 })
-  store %"Array<Pollfd>" zeroinitializer, %"Array<Pollfd>"* %fds, align 8
-  call void @watch(%"Array<Pollfd>"* %fds, i32 0)
-  %"$fd6" = load i32, i32* %fd, align 4
-  call void @watch(%"Array<Pollfd>"* %fds, i32 %"$fd6")
-  store %"Array<i8>" zeroinitializer, %"Array<i8>"* %buf, align 8
-  call void @"Array<i8>.resize"(%"Array<i8>"* %buf, i32 1024)
-  br label %while23
-
-while23:                                          ; preds = %endif4, %endif
-  br i1 true, label %while23.then, label %endloop
-
-while23.then:                                     ; preds = %while23
-  %fds.data = getelementptr inbounds %"Array<Pollfd>", %"Array<Pollfd>"* %fds, i32 0, i32 0
-  %"$fds.data" = load %Pollfd*, %Pollfd** %fds.data, align 8
-  %AS = bitcast %Pollfd* %"$fds.data" to i8*
-  %"call.Array<Pollfd>.len" = call i32 @"Array<Pollfd>.len"(%"Array<Pollfd>"* %fds)
-  %call.poll = call i32 @poll(i8* %AS, i32 %"call.Array<Pollfd>.len", i32 -1)
-  br label %if24
-
-if24:                                             ; preds = %while23.then
-  %"call.Array<Pollfd>.[]" = call %Pollfd* @"Array<Pollfd>.[]"(%"Array<Pollfd>"* %fds, i32 0)
-  store %Pollfd* %"call.Array<Pollfd>.[]", %Pollfd** %ref, align 8
-  %"*ref" = load %Pollfd*, %Pollfd** %ref, align 8
-  %"*ref.revents" = getelementptr inbounds %Pollfd, %Pollfd* %"*ref", i32 0, i32 2
-  %"$*ref.revents" = load i16, i16* %"*ref.revents", align 2
-  %AS7 = sext i16 %"$*ref.revents" to i32
-  %"$POLLIN" = load i32, i32* @POLLIN, align 4
-  %BAND = and i32 %AS7, %"$POLLIN"
-  %NQ8 = icmp ne i32 %BAND, 0
-  br i1 %NQ8, label %if24.then, label %endif2
-
-if24.then:                                        ; preds = %if24
-  %buf.data = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %buf, i32 0, i32 0
-  %"$buf.data" = load i8*, i8** %buf.data, align 8
-  %call.read = call i64 @read(i32 0, i8* %"$buf.data", i64 1023)
-  store i64 %call.read, i64* %r, align 8
-  br label %if25
-
-if25:                                             ; preds = %if24.then
-  %"$r" = load i64, i64* %r, align 8
-  %LE = icmp sle i64 %"$r", 0
-  br i1 %LE, label %if25.then, label %endif1
-
-if25.then:                                        ; preds = %if25
-  br label %endloop
-
-endif1:                                           ; preds = %if25
-  %buf.data9 = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %buf, i32 0, i32 0
-  %"$fd10" = load i32, i32* %fd, align 4
-  %"$buf.data11" = load i8*, i8** %buf.data9, align 8
-  %"$r12" = load i64, i64* %r, align 8
-  %call.write = call i64 @write(i32 %"$fd10", i8* %"$buf.data11", i64 %"$r12")
-  br label %endif2
-
-endif2:                                           ; preds = %endif1, %if24
-  br label %if26
-
-if26:                                             ; preds = %endif2
-  %"call.Array<Pollfd>.[]13" = call %Pollfd* @"Array<Pollfd>.[]"(%"Array<Pollfd>"* %fds, i32 1)
-  store %Pollfd* %"call.Array<Pollfd>.[]13", %Pollfd** %ref14, align 8
-  %"*ref15" = load %Pollfd*, %Pollfd** %ref14, align 8
-  %"*ref.revents16" = getelementptr inbounds %Pollfd, %Pollfd* %"*ref15", i32 0, i32 2
-  %"$*ref.revents17" = load i16, i16* %"*ref.revents16", align 2
-  %AS18 = sext i16 %"$*ref.revents17" to i32
-  %"$POLLIN19" = load i32, i32* @POLLIN, align 4
-  %BAND20 = and i32 %AS18, %"$POLLIN19"
-  %NQ21 = icmp ne i32 %BAND20, 0
-  br i1 %NQ21, label %if26.then, label %endif4
-
-if26.then:                                        ; preds = %if26
-  %buf.data23 = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %buf, i32 0, i32 0
-  %"$fd24" = load i32, i32* %fd, align 4
-  %"$buf.data25" = load i8*, i8** %buf.data23, align 8
-  %call.read26 = call i64 @read(i32 %"$fd24", i8* %"$buf.data25", i64 1023)
-  store i64 %call.read26, i64* %r22, align 8
-  br label %if27
-
-if27:                                             ; preds = %if26.then
-  %"$r27" = load i64, i64* %r22, align 8
-  %LE28 = icmp sle i64 %"$r27", 0
-  br i1 %LE28, label %if27.then, label %endif3
-
-if27.then:                                        ; preds = %if27
-  call void @"io::out"(%String { i8* getelementptr inbounds ([43 x i8], [43 x i8]* @str.2, i32 0, i32 0), i32 42, i32 0 })
-  br label %endloop
-
-endif3:                                           ; preds = %if27
-  call void @"io::out"(%String { i8* getelementptr inbounds ([10 x i8], [10 x i8]* @str.3, i32 0, i32 0), i32 9, i32 0 })
-  %buf.data29 = getelementptr inbounds %"Array<i8>", %"Array<i8>"* %buf, i32 0, i32 0
-  %"$buf.data30" = load i8*, i8** %buf.data29, align 8
-  %"$r31" = load i64, i64* %r22, align 8
-  %call.write32 = call i64 @write(i32 1, i8* %"$buf.data30", i64 %"$r31")
-  br label %endif4
-
-endif4:                                           ; preds = %endif3, %if26
-  br label %while23
-
-endloop:                                          ; preds = %if27.then, %if25.then, %while23
-  %"$fd33" = load i32, i32* %fd, align 4
-  %call.close = call i32 @close(i32 %"$fd33")
-  call void @"Array<i8>.drop"(%"Array<i8>"* %buf)
-  call void @"Array<Pollfd>.drop"(%"Array<Pollfd>"* %fds)
-  call void @"Array<i8>.drop"(%"Array<i8>"* %addr)
+endif9:                                           ; preds = %if60
   ret i32 0
 }
 
@@ -6922,6 +9276,8 @@ declare i8* @calloc(i64, i64)
 declare i8* @memcpy(i8*, i8*, i64)
 
 declare void @free(i8*)
+
+declare i32 @snprintf(i8*, i64, i8*, ...)
 ```
 
 ## 029 — dungeon: floor04
@@ -7619,9 +9975,9 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 @str.1 = private unnamed_addr constant [4 x i8] c"hi\0A\00", align 1
 @str.2 = private unnamed_addr constant [12 x i8] c"length: %d\0A\00", align 1
 
-declare i64 @write(i32, i8*, i64)
-
 declare i64 @strlen(i8*)
+
+declare i64 @write(i32, i8*, i64)
 
 declare i32 @printf(i8*, ...)
 
@@ -8028,15 +10384,12 @@ entry:
   %r = alloca %Range, align 8
   store i32 %0, i32* %start, align 4
   store i32 %1, i32* %stop, align 4
-  store %Range zeroinitializer, %Range* %r, align 4
-  %r.start = getelementptr inbounds %Range, %Range* %r, i32 0, i32 0
   %"$start" = load i32, i32* %start, align 4
-  store i32 %"$start", i32* %r.start, align 4
-  %r.stop = getelementptr inbounds %Range, %Range* %r, i32 0, i32 1
   %"$stop" = load i32, i32* %stop, align 4
-  store i32 %"$stop", i32* %r.stop, align 4
-  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 1, i32* %r.step, align 4
+  %2 = insertvalue %Range zeroinitializer, i32 %"$start", 0
+  %3 = insertvalue %Range %2, i32 %"$stop", 1
+  %4 = insertvalue %Range %3, i32 1, 2
+  store %Range %4, %Range* %r, align 4
   br label %if10
 
 if10:                                             ; preds = %entry
@@ -8046,8 +10399,8 @@ if10:                                             ; preds = %entry
   br i1 %LT, label %if10.then, label %endif
 
 if10.then:                                        ; preds = %if10
-  %r.step3 = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 -1, i32* %r.step3, align 4
+  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
+  store i32 -1, i32* %r.step, align 4
   br label %endif
 
 endif:                                            ; preds = %if10.then, %if10
@@ -8224,31 +10577,31 @@ entry:
 define i32 @enemy_hp(i32 %0) {
 entry:
   %kind = alloca i32, align 4
-  %"match@878" = alloca i32, align 4
+  %"match@1562" = alloca i32, align 4
   store i32 %0, i32* %kind, align 4
   %"$kind" = load i32, i32* %kind, align 4
-  store i32 %"$kind", i32* %"match@878", align 4
+  store i32 %"$kind", i32* %"match@1562", align 4
   br label %if12
 
 if12:                                             ; preds = %entry
-  %"$match@878" = load i32, i32* %"match@878", align 4
-  %EQ = icmp eq i32 %"$match@878", 0
+  %"$match@1562" = load i32, i32* %"match@1562", align 4
+  %EQ = icmp eq i32 %"$match@1562", 0
   br i1 %EQ, label %if12.then, label %elif13
 
 if12.then:                                        ; preds = %if12
   ret i32 20
 
 elif13:                                           ; preds = %if12
-  %"$match@8781" = load i32, i32* %"match@878", align 4
-  %EQ2 = icmp eq i32 %"$match@8781", 1
+  %"$match@15621" = load i32, i32* %"match@1562", align 4
+  %EQ2 = icmp eq i32 %"$match@15621", 1
   br i1 %EQ2, label %elif13.then, label %elif14
 
 elif13.then:                                      ; preds = %elif13
   ret i32 45
 
 elif14:                                           ; preds = %elif13
-  %"$match@8783" = load i32, i32* %"match@878", align 4
-  %EQ4 = icmp eq i32 %"$match@8783", 2
+  %"$match@15623" = load i32, i32* %"match@1562", align 4
+  %EQ4 = icmp eq i32 %"$match@15623", 2
   br i1 %EQ4, label %elif14.then, label %endif
 
 elif14.then:                                      ; preds = %elif14
@@ -10542,7 +12895,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 042 — link: a library that is not installed
 
 ```stderr
-error: test.ura:3:1 library 'NoSuchLib' not found
+error: library 'NoSuchLib' not found
+at test.ura:3:1
   |
 3 | link "NoSuchLib"
   | ^^^^
@@ -10841,7 +13195,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 044 — macros: @error stops the build with a message and a help
 
 ```stderr
-error: test.ura:3:5 nothing_like_this is not installed
+error: nothing_like_this is not installed
+at test.ura:3:5
   |
 3 |     @error "nothing_like_this is not installed" "linux: sudo apt install libnothing-dev"
   |     ^^^^^^
@@ -10853,7 +13208,8 @@ error: aborting due to 1 error
 ## 045 — macros: @if on something it can't check
 
 ```stderr
-error: test.ura:2:13 @if checks os, arch and installed("lib")
+error: @if checks os, arch and installed("lib")
+at test.ura:2:13
   |
 2 | @if version == 2:
   |             ^^
@@ -10861,3 +13217,4 @@ help: use @if os == "linux" and installed("SDL2"):
 error: aborting due to 1 error
 1
 ```
+

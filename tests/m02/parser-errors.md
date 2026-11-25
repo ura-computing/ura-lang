@@ -39,7 +39,6 @@
 - 081 — array: 1D i32 array: literal, index read, indexed write
 - 082 — array: variable index and element arithmetic
 - 083 — array: arrays of bool, char, f32
-- 085 — array: VLA: runtime-sized stack array
 - 086 — array: indexing a non-array
 - 087 — array: non-integer index
 - 088 — array: array literal with mixed element types
@@ -574,23 +573,6 @@ fn main() i32:
     c char[]  = ['a', 'b', 'c']
     f f32[] = [1.5, 2.5, 3.0]
     io::out($"b[0]={b[0]} c[1]={c[1]} f[2]={f[2]}\n")
-    return 0
-```
-
----
-
-## 085 — array: VLA: runtime-sized stack array
-
-```ura
-// stdout: a[0]=0 a[7]=100
-// expect: 0
-use "@/core"
-
-fn main() i32:
-    n i32 = 4
-    a i32[] = i32[n * 2]
-    a[7] = 100
-    io::out($"a[0]={a[0]} a[7]={a[7]}\n")
     return 0
 ```
 

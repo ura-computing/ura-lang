@@ -3757,7 +3757,8 @@ entry:
 ## 061 — name error: a struct declared twice
 
 ```stderr
-error: test.ura:6:8 struct 'User' is already declared, on line 3
+error: struct 'User' is already declared, on line 3
+at test.ura:6:8
   |
 6 | struct User:
   |        ^^^^
@@ -3768,7 +3769,8 @@ error: aborting due to 1 error
 ## 062 — name error: unknown attribute
 
 ```stderr
-error: test.ura:10:14 'User' has no attribute 'age'
+error: 'User' has no attribute 'age'
+at test.ura:10:14
    |
 10 |     return u.age
    |              ^^^
@@ -3780,7 +3782,8 @@ error: aborting due to 1 error
 ## 063 — name error: unknown method
 
 ```stderr
-error: test.ura:12:14 'User' has no method 'run'
+error: 'User' has no method 'run'
+at test.ura:12:14
    |
 12 |     return u.run()
    |              ^^^
@@ -3792,7 +3795,8 @@ error: aborting due to 1 error
 ## 064 — name error: self outside a method
 
 ```stderr
-error: test.ura:4:12 'self' only exists inside a method
+error: 'self' only exists inside a method
+at test.ura:4:12
   |
 4 |     return self.a
   |            ^^^^
@@ -3803,7 +3807,8 @@ error: aborting due to 1 error
 ## 065 — structs: missing name
 
 ```stderr
-error: test.ura:2:8 expected a struct name after 'struct'
+error: expected a struct name after 'struct'
+at test.ura:2:8
   |
 2 | struct :
   |        ^
@@ -3815,7 +3820,8 @@ error: aborting due to 1 error
 ## 066 — structs: missing colon
 
 ```stderr
-error: test.ura:2:8 expected ':' after the struct name
+error: expected ':' after the struct name
+at test.ura:2:8
   |
 2 | struct User
   |        ^^^^
@@ -3827,7 +3833,8 @@ error: aborting due to 1 error
 ## 067 — structs: expression inside a struct
 
 ```stderr
-error: test.ura:4:7 a struct holds only attributes and methods
+error: a struct holds only attributes and methods
+at test.ura:4:7
   |
 4 |     1 + 2
   |       ^
@@ -3838,7 +3845,8 @@ error: aborting due to 1 error
 ## 068 — structs: attribute without a type
 
 ```stderr
-error: test.ura:3:5 attribute 'a' needs a type
+error: attribute 'a' needs a type
+at test.ura:3:5
   |
 3 |     a
   |     ^
@@ -3850,7 +3858,8 @@ error: aborting due to 1 error
 ## 069 — structs: attribute declared twice
 
 ```stderr
-error: test.ura:4:5 'a' is already declared, on line 3
+error: 'a' is already declared, on line 3
+at test.ura:4:5
   |
 4 |     a i32
   |     ^
@@ -3861,7 +3870,8 @@ error: aborting due to 1 error
 ## 070 — structs: no attributes
 
 ```stderr
-error: test.ura:2:8 struct 'E' has no attributes
+error: struct 'E' has no attributes
+at test.ura:2:8
   |
 2 | struct E:
   |        ^
@@ -3872,7 +3882,8 @@ error: aborting due to 1 error
 ## 071 — structs: contains itself by value
 
 ```stderr
-error: test.ura:3:10 struct 'N' can't contain itself
+error: struct 'N' can't contain itself
+at test.ura:3:10
   |
 3 |     next N
   |          ^
@@ -3884,7 +3895,8 @@ error: aborting due to 1 error
 ## 072 — structs: unknown attribute
 
 ```stderr
-error: test.ura:7:14 'User' has no attribute 'zz'
+error: 'User' has no attribute 'zz'
+at test.ura:7:14
   |
 7 |     return u.zz
   |              ^^
@@ -3896,7 +3908,8 @@ error: aborting due to 1 error
 ## 073 — structs: unknown method
 
 ```stderr
-error: test.ura:7:14 'User' has no method 'zz'
+error: 'User' has no method 'zz'
+at test.ura:7:14
   |
 7 |     return u.zz()
   |              ^^
@@ -3907,7 +3920,8 @@ error: aborting due to 1 error
 ## 074 — structs: method with wrong arguments
 
 ```stderr
-error: test.ura:10:14 'User' has no method 'add' that takes (i32, i32)
+error: 'User' has no method 'add' that takes (i32, i32)
+at test.ura:10:14
    |
 10 |     return u.add(1, 2)
    |              ^^^
@@ -3919,7 +3933,8 @@ error: aborting due to 1 error
 ## 075 — structs: bare attribute inside a method
 
 ```stderr
-error: test.ura:6:16 undeclared variable 'value'
+error: undeclared variable 'value'
+at test.ura:6:16
   |
 6 |         return value
   |                ^^^^^
@@ -3931,7 +3946,8 @@ error: aborting due to 1 error
 ## 076 — structs: bare method call inside a method
 
 ```stderr
-error: test.ura:9:16 no function named 'get'
+error: no function named 'get'
+at test.ura:9:16
   |
 9 |         return get() * 2
   |                ^^^
@@ -3943,7 +3959,8 @@ error: aborting due to 1 error
 ## 077 — structs: method called on the type
 
 ```stderr
-error: test.ura:9:12 'User' is a type, not a value
+error: 'User' is a type, not a value
+at test.ura:9:12
   |
 9 |     return User.get()
   |            ^^^^
@@ -3954,7 +3971,8 @@ error: aborting due to 1 error
 ## 078 — structs: self outside a method
 
 ```stderr
-error: test.ura:3:12 'self' only exists inside a method
+error: 'self' only exists inside a method
+at test.ura:3:12
   |
 3 |     return self.a
   |            ^^^^
@@ -3965,11 +3983,13 @@ error: aborting due to 1 error
 ## 079 — expressions: add a struct and a number
 
 ```stderr
-error: test.ura:7:14 'User' has no operator '+' that takes 'i32'
+error: 'User' has no operator '+' that takes 'i32'
+at test.ura:7:14
   |
 7 |     return u + 1
   |              ^
-error: test.ura:7:14 expected 'i32', found 'User'
+error: expected 'i32', found 'User'
+at test.ura:7:14
   |
 7 |     return u + 1
   |              ^
@@ -3980,7 +4000,8 @@ error: aborting due to 2 errors
 ## 080 — expressions: compare structs
 
 ```stderr
-error: test.ura:8:10 'User' has no operator '==' that takes 'User'
+error: 'User' has no operator '==' that takes 'User'
+at test.ura:8:10
   |
 8 |     if u == v:
   |          ^^
@@ -3991,7 +4012,8 @@ error: aborting due to 1 error
 ## 081 — types: struct into another struct
 
 ```stderr
-error: test.ura:10:14 expected 'User', found 'Addr'
+error: expected 'User', found 'Addr'
+at test.ura:10:14
    |
 10 |     u User = v
    |              ^
@@ -6038,7 +6060,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 095 — method: calling a method the struct does not have
 
 ```stderr
-error: test.ura:9:7 'Room' has no method 'nope'
+error: 'Room' has no method 'nope'
+at test.ura:9:7
   |
 9 |     r.nope()
   |       ^^^^
@@ -6049,7 +6072,8 @@ error: aborting due to 1 error
 ## 096 — method: calling a method on a non-struct
 
 ```stderr
-error: test.ura:6:5 'x' is 'i32', not a struct
+error: 'x' is 'i32', not a struct
+at test.ura:6:5
   |
 6 |     x.nope()
   |     ^
@@ -6060,7 +6084,8 @@ error: aborting due to 1 error
 ## 097 — method: wrong argument count to a method
 
 ```stderr
-error: test.ura:12:7 'Room' has no method 'climb' that takes ()
+error: 'Room' has no method 'climb' that takes ()
+at test.ura:12:7
    |
 12 |     r.climb()
    |       ^^^^^
@@ -7984,15 +8009,12 @@ entry:
   %r = alloca %Range, align 8
   store i32 %0, i32* %start, align 4
   store i32 %1, i32* %stop, align 4
-  store %Range zeroinitializer, %Range* %r, align 4
-  %r.start = getelementptr inbounds %Range, %Range* %r, i32 0, i32 0
   %"$start" = load i32, i32* %start, align 4
-  store i32 %"$start", i32* %r.start, align 4
-  %r.stop = getelementptr inbounds %Range, %Range* %r, i32 0, i32 1
   %"$stop" = load i32, i32* %stop, align 4
-  store i32 %"$stop", i32* %r.stop, align 4
-  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 1, i32* %r.step, align 4
+  %2 = insertvalue %Range zeroinitializer, i32 %"$start", 0
+  %3 = insertvalue %Range %2, i32 %"$stop", 1
+  %4 = insertvalue %Range %3, i32 1, 2
+  store %Range %4, %Range* %r, align 4
   br label %if6
 
 if6:                                              ; preds = %entry
@@ -8002,8 +8024,8 @@ if6:                                              ; preds = %entry
   br i1 %LT, label %if6.then, label %endif
 
 if6.then:                                         ; preds = %if6
-  %r.step3 = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
-  store i32 -1, i32* %r.step3, align 4
+  %r.step = getelementptr inbounds %Range, %Range* %r, i32 0, i32 2
+  store i32 -1, i32* %r.step, align 4
   br label %endif
 
 endif:                                            ; preds = %if6.then, %if6
@@ -12192,7 +12214,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 122 — struct: a field declared twice
 
 ```stderr
-error: test.ura:7:5 'hp' is already declared, on line 6
+error: 'hp' is already declared, on line 6
+at test.ura:7:5
   |
 7 |     hp   i32
   |     ^^
@@ -12203,11 +12226,11 @@ error: aborting due to 1 error
 ## 123 — struct: a field whose type does not exist
 
 ```stderr
-error: test.ura:5:11 unknown type 'Room'
+error: unknown symbol 'Room'
+at test.ura:5:11
   |
 5 |     entry Room
   |           ^^^^
-help: declare it: struct Room:
 error: aborting due to 1 error
 1
 ```
@@ -12215,7 +12238,8 @@ error: aborting due to 1 error
 ## 124 — struct: a struct that contains itself by value
 
 ```stderr
-error: test.ura:6:11 struct 'Node' can't contain itself
+error: struct 'Node' can't contain itself
+at test.ura:6:11
   |
 6 |     next  Node
   |           ^^^^
@@ -12227,7 +12251,8 @@ error: aborting due to 1 error
 ## 125 — struct: two structs that contain each other by value
 
 ```stderr
-error: test.ura:5:7 struct 'A' can't contain itself
+error: struct 'A' can't contain itself
+at test.ura:5:7
   |
 5 |     b B
   |       ^
@@ -12239,11 +12264,11 @@ error: aborting due to 1 error
 ## 126 — struct: a variable of a type that was never declared
 
 ```stderr
-error: test.ura:5:7 unknown type 'Player'
+error: unknown symbol 'Player'
+at test.ura:5:7
   |
 5 |     p Player
   |       ^^^^^^
-help: declare it: struct Player:
 error: aborting due to 1 error
 1
 ```
@@ -12251,7 +12276,8 @@ error: aborting due to 1 error
 ## 127 — struct: reading a field the struct does not have
 
 ```stderr
-error: test.ura:10:18 'Player' has no attribute 'nope'
+error: 'Player' has no attribute 'nope'
+at test.ura:10:18
    |
 10 |     io::out($"{p.nope}")
    |                  ^^^^
@@ -12263,7 +12289,8 @@ error: aborting due to 1 error
 ## 128 — struct: reading a field from a scalar
 
 ```stderr
-error: test.ura:6:16 'x' is 'i32', not a struct
+error: 'x' is 'i32', not a struct
+at test.ura:6:16
   |
 6 |     io::out($"{x.foo}")
   |                ^
@@ -12274,11 +12301,11 @@ error: aborting due to 1 error
 ## 130 — struct: a struct declared in a block is not visible outside it
 
 ```stderr
-error: test.ura:10:7 unknown type 'Inner'
+error: unknown symbol 'Inner'
+at test.ura:10:7
    |
 10 |     i Inner
    |       ^^^^^
-help: declare it: struct Inner:
 error: aborting due to 1 error
 1
 ```
@@ -12286,7 +12313,8 @@ error: aborting due to 1 error
 ## 131 — struct: a struct declared twice in the same scope
 
 ```stderr
-error: test.ura:7:8 struct 'Player' is already declared, on line 4
+error: struct 'Player' is already declared, on line 4
+at test.ura:7:8
   |
 7 | struct Player:
   |        ^^^^^^
@@ -12650,7 +12678,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 133 — struct: struct redefinition
 
 ```stderr
-error: test.ura:9:8 struct 'Point' is already declared, on line 5
+error: struct 'Point' is already declared, on line 5
+at test.ura:9:8
   |
 9 | struct Point:
   |        ^^^^^
@@ -12661,7 +12690,8 @@ error: aborting due to 1 error
 ## 134 — struct: accessing an undefined field
 
 ```stderr
-error: test.ura:12:7 'Point' has no attribute 'z'
+error: 'Point' has no attribute 'z'
+at test.ura:12:7
    |
 12 |     p.z = 5
    |       ^
@@ -12673,7 +12703,8 @@ error: aborting due to 1 error
 ## 135 — struct: calling undefined method on struct
 
 ```stderr
-error: test.ura:12:7 'Point' has no method 'normalize'
+error: 'Point' has no method 'normalize'
+at test.ura:12:7
    |
 12 |     p.normalize()
    |       ^^^^^^^^^
@@ -12910,7 +12941,8 @@ entry:
 ## 142 — struct: a struct value with an unknown attribute
 
 ```stderr
-error: test.ura:8:22 'Point' has no attribute 'z'
+error: 'Point' has no attribute 'z'
+at test.ura:8:22
   |
 8 |     p Point = {x: 1, z: 2}
   |                      ^
@@ -12921,10 +12953,12 @@ error: aborting due to 1 error
 ## 143 — struct: a struct value given to an i32
 
 ```stderr
-error: test.ura:4:13 expected 'i32', found a struct value
+error: expected 'i32', found a struct value
+at test.ura:4:13
   |
 4 |     n i32 = {x: 1}
   |             ^
 error: aborting due to 1 error
 1
 ```
+

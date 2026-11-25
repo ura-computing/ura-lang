@@ -386,7 +386,7 @@ fn main() i32:
 // stdout: test
 // expect: 0
 use "@/core"
-use "@/posix/string"
+use "@/posix"
 
 fn kind(s String) i32:
     match s:

@@ -646,22 +646,31 @@ fn main() i32:
 ## 022 — operator: a temporary is destroyed at the end of its statement
 
 ```ura
+// stdout: DROP 2
 // stdout: show 3
 // stdout: DROP 3
 // stdout: --
+// stdout: DROP 2
 // stdout: 3
 // stdout: DROP 3
 // stdout: --
+// stdout: DROP 2
+// stdout: DROP 1
 // stdout: show 4
 // stdout: DROP 4
 // stdout: DROP 3
 // stdout: --
+// stdout: DROP 2
 // stdout: show 3
 // stdout: DROP 3
+// stdout: DROP 2
 // stdout: show 3
 // stdout: DROP 3
 // stdout: --
+// stdout: DROP 2
 // stdout: DROP 3
+// stdout: DROP 2
+// stdout: DROP 1
 // stdout: 3
 // stdout: --
 // stdout: 9

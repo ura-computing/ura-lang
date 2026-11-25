@@ -3092,7 +3092,8 @@ endloop3:                                         ; preds = %if4.then, %while0
 ## 081 — tokenizer error: unknown character
 
 ```stderr
-error: test.ura:5:15 unknown character '`'
+error: unknown character '`'
+at test.ura:5:15
   |
 5 |     x i32 = 5 ` 3
   |               ^
@@ -3104,7 +3105,8 @@ error: aborting due to 1 error
 ## 082 — tokenizer error: unclosed string
 
 ```stderr
-error: test.ura:5:14 unclosed string
+error: unclosed string
+at test.ura:5:14
   |
 5 |     s i8[] = "abc
   |              ^^^^
@@ -3116,7 +3118,8 @@ error: aborting due to 1 error
 ## 083 — tokenizer error: unclosed character
 
 ```stderr
-error: test.ura:5:14 unclosed character
+error: unclosed character
+at test.ura:5:14
   |
 5 |     c char = 'a
   |              ^^
@@ -3128,7 +3131,8 @@ error: aborting due to 1 error
 ## 084 — tokenizer error: character with two letters
 
 ```stderr
-error: test.ura:5:14 a character holds one letter, not 2
+error: a character holds one letter, not 2
+at test.ura:5:14
   |
 5 |     c char = 'ab'
   |              ^^^^
@@ -3140,7 +3144,8 @@ error: aborting due to 1 error
 ## 085 — tokenizer error: unknown escape
 
 ```stderr
-error: test.ura:5:16 unknown escape '\q'
+error: unknown escape '\q'
+at test.ura:5:16
   |
 5 |     s i8[] = "a\qb"
   |                ^^
@@ -3152,7 +3157,8 @@ error: aborting due to 1 error
 ## 086 — tokenizer error: unclosed comment
 
 ```stderr
-error: test.ura:5:5 unclosed comment
+error: unclosed comment
+at test.ura:5:5
   |
 5 |     /* this never ends
   |     ^^
@@ -3164,7 +3170,8 @@ error: aborting due to 1 error
 ## 087 — tokenizer error: number too big for i32
 
 ```stderr
-error: test.ura:5:13 99999999999 doesn't fit in i32
+error: 99999999999 doesn't fit in i32
+at test.ura:5:13
   |
 5 |     x i32 = 99999999999
   |             ^^^^^^^^^^^
@@ -3199,12 +3206,14 @@ endif:                                            ; preds = %if0
 ## 089 — tokenizer error: two errors in one file: both are shown
 
 ```stderr
-error: test.ura:5:15 unknown character '`'
+error: unknown character '`'
+at test.ura:5:15
   |
 5 |     x i32 = 5 ` 3
   |               ^
 help: remove it
-error: test.ura:6:15 unknown character '@'
+error: unknown character '@'
+at test.ura:6:15
   |
 6 |     y i32 = 2 @ 1
   |               ^
@@ -3216,7 +3225,8 @@ error: aborting due to 2 errors
 ## 090 — parser error: missing : after a function header
 
 ```stderr
-error: test.ura:4:11 expected ':' after the function header
+error: expected ':' after the function header
+at test.ura:4:11
   |
 4 | fn main() i32
   |           ^^^
@@ -3228,7 +3238,8 @@ error: aborting due to 1 error
 ## 091 — parser error: missing ( after a function name
 
 ```stderr
-error: test.ura:4:9 expected '(' after the function name
+error: expected '(' after the function name
+at test.ura:4:9
   |
 4 | fn main i32:
   |         ^^^
@@ -3240,7 +3251,8 @@ error: aborting due to 1 error
 ## 092 — parser error: missing ) after the parameters
 
 ```stderr
-error: test.ura:4:21 expected ')' after the parameters
+error: expected ')' after the parameters
+at test.ura:4:21
   |
 4 | fn add(a i32, b i32 i32:
   |                     ^^^
@@ -3252,7 +3264,8 @@ error: aborting due to 1 error
 ## 093 — parser error: a function with no name
 
 ```stderr
-error: test.ura:4:4 expected a name after 'fn'
+error: expected a name after 'fn'
+at test.ura:4:4
   |
 4 | fn () i32:
   |    ^
@@ -3264,7 +3277,8 @@ error: aborting due to 1 error
 ## 094 — parser error: a parameter with no type
 
 ```stderr
-error: test.ura:4:10 parameter 'a' has no type
+error: parameter 'a' has no type
+at test.ura:4:10
   |
 4 | fn twice(a) i32:
   |          ^
@@ -3276,7 +3290,8 @@ error: aborting due to 1 error
 ## 095 — parser error: missing : after an if condition
 
 ```stderr
-error: test.ura:6:12 expected ':' after the if condition
+error: expected ':' after the if condition
+at test.ura:6:12
   |
 6 |     if x > 1
   |            ^
@@ -3288,7 +3303,8 @@ error: aborting due to 1 error
 ## 096 — parser error: missing : after a while condition
 
 ```stderr
-error: test.ura:6:15 expected ':' after the while condition
+error: expected ':' after the while condition
+at test.ura:6:15
   |
 6 |     while i < 3
   |               ^
@@ -3300,7 +3316,8 @@ error: aborting due to 1 error
 ## 097 — parser error: else with a condition
 
 ```stderr
-error: test.ura:8:5 else has no condition
+error: else has no condition
+at test.ura:8:5
   |
 8 |     else x > 1:
   |     ^^^^
@@ -3312,7 +3329,8 @@ error: aborting due to 1 error
 ## 098 — parser error: elif without an if
 
 ```stderr
-error: test.ura:6:5 elif without an if before it
+error: elif without an if before it
+at test.ura:6:5
   |
 6 |     elif x == 1:
   |     ^^^^
@@ -3324,7 +3342,8 @@ error: aborting due to 1 error
 ## 099 — parser error: unclosed (
 
 ```stderr
-error: test.ura:5:18 expected ')' to close this '('
+error: expected ')' to close this '('
+at test.ura:5:18
   |
 5 |     x i32 = (1 + 2
   |                  ^
@@ -3336,7 +3355,8 @@ error: aborting due to 1 error
 ## 100 — parser error: nothing after =
 
 ```stderr
-error: test.ura:4:11 expected a value after '='
+error: expected a value after '='
+at test.ura:4:11
   |
 4 |     x i32 =
   |           ^
@@ -3347,7 +3367,8 @@ error: aborting due to 1 error
 ## 101 — parser error: nothing after an operator
 
 ```stderr
-error: test.ura:4:15 expected a value after '+'
+error: expected a value after '+'
+at test.ura:4:15
   |
 4 |     x i32 = 1 +
   |               ^
@@ -3358,7 +3379,8 @@ error: aborting due to 1 error
 ## 102 — parser error: unclosed ( in a call
 
 ```stderr
-error: test.ura:8:19 expected ')' to close the call to 'add'
+error: expected ')' to close the call to 'add'
+at test.ura:8:19
   |
 8 |     return add(1, 2
   |                   ^
@@ -3370,7 +3392,8 @@ error: aborting due to 1 error
 ## 103 — name error: undeclared variable
 
 ```stderr
-error: test.ura:6:12 undeclared variable 'y'
+error: undeclared variable 'y'
+at test.ura:6:12
   |
 6 |     return y
   |            ^
@@ -3382,7 +3405,8 @@ error: aborting due to 1 error
 ## 104 — name error: a typo in a variable name
 
 ```stderr
-error: test.ura:6:12 undeclared variable 'cuont'
+error: undeclared variable 'cuont'
+at test.ura:6:12
   |
 6 |     return cuont
   |            ^^^^^
@@ -3394,7 +3418,8 @@ error: aborting due to 1 error
 ## 105 — name error: a variable used before its declaration
 
 ```stderr
-error: test.ura:5:13 'x' is used before its declaration, on line 6
+error: 'x' is used before its declaration, on line 6
+at test.ura:5:13
   |
 5 |     y i32 = x + 1
   |             ^
@@ -3406,7 +3431,8 @@ error: aborting due to 1 error
 ## 106 — name error: a variable declared twice
 
 ```stderr
-error: test.ura:6:5 'x' is already declared, on line 5
+error: 'x' is already declared, on line 5
+at test.ura:6:5
   |
 6 |     x i32 = 2
   |     ^
@@ -3418,11 +3444,11 @@ error: aborting due to 1 error
 ## 107 — name error: unknown type
 
 ```stderr
-error: test.ura:5:7 unknown type 'Point'
+error: unknown symbol 'Point'
+at test.ura:5:7
   |
 5 |     p Point
   |       ^^^^^
-help: declare it: struct Point:
 error: aborting due to 1 error
 1
 ```
@@ -3430,7 +3456,8 @@ error: aborting due to 1 error
 ## 108 — name error: undeclared function
 
 ```stderr
-error: test.ura:4:12 no function named 'foo'
+error: no function named 'foo'
+at test.ura:4:12
   |
 4 |     return foo()
   |            ^^^
@@ -3441,7 +3468,8 @@ error: aborting due to 1 error
 ## 109 — name error: a typo in a function name
 
 ```stderr
-error: test.ura:8:12 no function named 'ad'
+error: no function named 'ad'
+at test.ura:8:12
   |
 8 |     return ad(1, 2)
   |            ^^
@@ -3453,11 +3481,13 @@ error: aborting due to 1 error
 ## 110 — name error: wrong number of arguments
 
 ```stderr
-error: test.ura:8:12 'add' takes 2 arguments, not 1
+error: 'add' takes 2 arguments, not 1
+at test.ura:8:12
   |
 8 |     return add(1)
   |            ^^^
 help: fn add(a i32, b i32) i32
+declared at test.ura:3
 error: aborting due to 1 error
 1
 ```
@@ -3465,7 +3495,8 @@ error: aborting due to 1 error
 ## 111 — name error: a function declared twice
 
 ```stderr
-error: test.ura:6:4 'f' is already defined with these parameters
+error: 'f' is already defined with these parameters
+at test.ura:6:4
   |
 6 | fn f() i32:
   |    ^
@@ -3476,7 +3507,8 @@ error: aborting due to 1 error
 ## 112 — name error: break outside a loop
 
 ```stderr
-error: test.ura:5:5 break outside a loop or match
+error: break outside a loop or match
+at test.ura:5:5
   |
 5 |     break
   |     ^^^^^
@@ -3488,7 +3520,8 @@ error: aborting due to 1 error
 ## 113 — name error: continue outside a loop
 
 ```stderr
-error: test.ura:6:9 continue outside a loop
+error: continue outside a loop
+at test.ura:6:9
   |
 6 |         continue
   |         ^^^^^^^^
@@ -3500,7 +3533,8 @@ error: aborting due to 1 error
 ## 114 — name error: calling a variable
 
 ```stderr
-error: test.ura:5:12 'x' is a variable, not a function
+error: 'x' is a variable, not a function
+at test.ura:5:12
   |
 5 |     return x()
   |            ^
@@ -3511,7 +3545,8 @@ error: aborting due to 1 error
 ## 115 — tokenizer: unexpected character
 
 ```stderr
-error: test.ura:3:15 unknown character '`'
+error: unknown character '`'
+at test.ura:3:15
   |
 3 |     x i32 = 5 `
   |               ^
@@ -3523,7 +3558,8 @@ error: aborting due to 1 error
 ## 116 — tokenizer: unterminated character
 
 ```stderr
-error: test.ura:3:12 unclosed character
+error: unclosed character
+at test.ura:3:12
   |
 3 |     c i8 = 'a
   |            ^^
@@ -3557,7 +3593,8 @@ endif:                                            ; preds = %if0
 ## 118 — tokenizer: character with two letters
 
 ```stderr
-error: test.ura:3:12 a character holds one letter, not 2
+error: a character holds one letter, not 2
+at test.ura:3:12
   |
 3 |     c i8 = 'ab'
   |            ^^^^
@@ -3569,7 +3606,8 @@ error: aborting due to 1 error
 ## 119 — tokenizer: integer too big for i32
 
 ```stderr
-error: test.ura:3:13 99999999999 doesn't fit in i32
+error: 99999999999 doesn't fit in i32
+at test.ura:3:13
   |
 3 |     x i32 = 99999999999
   |             ^^^^^^^^^^^
@@ -3581,7 +3619,8 @@ error: aborting due to 1 error
 ## 120 — functions: missing name
 
 ```stderr
-error: test.ura:2:4 expected a name after 'fn'
+error: expected a name after 'fn'
+at test.ura:2:4
   |
 2 | fn () i32:
   |    ^
@@ -3593,7 +3632,8 @@ error: aborting due to 1 error
 ## 121 — functions: unclosed parameters
 
 ```stderr
-error: test.ura:2:13 expected ')' after the parameters
+error: expected ')' after the parameters
+at test.ura:2:13
   |
 2 | fn add(a i32:
   |             ^
@@ -3605,7 +3645,8 @@ error: aborting due to 1 error
 ## 122 — functions: parameter without a type
 
 ```stderr
-error: test.ura:2:6 parameter 'a' has no type
+error: parameter 'a' has no type
+at test.ura:2:6
   |
 2 | fn f(a) i32:
   |      ^
@@ -3617,7 +3658,8 @@ error: aborting due to 1 error
 ## 123 — functions: missing comma between parameters
 
 ```stderr
-error: test.ura:2:12 expected ',' between parameters
+error: expected ',' between parameters
+at test.ura:2:12
   |
 2 | fn f(a i32 b i32) i32:
   |            ^
@@ -3628,7 +3670,8 @@ error: aborting due to 1 error
 ## 124 — functions: variadic not last
 
 ```stderr
-error: test.ura:2:9 '...' must be the last parameter
+error: '...' must be the last parameter
+at test.ura:2:9
   |
 2 | proto p(..., a i32) i32
   |         ^^^
@@ -3639,11 +3682,11 @@ error: aborting due to 1 error
 ## 125 — functions: unknown return type
 
 ```stderr
-error: test.ura:2:8 unknown type 'Foo'
+error: unknown symbol 'Foo'
+at test.ura:2:8
   |
 2 | fn f() Foo:
   |        ^^^
-help: declare it: struct Foo:
 error: aborting due to 1 error
 1
 ```
@@ -3651,11 +3694,11 @@ error: aborting due to 1 error
 ## 126 — functions: unknown parameter type
 
 ```stderr
-error: test.ura:2:8 unknown type 'Foo'
+error: unknown symbol 'Foo'
+at test.ura:2:8
   |
 2 | fn f(a Foo) i32:
   |        ^^^
-help: declare it: struct Foo:
 error: aborting due to 1 error
 1
 ```
@@ -3663,7 +3706,8 @@ error: aborting due to 1 error
 ## 127 — functions: parameter declared twice
 
 ```stderr
-error: test.ura:2:13 'a' is already declared
+error: 'a' is already declared
+at test.ura:2:13
   |
 2 | fn f(a i32, a i32) i32:
   |             ^
@@ -3674,7 +3718,8 @@ error: aborting due to 1 error
 ## 128 — functions: defined twice
 
 ```stderr
-error: test.ura:5:4 'f' is already defined with these parameters
+error: 'f' is already defined with these parameters
+at test.ura:5:4
   |
 5 | fn f() i32:
   |    ^
@@ -3685,7 +3730,8 @@ error: aborting due to 1 error
 ## 129 — functions: overloaded on return type only
 
 ```stderr
-error: test.ura:5:4 'f' can't be overloaded on its return type
+error: 'f' can't be overloaded on its return type
+at test.ura:5:4
   |
 5 | fn f() i8:
   |    ^
@@ -3696,7 +3742,8 @@ error: aborting due to 1 error
 ## 130 — functions: return at top level
 
 ```stderr
-error: test.ura:2:1 'return' outside of a function
+error: 'return' outside of a function
+at test.ura:2:1
   |
 2 | return 1
   | ^^^^^^
@@ -3708,7 +3755,8 @@ error: aborting due to 1 error
 ## 131 — structs: dot on a non-struct
 
 ```stderr
-error: test.ura:4:12 'a' is 'i32', not a struct
+error: 'a' is 'i32', not a struct
+at test.ura:4:12
   |
 4 |     return a.b
   |            ^
@@ -3719,11 +3767,11 @@ error: aborting due to 1 error
 ## 132 — variables: unknown type
 
 ```stderr
-error: test.ura:3:7 unknown type 'Foo'
+error: unknown symbol 'Foo'
+at test.ura:3:7
   |
 3 |     x Foo
   |       ^^^
-help: declare it: struct Foo:
 error: aborting due to 1 error
 1
 ```
@@ -3731,7 +3779,8 @@ error: aborting due to 1 error
 ## 133 — variables: declared twice
 
 ```stderr
-error: test.ura:4:5 'a' is already declared, on line 3
+error: 'a' is already declared, on line 3
+at test.ura:4:5
   |
 4 |     a i32 = 2
   |     ^
@@ -3743,7 +3792,8 @@ error: aborting due to 1 error
 ## 134 — variables: used before its declaration
 
 ```stderr
-error: test.ura:3:13 'a' is used before its declaration, on line 4
+error: 'a' is used before its declaration, on line 4
+at test.ura:3:13
   |
 3 |     b i32 = a
   |             ^
@@ -3755,7 +3805,8 @@ error: aborting due to 1 error
 ## 135 — variables: used outside its block
 
 ```stderr
-error: test.ura:5:12 undeclared variable 'x'
+error: undeclared variable 'x'
+at test.ura:5:12
   |
 5 |     return x
   |            ^
@@ -3767,7 +3818,8 @@ error: aborting due to 1 error
 ## 136 — variables: assigned without a declaration
 
 ```stderr
-error: test.ura:3:5 undeclared variable 'x'
+error: undeclared variable 'x'
+at test.ura:3:5
   |
 3 |     x = 5
   |     ^
@@ -3779,7 +3831,8 @@ error: aborting due to 1 error
 ## 137 — expressions: missing operand
 
 ```stderr
-error: test.ura:3:15 expected a value after '+'
+error: expected a value after '+'
+at test.ura:3:15
   |
 3 |     a i32 = 1 +
   |               ^
@@ -3790,7 +3843,8 @@ error: aborting due to 1 error
 ## 138 — expressions: unclosed parenthesis
 
 ```stderr
-error: test.ura:3:18 expected ')' to close this '('
+error: expected ')' to close this '('
+at test.ura:3:18
   |
 3 |     a i32 = (1 + 2
   |                  ^
@@ -3802,7 +3856,8 @@ error: aborting due to 1 error
 ## 139 — expressions: unexpected parenthesis
 
 ```stderr
-error: test.ura:3:18 unexpected ')'
+error: unexpected ')'
+at test.ura:3:18
   |
 3 |     a i32 = 1 + 2)
   |                  ^
@@ -3813,7 +3868,8 @@ error: aborting due to 1 error
 ## 140 — expressions: assign to a literal
 
 ```stderr
-error: test.ura:4:5 can't assign to a value
+error: can't assign to a value
+at test.ura:4:5
   |
 4 |     1 = a
   |     ^
@@ -3824,7 +3880,8 @@ error: aborting due to 1 error
 ## 141 — expressions: assign to a call
 
 ```stderr
-error: test.ura:6:5 can't assign to a value
+error: can't assign to a value
+at test.ura:6:5
   |
 6 |     f() = 3
   |     ^
@@ -3835,7 +3892,8 @@ error: aborting due to 1 error
 ## 142 — expressions: compare a number and a string
 
 ```stderr
-error: test.ura:4:13 expected 'i32', found 'String'
+error: expected 'i32', found 'String'
+at test.ura:4:13
   |
 4 |     if a == "x":
   |             ^^^
@@ -3846,18 +3904,25 @@ error: aborting due to 1 error
 ## 143 — expressions: add a number and a string
 
 ```stderr
-error: test.ura:3:14 can't apply '+' to 'i32' and 'String'
+error: can't apply '+' to 'i32' and 'String'
+at test.ura:3:14
   |
 3 |     return 1 + "a"
   |              ^
-error: aborting due to 1 error
+error: expected 'i32', found 'String'
+at test.ura:3:16
+  |
+3 |     return 1 + "a"
+  |                ^^^
+error: aborting due to 2 errors
 1
 ```
 
 ## 144 — expressions: and on numbers
 
 ```stderr
-error: test.ura:3:8 expected 'bool', found 'i32'
+error: expected 'bool', found 'i32'
+at test.ura:3:8
   |
 3 |     if 1 and 2:
   |        ^
@@ -3868,7 +3933,8 @@ error: aborting due to 1 error
 ## 145 — calls: unknown function
 
 ```stderr
-error: test.ura:3:12 no function named 'zz'
+error: no function named 'zz'
+at test.ura:3:12
   |
 3 |     return zz()
   |            ^^
@@ -3879,11 +3945,13 @@ error: aborting due to 1 error
 ## 146 — calls: too many arguments
 
 ```stderr
-error: test.ura:6:12 'f' takes 1 argument, not 2
+error: 'f' takes 1 argument, not 2
+at test.ura:6:12
   |
 6 |     return f(1, 2)
   |            ^
 help: fn f(a i32) i32
+declared at test.ura:1
 error: aborting due to 1 error
 1
 ```
@@ -3891,10 +3959,13 @@ error: aborting due to 1 error
 ## 147 — calls: wrong argument type
 
 ```stderr
-error: test.ura:6:14 expected 'i32', found 'String'
+error: expected 'i32', found 'String'
+at test.ura:6:14
   |
 6 |     return f("a")
   |              ^^^
+help: fn f(a i32) i32
+declared at test.ura:1
 error: aborting due to 1 error
 1
 ```
@@ -3902,7 +3973,8 @@ error: aborting due to 1 error
 ## 148 — calls: missing comma between arguments
 
 ```stderr
-error: test.ura:6:16 expected ',' between arguments
+error: expected ',' between arguments
+at test.ura:6:16
   |
 6 |     return f(1 2)
   |                ^
@@ -3913,7 +3985,8 @@ error: aborting due to 1 error
 ## 149 — calls: unclosed call
 
 ```stderr
-error: test.ura:6:18 expected ')' to close the call to 'f'
+error: expected ')' to close the call to 'f'
+at test.ura:6:18
   |
 6 |     x i32 = f(1, 2
   |                  ^
@@ -3925,7 +3998,8 @@ error: aborting due to 1 error
 ## 150 — calls: trailing comma
 
 ```stderr
-error: test.ura:6:16 expected an argument after ','
+error: expected an argument after ','
+at test.ura:6:16
   |
 6 |     return f(1,)
   |                ^
@@ -3936,7 +4010,8 @@ error: aborting due to 1 error
 ## 151 — calls: call a variable
 
 ```stderr
-error: test.ura:4:12 'a' is a variable, not a function
+error: 'a' is a variable, not a function
+at test.ura:4:12
   |
 4 |     return a()
   |            ^
@@ -3947,7 +4022,8 @@ error: aborting due to 1 error
 ## 152 — calls: use a void result
 
 ```stderr
-error: test.ura:6:13 expected 'i32', found 'void'
+error: expected 'i32', found 'void'
+at test.ura:6:13
   |
 6 |     x i32 = v()
   |             ^
@@ -3958,7 +4034,8 @@ error: aborting due to 1 error
 ## 153 — types: string into i8
 
 ```stderr
-error: test.ura:3:12 expected 'i8', found 'String'
+error: expected 'i8', found 'String'
+at test.ura:3:12
   |
 3 |     x i8 = "a"
   |            ^^^
@@ -3969,7 +4046,8 @@ error: aborting due to 1 error
 ## 154 — types: bool into i32
 
 ```stderr
-error: test.ura:3:13 expected 'i32', found 'bool'
+error: expected 'i32', found 'bool'
+at test.ura:3:13
   |
 3 |     a i32 = True
   |             ^^^^
@@ -3980,7 +4058,8 @@ error: aborting due to 1 error
 ## 155 — types: number into bool
 
 ```stderr
-error: test.ura:3:14 expected 'bool', found 'i32'
+error: expected 'bool', found 'i32'
+at test.ura:3:14
   |
 3 |     b bool = 1
   |              ^
@@ -3991,7 +4070,8 @@ error: aborting due to 1 error
 ## 156 — types: number too big for i8
 
 ```stderr
-error: test.ura:3:12 300 doesn't fit in i8
+error: 300 doesn't fit in i8
+at test.ura:3:12
   |
 3 |     x i8 = 300
   |            ^^^
@@ -4003,7 +4083,8 @@ error: aborting due to 1 error
 ## 157 — types: wrong return type
 
 ```stderr
-error: test.ura:3:12 expected 'i32', found 'String'
+error: expected 'i32', found 'String'
+at test.ura:3:12
   |
 3 |     return "a"
   |            ^^^
@@ -4014,7 +4095,8 @@ error: aborting due to 1 error
 ## 158 — types: value returned from a void fn
 
 ```stderr
-error: test.ura:3:12 expected 'void', found 'i32'
+error: expected 'void', found 'i32'
+at test.ura:3:12
   |
 3 |     return 1
   |            ^
@@ -4025,7 +4107,8 @@ error: aborting due to 1 error
 ## 159 — types: bare return in a fn with a type
 
 ```stderr
-error: test.ura:3:5 'f' must return a value of type 'i32'
+error: 'f' must return a value of type 'i32'
+at test.ura:3:5
   |
 3 |     return
   |     ^^^^^^
@@ -4036,7 +4119,8 @@ error: aborting due to 1 error
 ## 160 — types: number as an if condition
 
 ```stderr
-error: test.ura:3:8 expected 'bool', found 'i32'
+error: expected 'bool', found 'i32'
+at test.ura:3:8
   |
 3 |     if 5:
   |        ^
@@ -4047,7 +4131,8 @@ error: aborting due to 1 error
 ## 161 — types: number as a while condition
 
 ```stderr
-error: test.ura:4:11 expected 'bool', found 'i32'
+error: expected 'bool', found 'i32'
+at test.ura:4:11
   |
 4 |     while a:
   |           ^
@@ -4059,7 +4144,8 @@ error: aborting due to 1 error
 ## 162 — control flow: continue outside a loop
 
 ```stderr
-error: test.ura:3:5 continue outside a loop
+error: continue outside a loop
+at test.ura:3:5
   |
 3 |     continue
   |     ^^^^^^^^
@@ -4071,7 +4157,8 @@ error: aborting due to 1 error
 ## 163 — control flow: elif without if
 
 ```stderr
-error: test.ura:3:5 elif without an if before it
+error: elif without an if before it
+at test.ura:3:5
   |
 3 |     elif True:
   |     ^^^^
@@ -4083,7 +4170,8 @@ error: aborting due to 1 error
 ## 164 — control flow: else without if
 
 ```stderr
-error: test.ura:3:5 else without an if before it
+error: else without an if before it
+at test.ura:3:5
   |
 3 |     else:
   |     ^^^^
@@ -4094,7 +4182,8 @@ error: aborting due to 1 error
 ## 165 — control flow: missing colon after if
 
 ```stderr
-error: test.ura:4:12 expected ':' after the if condition
+error: expected ':' after the if condition
+at test.ura:4:12
   |
 4 |     if a > 1
   |            ^
@@ -4106,7 +4195,8 @@ error: aborting due to 1 error
 ## 166 — control flow: missing colon after elif
 
 ```stderr
-error: test.ura:6:14 expected ':' after the elif condition
+error: expected ':' after the elif condition
+at test.ura:6:14
   |
 6 |     elif a > 0
   |              ^
@@ -4118,7 +4208,8 @@ error: aborting due to 1 error
 ## 167 — control flow: missing colon after else
 
 ```stderr
-error: test.ura:6:5 expected ':' after else
+error: expected ':' after else
+at test.ura:6:5
   |
 6 |     else
   |     ^^^^
@@ -4130,7 +4221,8 @@ error: aborting due to 1 error
 ## 168 — control flow: missing colon after while
 
 ```stderr
-error: test.ura:4:15 expected ':' after the while condition
+error: expected ':' after the while condition
+at test.ura:4:15
   |
 4 |     while a > 0
   |               ^
@@ -4142,7 +4234,8 @@ error: aborting due to 1 error
 ## 169 — control flow: if without a condition
 
 ```stderr
-error: test.ura:3:5 expected a condition after 'if'
+error: expected a condition after 'if'
+at test.ura:3:5
   |
 3 |     if:
   |     ^^
@@ -4153,7 +4246,8 @@ error: aborting due to 1 error
 ## 170 — control flow: else with a condition
 
 ```stderr
-error: test.ura:6:5 else has no condition
+error: else has no condition
+at test.ura:6:5
   |
 6 |     else a > 0:
   |     ^^^^
@@ -4165,17 +4259,20 @@ error: aborting due to 1 error
 ## 171 — recovery: three analysis errors
 
 ```stderr
-error: test.ura:3:13 undeclared variable 'zz'
+error: undeclared variable 'zz'
+at test.ura:3:13
   |
 3 |     a i32 = zz
   |             ^^
 help: did you mean 'a'?
-error: test.ura:4:13 undeclared variable 'u'
+error: undeclared variable 'u'
+at test.ura:4:13
   |
 4 |     b i32 = u.x
   |             ^
 help: did you mean 'a'?
-error: test.ura:5:12 no function named 'yy'
+error: no function named 'yy'
+at test.ura:5:12
   |
 5 |     return yy()
   |            ^^
@@ -4186,12 +4283,14 @@ error: aborting due to 3 errors
 ## 172 — recovery: two syntax errors in two functions
 
 ```stderr
-error: test.ura:2:8 expected ':' after the function header
+error: expected ':' after the function header
+at test.ura:2:8
   |
 2 | fn f() i32
   |        ^^^
 help: use fn f() i32:
-error: test.ura:6:13 expected ')' to close this '('
+error: expected ')' to close this '('
+at test.ura:6:13
   |
 6 |     return (2
   |             ^
@@ -4203,7 +4302,8 @@ error: aborting due to 2 errors
 ## 173 — diagnostics: error past line 9
 
 ```stderr
-error: test.ura:12:12 undeclared variable 'zz'
+error: undeclared variable 'zz'
+at test.ura:12:12
    |
 12 |     return zz
    |            ^^
@@ -6750,7 +6850,8 @@ entry:
 ## 193 — function: redeclaring a function
 
 ```stderr
-error: test.ura:7:4 'dup' is already defined with these parameters
+error: 'dup' is already defined with these parameters
+at test.ura:7:4
   |
 7 | fn dup() i32:
   |    ^^^
@@ -6761,7 +6862,8 @@ error: aborting due to 1 error
 ## 194 — function: calling a function that does not exist
 
 ```stderr
-error: test.ura:5:12 no function named 'bar'
+error: no function named 'bar'
+at test.ura:5:12
   |
 5 |     return bar(3)
   |            ^^^
@@ -6772,11 +6874,13 @@ error: aborting due to 1 error
 ## 195 — function: too many arguments
 
 ```stderr
-error: test.ura:8:13 'add' takes 2 arguments, not 3
+error: 'add' takes 2 arguments, not 3
+at test.ura:8:13
   |
 8 |     x i32 = add(1, 2, 3)
   |             ^^^
 help: fn add(a i32, b i32) i32
+declared at test.ura:3
 error: aborting due to 1 error
 1
 ```
@@ -6784,10 +6888,13 @@ error: aborting due to 1 error
 ## 196 — function: an argument of the wrong type
 
 ```stderr
-error: test.ura:8:10 expected 'i8[]', found 'i32'
+error: expected 'i8[]', found 'i32'
+at test.ura:8:10
   |
 8 |     show(42)
   |          ^^
+help: fn show(s i8[])
+declared at test.ura:3
 error: aborting due to 1 error
 1
 ```
@@ -6795,7 +6902,8 @@ error: aborting due to 1 error
 ## 197 — function: two parameters with the same name
 
 ```stderr
-error: test.ura:4:15 'a' is already declared
+error: 'a' is already declared
+at test.ura:4:15
   |
 4 | fn add(a i32, a i32) i32:
   |               ^
@@ -6806,11 +6914,13 @@ error: aborting due to 1 error
 ## 198 — function: a variadic call missing its required arguments
 
 ```stderr
-error: test.ura:7:5 'printf' takes at least 1 argument, not 0
+error: 'printf' takes at least 1 argument, not 0
+at test.ura:7:5
   |
 7 |     printf()
   |     ^^^^^^
 help: proto printf(fmt i8[], ...) i32
+declared at test.ura:3
 error: aborting due to 1 error
 1
 ```
@@ -7109,7 +7219,8 @@ declare void @free(i8*)
 ## 200 — lexer: unterminated string literal
 
 ```stderr
-error: test.ura:5:12 unclosed string
+error: unclosed string
+at test.ura:5:12
   |
 5 |     output("hello)
   |            ^^^^^^^
@@ -7121,7 +7232,8 @@ error: aborting due to 1 error
 ## 201 — lexer: unterminated character literal
 
 ```stderr
-error: test.ura:5:14 unclosed character
+error: unclosed character
+at test.ura:5:14
   |
 5 |     c char = 'a
   |              ^^
@@ -7133,7 +7245,8 @@ error: aborting due to 1 error
 ## 202 — lexer: unterminated block comment
 
 ```stderr
-error: test.ura:4:1 unclosed comment
+error: unclosed comment
+at test.ura:4:1
   |
 4 | /* this comment never closes
   | ^^
@@ -7145,7 +7258,8 @@ error: aborting due to 1 error
 ## 203 — lexer: an unexpected character
 
 ```stderr
-error: test.ura:5:15 unknown character '#'
+error: unknown character '#'
+at test.ura:5:15
   |
 5 |     a i32 = 5 # 1
   |               ^
@@ -7157,7 +7271,8 @@ error: aborting due to 1 error
 ## 204 — lexer: an unknown escape sequence
 
 ```stderr
-error: test.ura:5:15 unknown escape '\q'
+error: unknown escape '\q'
+at test.ura:5:15
   |
 5 |     c char = '\q'
   |               ^^
@@ -7169,7 +7284,8 @@ error: aborting due to 1 error
 ## 205 — lexer: as with no type after it
 
 ```stderr
-error: test.ura:5:15 expected a type after 'as'
+error: expected a type after 'as'
+at test.ura:5:15
   |
 5 |     a i32 = 5 as
   |               ^^
@@ -7180,7 +7296,8 @@ error: aborting due to 1 error
 ## 206 — lexer: a call with no closing parenthesis
 
 ```stderr
-error: test.ura:8:20 expected ')' to close the call to 'add'
+error: expected ')' to close the call to 'add'
+at test.ura:8:20
   |
 8 |     x i32 = add(1, 2
   |                    ^
@@ -7192,7 +7309,8 @@ error: aborting due to 1 error
 ## 207 — lexer: a function declaration missing its colon
 
 ```stderr
-error: test.ura:4:13 expected ':' after the function header
+error: expected ':' after the function header
+at test.ura:4:13
   |
 4 | fn answer() i32
   |             ^^^
@@ -7204,7 +7322,8 @@ error: aborting due to 1 error
 ## 208 — lexer: a function declaration missing its name
 
 ```stderr
-error: test.ura:4:4 expected a name after 'fn'
+error: expected a name after 'fn'
+at test.ura:4:4
   |
 4 | fn () i32:
   |    ^
@@ -7216,7 +7335,8 @@ error: aborting due to 1 error
 ## 209 — lexer: a parameter missing its type
 
 ```stderr
-error: test.ura:4:8 parameter 'a' has no type
+error: parameter 'a' has no type
+at test.ura:4:8
   |
 4 | fn add(a, b i32) i32:
   |        ^
@@ -7495,7 +7615,8 @@ declare void @free(i8*)
 ## 211 — lexer: if and while missing their colon
 
 ```stderr
-error: test.ura:6:12 expected ':' after the if condition
+error: expected ':' after the if condition
+at test.ura:6:12
   |
 6 |     if x > 0
   |            ^
@@ -7507,7 +7628,8 @@ error: aborting due to 1 error
 ## 212 — lexer: proto not followed by fn
 
 ```stderr
-error: test.ura:4:9 expected '(' after the function name
+error: expected '(' after the function name
+at test.ura:4:9
   |
 4 | proto x i32
   |         ^^^
@@ -7519,7 +7641,8 @@ error: aborting due to 1 error
 ## 213 — lexer: a struct declaration missing its name
 
 ```stderr
-error: test.ura:4:7 expected a struct name after 'struct'
+error: expected a struct name after 'struct'
+at test.ura:4:7
   |
 4 | struct:
   |       ^
@@ -7531,7 +7654,8 @@ error: aborting due to 1 error
 ## 214 — lexer: an unexpected token in an expression
 
 ```stderr
-error: test.ura:5:13 unexpected '*'
+error: unexpected '*'
+at test.ura:5:13
   |
 5 |     x i32 = *
   |             ^
@@ -7542,7 +7666,8 @@ error: aborting due to 1 error
 ## 215 — lexer: member access with no member name after .
 
 ```stderr
-error: test.ura:11:6 expected an attribute or method name after '.'
+error: expected an attribute or method name after '.'
+at test.ura:11:6
    |
 11 |     p.
    |      ^
@@ -11015,7 +11140,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 229 — operator: type mismatch between operands
 
 ```stderr
-error: test.ura:7:12 'twice' is a function, not a value
+error: 'twice' is a function, not a value
+at test.ura:7:12
   |
 7 |     return twice + 1
   |            ^^^^^
@@ -11027,7 +11153,8 @@ error: aborting due to 1 error
 ## 230 — operator: a comparison result is a bool, not an i32
 
 ```stderr
-error: test.ura:6:15 expected 'i32', found 'bool'
+error: expected 'i32', found 'bool'
+at test.ura:6:15
   |
 6 |     n i32 = a < 9
   |               ^
@@ -12593,7 +12720,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 235 — variable: redeclaring a variable in the same scope
 
 ```stderr
-error: test.ura:6:5 'a' is already declared, on line 5
+error: 'a' is already declared, on line 5
+at test.ura:6:5
   |
 6 |     a i32 = 2
   |     ^
@@ -12605,7 +12733,8 @@ error: aborting due to 1 error
 ## 236 — variable: using a name that was never declared
 
 ```stderr
-error: test.ura:6:16 undeclared variable 'y'
+error: undeclared variable 'y'
+at test.ura:6:16
   |
 6 |     io::out($"{y}\n")
   |                ^
@@ -12617,12 +12746,14 @@ error: aborting due to 1 error
 ## 237 — variable: assigning to a name that was never declared
 
 ```stderr
-error: test.ura:5:5 undeclared variable 'score'
+error: undeclared variable 'score'
+at test.ura:5:5
   |
 5 |     score = 100
   |     ^^^^^
 help: declare it first, like: score i32 = 0
-error: test.ura:6:16 undeclared variable 'score'
+error: undeclared variable 'score'
+at test.ura:6:16
   |
 6 |     io::out($"{score}\n")
   |                ^^^^^
@@ -12634,7 +12765,8 @@ error: aborting due to 2 errors
 ## 238 — variable: a variable does not outlive the block that declared it
 
 ```stderr
-error: test.ura:8:16 undeclared variable 'y'
+error: undeclared variable 'y'
+at test.ura:8:16
   |
 8 |     io::out($"{y}\n")
   |                ^
@@ -12646,7 +12778,8 @@ error: aborting due to 1 error
 ## 239 — variable: redeclaring a global
 
 ```stderr
-error: test.ura:5:1 'score' is already declared, on line 4
+error: 'score' is already declared, on line 4
+at test.ura:5:1
   |
 5 | score i32 = 10
   | ^^^^^
@@ -12658,7 +12791,8 @@ error: aborting due to 1 error
 ## 240 — variable: a bool takes only True or False
 
 ```stderr
-error: test.ura:5:14 expected 'bool', found 'i32'
+error: expected 'bool', found 'i32'
+at test.ura:5:14
   |
 5 |     b bool = 5
   |              ^
@@ -12669,11 +12803,13 @@ error: aborting due to 1 error
 ## 241 — variable: assigning a string or a struct to an integer
 
 ```stderr
-error: test.ura:8:13 expected 'i32', found 'String'
+error: expected 'i32', found 'String'
+at test.ura:8:13
   |
 8 |     a i32 = "hello"
   |             ^^^^^^^
-error: test.ura:10:13 expected 'i32', found 'Point'
+error: expected 'i32', found 'Point'
+at test.ura:10:13
    |
 10 |     b i32 = p
    |             ^
@@ -12914,7 +13050,8 @@ endif1:                                           ; preds = %if1.then, %if1
 ## 251 — variables: a variable with the name of a parameter
 
 ```stderr
-error: test.ura:3:5 'r' is already declared, on line 2
+error: 'r' is already declared, on line 2
+at test.ura:3:5
   |
 3 |     r i32 = 2
   |     ^
@@ -13271,7 +13408,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 253 — unsigned: a number that doesn't fit in u8
 
 ```stderr
-error: test.ura:3:12 256 doesn't fit in u8
+error: 256 doesn't fit in u8
+at test.ura:3:12
   |
 3 |     x u8 = 256
   |            ^^^
@@ -13283,17 +13421,20 @@ error: aborting due to 1 error
 ## 254 — variables: the type written before the name
 
 ```stderr
-error: test.ura:6:5 the type goes after the name
+error: the type goes after the name
+at test.ura:6:5
   |
 6 |     i32 x = 1
   |     ^^^
 help: use x i32 = 1
-error: test.ura:7:5 the type goes after the name
+error: the type goes after the name
+at test.ura:7:5
   |
 7 |     i8[] s = "ab"
   |     ^^^^
 help: use s i8[] = "ab"
-error: test.ura:8:5 the type goes after the name
+error: the type goes after the name
+at test.ura:8:5
   |
 8 |     Point p
   |     ^^^^^
@@ -13643,11 +13784,13 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 256 — bool: not on an i32
 
 ```stderr
-error: test.ura:4:16 expected 'bool', found 'i32'
+error: expected 'bool', found 'i32'
+at test.ura:4:16
   |
 4 |     return not x
   |                ^
-error: test.ura:4:12 expected 'i32', found 'bool'
+error: expected 'i32', found 'bool'
+at test.ura:4:12
   |
 4 |     return not x
   |            ^^^
@@ -13953,7 +14096,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 258 — float: a negative f64 literal into an f32
 
 ```stderr
-error: test.ura:4:13 expected 'f32', found 'f64'
+error: expected 'f32', found 'f64'
+at test.ura:4:13
   |
 4 |     a f32 = -2.5
   |             ^
@@ -13961,3 +14105,4 @@ help: write -2.5f for an f32
 error: aborting due to 1 error
 1
 ```
+

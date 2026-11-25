@@ -457,7 +457,7 @@ fn main() i32:
 // expect: 0
 use "@/core"
 
-use "@/posix/string"
+use "@/posix"
 
 struct Buffer:
     value char[]
@@ -472,12 +472,12 @@ operator drop(value &Buffer):
     free<char>(value.value)
 
 operator = (left &Buffer, s char[]) void:
-    strcpy(left.value, s)
+    cstd::strcpy(left.value, s)
 
 operator = (left &Buffer, b &Buffer) void:
     free<char>(left.value)
     left.value = new<char>(64)
-    strcpy(left.value, b.value)
+    cstd::strcpy(left.value, b.value)
 
 fn main() i32:
     b1 Buffer = Buffer::create()
@@ -486,7 +486,7 @@ fn main() i32:
     b2 Buffer = Buffer::create()
     b2 = b1
 
-    strcpy(b2.value, "world")
+    cstd::strcpy(b2.value, "world")
 
     io::out($"b1: {b1.value}\n")
     io::out($"b2: {b2.value}\n")
@@ -523,21 +523,21 @@ struct String2:
         while self.size < want:
             self.size *= 2
         bigger char[] = new<char>(self.size)
-        if self.count > 0: strcpy(bigger, self.value)
+        if self.count > 0: cstd::strcpy(bigger, self.value)
         free<char>(self.value)
         self.value = bigger
 
     fn assign(str char[]):
-        len i32 = strlen(str) as i32
+        len i32 = cstd::strlen(str) as i32
         self.grow(len + 1)
-        bzero(self.value, self.size as i64)
-        strcpy(self.value, str)
+        cstd::bzero(self.value, self.size as i64)
+        cstd::strcpy(self.value, str)
         self.count = len
 
     fn join(str char[]):
-        len i32 = strlen(str) as i32
+        len i32 = cstd::strlen(str) as i32
         self.grow(self.count + len + 1)
-        strcat(self.value, str)
+        cstd::strcat(self.value, str)
         self.count += len
 
 
@@ -596,8 +596,8 @@ struct Hero:
         return h
 
     fn setup(name char[], title char[]):
-        strcpy(self.name,  name)
-        strcpy(self.title, title)
+        cstd::strcpy(self.name,  name)
+        cstd::strcpy(self.title, title)
 
     fn announce():
         io::out($"{self.title} {self.name} enters!\n")
@@ -608,8 +608,8 @@ operator = (left &Hero, other &Hero) void:
     free<char>(left.title)
     left.name  = new<char>(32)
     left.title = new<char>(32)
-    strcpy(left.name,  other.name)
-    strcpy(left.title, other.title)
+    cstd::strcpy(left.name,  other.name)
+    cstd::strcpy(left.title, other.title)
 
 operator drop(value &Hero):
     free<char>(value.name)

@@ -272,7 +272,7 @@ fn main() i32:
 
 ```ura
 use "@/core"
-use "@/posix/string"
+use "@/posix"
 
 fn main() i32:
     s String = "  Hello World  "

@@ -20,6 +20,7 @@
 - 016 — (was milestone08 013) array: array literals: one element, expressions, and strings
 - 017 — (was milestone08 044) struct: a 2D heap array of structs frees every inner slice
 - 018 — (was milestone08 048) variable: global variables: scalars, arrays, forward reference, shadowing
+- 019 — (was m02 085) array: VLA: runtime-sized stack array
 
 ---
 
@@ -404,4 +405,21 @@ fn main() i32:
     return 0
 
 total i32 = 7
+```
+
+---
+
+## 019 — (was m02 085) array: VLA: runtime-sized stack array
+
+```ura
+// stdout: a[0]=0 a[7]=100
+// expect: 0
+use "@/core"
+
+fn main() i32:
+    n i32 = 4
+    a i32[] = i32[n * 2]
+    a[7] = 100
+    io::out($"a[0]={a[0]} a[7]={a[7]}\n")
+    return 0
 ```

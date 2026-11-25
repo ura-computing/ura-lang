@@ -2400,7 +2400,8 @@ entry:
 ## 045 — parser error: unclosed [ in an array literal
 
 ```stderr
-error: test.ura:5:19 expected ']' to close the array
+error: expected ']' to close the array
+at test.ura:5:19
   |
 5 |     a i32[] = [1, 2
   |                   ^
@@ -2412,7 +2413,8 @@ error: aborting due to 1 error
 ## 046 — refs: ref to a ref
 
 ```stderr
-error: test.ura:4:7 a ref can't point to a ref
+error: a ref can't point to a ref
+at test.ura:4:7
   |
 4 |     p &&i32 = &a
   |       ^^
@@ -2423,7 +2425,8 @@ error: aborting due to 1 error
 ## 047 — refs: missing type after &
 
 ```stderr
-error: test.ura:4:7 expected a type after '&'
+error: expected a type after '&'
+at test.ura:4:7
   |
 4 |     p & = &a
   |       ^
@@ -2434,7 +2437,8 @@ error: aborting due to 1 error
 ## 048 — refs: initialized with a value
 
 ```stderr
-error: test.ura:4:14 'p' is a ref, initialize it with an address
+error: 'p' is a ref, initialize it with an address
+at test.ura:4:14
   |
 4 |     p &i32 = a
   |              ^
@@ -2446,7 +2450,8 @@ error: aborting due to 1 error
 ## 049 — refs: address of a literal
 
 ```stderr
-error: test.ura:3:15 '&' expects a variable or a struct attribute
+error: '&' expects a variable or a struct attribute
+at test.ura:3:15
   |
 3 |     p &i32 = &5
   |               ^
@@ -2457,7 +2462,8 @@ error: aborting due to 1 error
 ## 050 — refs: address of an expression
 
 ```stderr
-error: test.ura:4:18 '&' expects a variable or a struct attribute
+error: '&' expects a variable or a struct attribute
+at test.ura:4:18
   |
 4 |     p &i32 = &(a + 1)
   |                  ^
@@ -2468,7 +2474,8 @@ error: aborting due to 1 error
 ## 051 — refs: address of a call
 
 ```stderr
-error: test.ura:6:15 '&' expects a variable or a struct attribute
+error: '&' expects a variable or a struct attribute
+at test.ura:6:15
   |
 6 |     p &i32 = &f()
   |               ^
@@ -2479,7 +2486,8 @@ error: aborting due to 1 error
 ## 052 — refs: address of an address
 
 ```stderr
-error: test.ura:4:14 can't take the address of an address
+error: can't take the address of an address
+at test.ura:4:14
   |
 4 |     p &i32 = &&a
   |              ^^
@@ -2490,7 +2498,8 @@ error: aborting due to 1 error
 ## 053 — refs: ref to a different type
 
 ```stderr
-error: test.ura:4:14 expected '&i32', found '&i8'
+error: expected '&i32', found '&i8'
+at test.ura:4:14
   |
 4 |     p &i32 = &c
   |              ^
@@ -2501,7 +2510,8 @@ error: aborting due to 1 error
 ## 054 — null: assigned to a value
 
 ```stderr
-error: test.ura:3:13 'i32' can't be null
+error: 'i32' can't be null
+at test.ura:3:13
   |
 3 |     x i32 = null
   |             ^^^^
@@ -2513,7 +2523,8 @@ error: aborting due to 1 error
 ## 055 — null: compared with a value
 
 ```stderr
-error: test.ura:4:14 'a' is never null, so this comparison is always the same
+error: 'a' is never null, so this comparison is always the same
+at test.ura:4:14
   |
 4 |     b bool = a == null
   |              ^
@@ -2524,7 +2535,8 @@ error: aborting due to 1 error
 ## 056 — null: address of null
 
 ```stderr
-error: test.ura:3:15 '&' expects a variable or a struct attribute
+error: '&' expects a variable or a struct attribute
+at test.ura:3:15
   |
 3 |     p &i32 = &null
   |               ^^^^
@@ -2535,7 +2547,8 @@ error: aborting due to 1 error
 ## 057 — expressions: compound assign on chars
 
 ```stderr
-error: test.ura:4:7 can't apply '+=' to 'i8[]' and 'i32'
+error: can't apply '+=' to 'i8[]' and 'i32'
+at test.ura:4:7
   |
 4 |     s += 1
   |       ^^
@@ -2546,7 +2559,8 @@ error: aborting due to 1 error
 ## 058 — expressions: negate a string
 
 ```stderr
-error: test.ura:3:14 can't apply '-' to 'String'
+error: can't apply '-' to 'String'
+at test.ura:3:14
   |
 3 |     s i8[] = -"a"
   |              ^
@@ -2557,7 +2571,8 @@ error: aborting due to 1 error
 ## 059 — calls: missing & on a ref argument
 
 ```stderr
-error: test.ura:7:7 expected '&i32', found 'i32'
+error: expected '&i32', found 'i32'
+at test.ura:7:7
   |
 7 |     f(a)
   |       ^
@@ -2569,7 +2584,8 @@ error: aborting due to 1 error
 ## 060 — arrays: unclosed type
 
 ```stderr
-error: test.ura:3:10 expected ']' after '['
+error: expected ']' after '['
+at test.ura:3:10
   |
 3 |     x i32[
   |          ^
@@ -2581,7 +2597,8 @@ error: aborting due to 1 error
 ## 062 — arrays: index a non-array
 
 ```stderr
-error: test.ura:4:12 'a' is 'i32', not an array
+error: 'a' is 'i32', not an array
+at test.ura:4:12
   |
 4 |     return a[0]
   |            ^
@@ -2592,7 +2609,8 @@ error: aborting due to 1 error
 ## 063 — arrays: index with a string
 
 ```stderr
-error: test.ura:4:14 expected an integer index, found 'String'
+error: expected an integer index, found 'String'
+at test.ura:4:14
   |
 4 |     return x["a"]
   |              ^^^
@@ -2603,7 +2621,8 @@ error: aborting due to 1 error
 ## 064 — arrays: mixed element types
 
 ```stderr
-error: test.ura:3:19 expected 'i32', found 'String'
+error: expected 'i32', found 'String'
+at test.ura:3:19
   |
 3 |     x i32[] = [1, "a"]
   |                   ^^^
@@ -2614,7 +2633,8 @@ error: aborting due to 1 error
 ## 065 — arrays: array into a scalar
 
 ```stderr
-error: test.ura:3:13 expected 'i32', found an array literal
+error: expected 'i32', found an array literal
+at test.ura:3:13
   |
 3 |     a i32 = [1, 2]
   |             ^
@@ -2625,7 +2645,8 @@ error: aborting due to 1 error
 ## 066 — arrays: unclosed literal
 
 ```stderr
-error: test.ura:3:19 expected ']' to close the array
+error: expected ']' to close the array
+at test.ura:3:19
   |
 3 |     x i32[] = [1, 2
   |                   ^
@@ -2637,7 +2658,8 @@ error: aborting due to 1 error
 ## 067 — arrays: missing comma between elements
 
 ```stderr
-error: test.ura:3:18 expected ',' between elements
+error: expected ',' between elements
+at test.ura:3:18
   |
 3 |     x i32[] = [1 2]
   |                  ^
@@ -3940,7 +3962,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 086 — array: indexing a non-array
 
 ```stderr
-error: test.ura:5:16 'a' is 'i32', not an array
+error: 'a' is 'i32', not an array
+at test.ura:5:16
   |
 5 |     io::out($"{a[0]}")
   |                ^
@@ -3951,7 +3974,8 @@ error: aborting due to 1 error
 ## 087 — array: non-integer index
 
 ```stderr
-error: test.ura:5:18 expected an integer index, found 'f64'
+error: expected an integer index, found 'f64'
+at test.ura:5:18
   |
 5 |     io::out($"{a[1.5]}")
   |                  ^^^
@@ -3962,7 +3986,8 @@ error: aborting due to 1 error
 ## 088 — array: array literal with mixed element types
 
 ```stderr
-error: test.ura:4:19 expected 'i32', found 'bool'
+error: expected 'i32', found 'bool'
+at test.ura:4:19
   |
 4 |     a i32[] = [1, True, 3]
   |                   ^^^^
@@ -3973,11 +3998,13 @@ error: aborting due to 1 error
 ## 089 — array: array size is not an integer
 
 ```stderr
-error: test.ura:4:19 expected an integer index, found 'f64'
+error: expected an integer index, found 'f64'
+at test.ura:4:19
   |
 4 |     a i32[] = i32[1.5]
   |                   ^^^
-error: test.ura:4:15 'i32' is 'i32', not an array
+error: 'i32' is 'i32', not an array
+at test.ura:4:15
   |
 4 |     a i32[] = i32[1.5]
   |               ^^^
@@ -3988,7 +4015,8 @@ error: aborting due to 2 errors
 ## 090 — array: missing closing bracket on index
 
 ```stderr
-error: test.ura:5:15 expected ']' after the index
+error: expected ']' after the index
+at test.ura:5:15
   |
 5 |     output(a[0)
   |               ^
@@ -4000,7 +4028,8 @@ error: aborting due to 1 error
 ## 092 — array: unknown member
 
 ```stderr
-error: test.ura:5:16 'a' is 'i32[]', not a struct
+error: 'a' is 'i32[]', not a struct
+at test.ura:5:16
   |
 5 |     io::out($"{a.size}")
   |                ^
@@ -9876,7 +9905,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 112 — ref: binding a reference to the wrong type
 
 ```stderr
-error: test.ura:6:17 expected '&i8[]', found '&i32'
+error: expected '&i8[]', found '&i32'
+at test.ura:6:17
   |
 6 |     y &char[] = &x
   |                 ^
@@ -9887,10 +9917,13 @@ error: aborting due to 1 error
 ## 113 — ref: a ref parameter given a value
 
 ```stderr
-error: test.ura:9:17 expected '&i32', found 'i32'
+error: expected '&i32', found 'i32'
+at test.ura:9:17
   |
 9 |     return tick(5)
   |                 ^
+help: fn tick(n &i32) i32
+declared at test.ura:3
 error: aborting due to 1 error
 1
 ```
@@ -9898,7 +9931,8 @@ error: aborting due to 1 error
 ## 114 — ref: taking a reference to a literal
 
 ```stderr
-error: test.ura:5:15 '&' expects a variable or a struct attribute
+error: '&' expects a variable or a struct attribute
+at test.ura:5:15
   |
 5 |     r &i32 = &5
   |               ^
@@ -9909,10 +9943,13 @@ error: aborting due to 1 error
 ## 115 — ref: a by-value parameter given a reference
 
 ```stderr
-error: test.ura:9:18 expected 'i32', found '&i32'
+error: expected 'i32', found '&i32'
+at test.ura:9:18
   |
 9 |     return twice(&x)
   |                  ^
+help: fn twice(n i32) i32
+declared at test.ura:3
 error: aborting due to 1 error
 1
 ```
@@ -9920,7 +9957,8 @@ error: aborting due to 1 error
 ## 116 — ref: a reference to a name that does not exist
 
 ```stderr
-error: test.ura:5:15 undeclared variable 'ghost'
+error: undeclared variable 'ghost'
+at test.ura:5:15
   |
 5 |     r &i32 = &ghost
   |               ^^^^^
@@ -9932,7 +9970,8 @@ error: aborting due to 1 error
 ## 117 — ref: a nested function may not capture an enclosing local
 
 ```stderr
-error: test.ura:8:16 'r' belongs to an enclosing function
+error: 'r' belongs to an enclosing function
+at test.ura:8:16
   |
 8 |         return r
   |                ^
@@ -11919,7 +11958,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 124 — ref: a value function cannot return a reference
 
 ```stderr
-error: test.ura:5:12 expected 'i32', found '&i32'
+error: expected 'i32', found '&i32'
+at test.ura:5:12
   |
 5 |     return &x
   |            ^
@@ -11930,7 +11970,8 @@ error: aborting due to 1 error
 ## 125 — ref: a ref declaration cannot be bound to a plain value
 
 ```stderr
-error: test.ura:4:14 'm' is a ref, initialize it with an address
+error: 'm' is a ref, initialize it with an address
+at test.ura:4:14
   |
 4 |     m &i32 = 5
   |              ^
@@ -11941,7 +11982,8 @@ error: aborting due to 1 error
 ## 126 — ref: a non-nullable value cannot be compared to null
 
 ```stderr
-error: test.ura:5:16 'x' is never null, so this comparison is always the same
+error: 'x' is never null, so this comparison is always the same
+at test.ura:5:16
   |
 5 |     io::out($"{x == null}\n")
   |                ^
@@ -13308,7 +13350,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 129 — use: a package that doesn't exist
 
 ```stderr
-error: test.ura:2:5 package '@/nothing' not found
+error: package '@/nothing' not found
+at test.ura:2:5
   |
 2 | use "@/nothing"
   |     ^^^^^^^^^^^
@@ -13320,11 +13363,12 @@ error: aborting due to 1 error
 ## 130 — use: an error after a use points at the user's file and line
 
 ```stderr
-error: test.ura:6:7 'Array<i32>' has no method 'append' that takes (String)
+error: package '@/posix/string' not found
+at test.ura:2:5
   |
-6 |     a.append("text")
-  |       ^^^^^^
-help: 'append' takes (i32)
+2 | use "@/posix/string"
+  |     ^^^^^^^^^^^^^^^^
+help: add a dependency that has it: ura deps add <name>
 error: aborting due to 1 error
 1
 ```
@@ -14238,7 +14282,8 @@ declare i32 @snprintf(i8*, i64, i8*, ...)
 ## 134 — as: a struct can't be cast, operator = converts it
 
 ```stderr
-error: test.ura:8:18 can't cast 'Point' to 'i8[]'
+error: can't cast 'Point' to 'i8[]'
+at test.ura:8:18
   |
 8 |     raw i8[] = p as i8[]
   |                  ^^
@@ -14529,8 +14574,6 @@ entry:
 
 declare i64 @write(i32, i8*, i64)
 
-declare i64 @read(i32, i8*, i64)
-
 define void @"io::out"(%String %0) {
 entry:
   %text = alloca %String, align 8
@@ -14543,6 +14586,8 @@ entry:
   call void @"Array<i8>.drop"(%"Array<i8>"* %1)
   ret void
 }
+
+declare i64 @read(i32, i8*, i64)
 
 define i32 @first(i32* %0) {
 entry:
@@ -14634,3 +14679,4 @@ declare void @free(i8*)
 
 declare i32 @snprintf(i8*, i64, i8*, ...)
 ```
+

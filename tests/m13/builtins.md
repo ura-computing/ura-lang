@@ -417,104 +417,49 @@ fn main() i32:
 ## 027 — project: net server
 
 ```ura
-// a TCP chat server on one poll() loop: stdin, the listener and every client.
-// A line typed here goes to every client, a line from a client is printed.
-// It needs port 8080, so run it by hand: the test only compiles it.
 use "@/core"
-use "@/posix/net"
-use "@/posix/unistd"
+use "@/posix"
 
 PORT i32 = 8080
-
-fn address(port i32) Array<i8>:
-    data Array<i8>
-    @if os == "macos":
-        data.append(16)
-        data.append(2)
-    @else:
-        data.append(2)
-        data.append(0)
-    data.append((port >> 8) as i8)
-    data.append((port & 255) as i8)
-    for i in Range::create(0, 12):
-        data.append(0)
-    return data
-
-fn listener(port i32) i32:
-    fd i32 = socket(2, 1, 0)
-    if fd < 0:
-        return -1
-    one Array<i32>
-    one.append(1)
-    @if os == "macos":
-        setsockopt(fd, 65535, 4, one.data as i8[], 4)
-    @else:
-        setsockopt(fd, 1, 2, one.data as i8[], 4)
-    addr Array<i8> = address(port)
-    is_bound bool = bind(fd, addr.data, 16) == 0
-    if not is_bound or listen(fd, 16) < 0:
-        close(fd)
-        return -1
-    return fd
-
-fn watch(fds &Array<Pollfd>, fd i32):
-    p Pollfd
-    p.fd = fd
-    p.events = POLLIN as i16
-    fds.append(p)
+BACKLOG i32 = 16
+CHUNK i32 = 1024
+STDIN i32 = 0
 
 fn main() i32:
-    server i32 = listener(PORT)
-    if server < 0:
-        io::err("[server] can't listen on port 8080\n")
-        return 1
-    io::out("[server] listening on port 8080\n")
+    server net::Server = net::Server::create(PORT, BACKLOG)
+    io::out($"[server] listening on port {PORT}\n")
 
-    // [0] stdin, [1] the listener, [2..] the clients
-    fds Array<Pollfd>
-    watch(&fds,0)
-    watch(&fds,server)
-    buf Array<i8>
-    buf.resize(1024)
+    sockets Array<net::Socket>
+    sockets.append({ fd: STDIN })
+    sockets.append(server.socket)
 
     while True:
-        poll(fds.data as i8[], fds.len(), -1)
+        ready Array<i16> = net::poll(&sockets, cstd::POLLIN, -1)
 
-        // a line typed here goes to every client
-        if ((fds[0].revents as i32) & POLLIN) != 0:
-            r i64 = read(0, buf.data, 1023)
-            if r <= 0:
+        if (ready[0] & cstd::POLLIN) != 0:
+            line String = io::input()
+            if line.is_empty():
                 break
-            i i32 = 2
-            while i < fds.len():
-                write(fds[i].fd, buf.data, r)
-                i += 1
+            for i in Range::create(2, sockets.len()):
+                sockets[i].send($"{line}\n")
 
-        // a new client joins the poll set
-        if ((fds[1].revents as i32) & POLLIN) != 0:
-            client i32 = accept(server, null, null)
-            if client >= 0:
-                watch(&fds,client)
-                io::out("[server] client connected\n")
+        if (ready[1] & cstd::POLLIN) != 0:
+            sockets.append(server.accept())
+            io::out("[server] client connected\n")
 
-        // a client's line is printed; a closed client leaves the set
-        j i32 = 2
-        while j < fds.len():
-            if ((fds[j].revents as i32) & POLLIN) == 0:
-                j += 1
-                continue
-            r i64 = read(fds[j].fd, buf.data, 1023)
-            if r <= 0:
-                close(fds[j].fd)
-                fds[j] = fds[fds.len() - 1]
-                fds.pop()
-                io::out("[server] client disconnected\n")
-                continue
-            io::out("[client] ")
-            write(1, buf.data, r)
-            j += 1
+        j i32 = ready.len() - 1
+        while j >= 2:
+            if (ready[j] & cstd::POLLIN) != 0:
+                text String = sockets[j].recv(CHUNK)
+                if text.is_empty():
+                    sockets[j].close()
+                    sockets.pop(j)
+                    io::out("[server] client disconnected\n")
+                else:
+                    io::out($"[client] {text}")
+            j -= 1
 
-    close(server)
+    server.close()
     return 0
 ```
 
@@ -523,75 +468,41 @@ fn main() i32:
 ## 028 — project: net client
 
 ```ura
-// a TCP chat client on one poll() loop: stdin and the server socket.
-// A line typed here goes to the server, a line from the server is printed.
-// It needs the net server on port 8080, so run it by hand: the test only
-// compiles it.
 use "@/core"
-use "@/posix/net"
-use "@/posix/unistd"
+use "@/posix"
 
+HOST String = "127.0.0.1"
 PORT i32 = 8080
-
-fn address(port i32) Array<i8>:
-    data Array<i8>
-    @if os == "macos":
-        data.append(16)
-        data.append(2)
-    @else:
-        data.append(2)
-        data.append(0)
-    data.append((port >> 8) as i8)
-    data.append((port & 255) as i8)
-    data.append(127)
-    data.append(0)
-    data.append(0)
-    data.append(1)
-    for i in Range::create(0, 8):
-        data.append(0)
-    return data
-
-fn watch(fds &Array<Pollfd>, fd i32):
-    p Pollfd
-    p.fd = fd
-    p.events = POLLIN as i16
-    fds.append(p)
+CHUNK i32 = 1024
+STDIN i32 = 0
 
 fn main() i32:
-    fd i32 = socket(2, 1, 0)
-    addr Array<i8> = address(PORT)
-    if fd < 0 or connect(fd, addr.data, 16) != 0:
-        io::err("[client] can't reach 127.0.0.1:8080\n")
-        return 1
-    io::out("[client] connected to 127.0.0.1:8080\n")
+    address net::Address = net::Address::create(HOST, PORT)
+    socket net::Socket = net::Socket::create()
+    socket.connect(&address)
+    io::out($"[client] connected to {HOST}:{PORT}\n")
 
-    // [0] stdin, [1] the server
-    fds Array<Pollfd>
-    watch(&fds,0)
-    watch(&fds,fd)
-    buf Array<i8>
-    buf.resize(1024)
+    sockets Array<net::Socket>
+    sockets.append({ fd: STDIN })
+    sockets.append(socket)
 
     while True:
-        poll(fds.data as i8[], fds.len(), -1)
+        ready Array<i16> = net::poll(&sockets, cstd::POLLIN, -1)
 
-        // a line typed here goes to the server
-        if ((fds[0].revents as i32) & POLLIN) != 0:
-            r i64 = read(0, buf.data, 1023)
-            if r <= 0:
+        if (ready[0] & cstd::POLLIN) != 0:
+            line String = io::input()
+            if line.is_empty():
                 break
-            write(fd, buf.data, r)
+            socket.send($"{line}\n")
 
-        // a line from the server is printed; a closed server ends the loop
-        if ((fds[1].revents as i32) & POLLIN) != 0:
-            r i64 = read(fd, buf.data, 1023)
-            if r <= 0:
+        if (ready[1] & cstd::POLLIN) != 0:
+            text String = socket.recv(CHUNK)
+            if text.is_empty():
                 io::out("[client] the server closed the connection\n")
                 break
-            io::out("[server] ")
-            write(1, buf.data, r)
+            io::out($"[server] {text}")
 
-    close(fd)
+    socket.close()
     return 0
 ```
 
