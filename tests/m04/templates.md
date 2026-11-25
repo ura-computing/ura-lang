@@ -18,6 +18,7 @@
 - 014 — template: declared inside a function
 - 015 — templates: used outside the scope it is declared in
 - 016 — template: several functions in one template, each instance renames all of them; memory_alloc, memory_copy, memory_free
+- 017 — template: an array type as the type argument, sizeof(T) with T = char[]
 
 ---
 
@@ -305,5 +306,23 @@ fn main() i32:
     free<i32>(a)
     free<i32>(b)
     free<P>(ps)
+    return 0
+```
+
+---
+
+## 017 — template: an array type as the type argument, sizeof(T) with T = char[]
+
+```ura
+// stdout: a b
+// expect: 0
+use "@/core"
+
+fn main() i32:
+    rows char[][] = new<char[]>(2)
+    rows[0] = "a"
+    rows[1] = "b"
+    io::out($"{rows[0]} {rows[1]}\n")
+    free<char[]>(rows)
     return 0
 ```

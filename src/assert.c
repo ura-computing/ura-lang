@@ -1882,6 +1882,8 @@ void assert_builtin(Node *node) {
             arg->declared = st;
             continue;
         }
+        if (arg->token->is_type)
+            continue;
         analyze(arg);
         bool is_text = token->type == FORMAT;
         if (is_text && arg->token->type == CHARS)
