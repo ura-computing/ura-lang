@@ -1276,7 +1276,7 @@ Node *parse_prime() {
     case ID: {
         Token *prev = ura.tokens[ura.exe_pos - 2];
         bool is_member = includes(prev->type, DOT, DOUBLE_DOTS, 0);
-        bool starts_line = prev->line != token->line;
+        bool starts_line = is_line_start(ura.exe_pos - 1);
         parse_module_name(token);
         Token *builtin = is_member ? NULL : find_builtin(token->name);
         if (builtin) {
