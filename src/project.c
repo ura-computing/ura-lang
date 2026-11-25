@@ -428,18 +428,13 @@ char *template_files[][2] = {
       "    return 0\n" },
     { "src/user.ura",
       "use \"@/posix\"\n\n"
-      "fn env(key String) String:\n"
-      "    value char[] = getenv(key.chars())\n"
-      "    if value == null:\n"
-      "        return \"\"\n"
-      "    return String::create(value)\n\n"
       "fn user() String:\n"
       "    @if os == \"windows\":\n"
-      "        return env(\"USERNAME\")\n"
+      "        return env::get(\"USERNAME\")\n"
       "    @elif os == \"linux\":\n"
-      "        return env(\"USER\")\n"
+      "        return env::get(\"USER\")\n"
       "    @elif os == \"macos\":\n"
-      "        return env(\"USER\")\n"
+      "        return env::get(\"USER\")\n"
       "    @else:\n"
       "        return \"unknown user\"\n" },
     { NULL, NULL },
