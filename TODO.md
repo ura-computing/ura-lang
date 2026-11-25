@@ -233,9 +233,57 @@ later: http lib + FastAPI-like framework, ura init SDL2, other architectures (em
 + when {do a new line here it shold luk go one step back or somehting}
 + we should add a code formatter for ura-lang
 
-+ add the line and the file where the function is declared
-error: main.ura:36:16 expected 'i32', found 'Server'
-   |
-36 |         listen(server, listen)
-   |                ^^^^^^
-error: aborting due to 1 error
++ no need for expand mode
+
++ all stucts should follow one rule:
+	+ operator/methods/utils folders that's it
+
++ always: 
+	use:	
+		file File = {
+			path: path,
+			fd: cstd::open(path.chars(), flags, cstd::S_IRUSR | cstd::S_IWUSR)
+		}
+		or
+		address Address = {
+    	    raw: {
+				sin_family: cstd::AF_INET as u16,
+				sin_port: cstd::htons(port as u16),
+				sin_addr: {
+					s_addr: cstd::INADDR_ANY
+				}
+			},
+    }
+	rather than:
+		file.path = path
+		file.fd =  cstd::open(path.chars(), flags, cstd::S_IRUSR | cstd::S_IWUSR)
+	
+	use:
+		// TODO: chouldn't we remove
+		// sending adderr to bind ? 
+		// and just access to it inside
+		server.socket.reuse().bind(&server.address).listen(backlog)
+	
+	use:
+	    wait = {
+			tv_sec: ms / 1000,
+    		tv_nsec: (ms % 1000) * 1000000
+		} 
+	rather than:
+	    wait.tv_sec = ms / 1000
+	    wait.tv_nsec = (ms % 1000) * 1000000
+	
+	+ there are lot of unciton that u don't check there returns ??:
+		cstd::nanosleep(&wait, &left)
+	
+	+ i was thinking:
+		+ instead of  hardpcing values like:
+			fn read_all() String:
+				text String
+				part String = self.read(4096)
+		+ they should be stoed in a varibale so i can edit them
+	+ waaait:
+		+ in read_all why reading line by line ??
+		+ in fopen, fread, ....
+		+ we can nkow the size of the file and read it fully ?????? tat's more optimal
+		+ we shdoul review allll you implemntations one by one

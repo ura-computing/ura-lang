@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/25 01:18:07                              */
+/*   updated: 2026/11/25 02:56:14                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -2255,6 +2255,7 @@ char *type_name(Node *type) {
     } // clang-format on
 }
 
+// TODO: check if we really need to call new_node inside type_of 
 Node *type_of(Node *node) {
     // assert(node);
     // assert(node->token);
