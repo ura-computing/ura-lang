@@ -309,4 +309,4 @@ later: http lib + FastAPI-like framework, ura init SDL2, other architectures (em
 				fn foo(...args) -> fn foo(array_of_lements, array_of_there_size)
 				should be supported in ucg
 	+ I added some TODO in .ura file check them all
-	+ waht is the tag thing un .ura folder
+	+ waht is the tag thing in ura-lang github repo
