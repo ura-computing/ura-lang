@@ -41,6 +41,8 @@ export function declarationOf(found: Resolved): Declaration {
             return at(found.enumeration);
         case "variant":
             return at(found.variant);
+        case "module":
+            return at(found.module);
         case "variable":
             return { name: found.variable.name, line: found.variable.line, character: found.variable.character };
     }
@@ -76,6 +78,8 @@ export function hoverOf(found: Resolved): HoverText {
             return { code: enumSignature(found.enumeration) };
         case "variant":
             return { code: `${found.enumeration.name}::${found.variant.name}`, note: `variant of ${found.enumeration.name}` };
+        case "module":
+            return { code: `mod ${found.module.name}` };
         case "variable":
             return { code: `${found.variable.name} ${found.variable.type}`, note: found.variable.isParam ? "parameter" : "variable" };
     }

@@ -1,7 +1,7 @@
 // `use "path"` and `use "@/package"`: the path opens its file on ctrl+click.
 
 import type { DocumentLink, DocumentLinkParams } from "vscode-languageserver/node";
-import { useCandidates } from "../core/imports";
+import { useTarget } from "../core/imports";
 import { analyze } from "../core/parser";
 import { guard } from "../services/logger";
 import type { Feature, Services } from "../services";
@@ -13,10 +13,9 @@ function links(s: Services, params: DocumentLinkParams): DocumentLink[] {
         return [];
     }
     const result: DocumentLink[] = [];
-    const libs = s.workspace.libs(file);
     for (const use of analyze(document.getText()).uses) {
-        const target = useCandidates(file, use.target, libs).find((candidate) => s.workspace.exists(candidate));
-        if (target === undefined) {
+        const target = useTarget(file, use.target, s.workspace.findPackage);
+        if (target === undefined || !s.workspace.exists(target)) {
             continue; // the compiler reports the missing file
         }
         result.push({

@@ -77,6 +77,8 @@ export function renameProblem(context: Pick<FileContext, "analysis" | "imports">
                 return taken("enum");
             }
             return structNamed() ? taken("struct") : undefined;
+        case "module":
+            return "a mod can't be renamed yet";
         case "variant": {
             const { enumeration } = target;
             return enumeration.variants.some((v) => v.name === name) ? taken(`variant of ${enumeration.name}`) : undefined;

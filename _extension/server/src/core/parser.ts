@@ -49,6 +49,7 @@ export interface UseInfo {
     start: number; // where the path starts, after the opening quote
     end: number; // the closing quote
     owner?: string; // a `use` inside a struct body pastes methods into that struct
+    module?: string; // a `use` inside a `mod` body pastes into that mod
 }
 
 export interface AttributeInfo {
@@ -130,6 +131,11 @@ export interface ImportedEnum {
     enumeration: EnumInfo;
 }
 
+export interface ImportedModule {
+    file: string;
+    module: ModuleInfo;
+}
+
 // What a file sees from other files. `methods` are functions pasted into a
 // struct by a `use` inside its body; each one's `owner` names the struct.
 export interface Imports {
@@ -137,9 +143,10 @@ export interface Imports {
     structs: ImportedStruct[];
     enums: ImportedEnum[];
     methods: ImportedFunction[];
+    modules: ImportedModule[];
 }
 
-export const NO_IMPORTS: Imports = { functions: [], structs: [], enums: [], methods: [] };
+export const NO_IMPORTS: Imports = { functions: [], structs: [], enums: [], methods: [], modules: [] };
 
 export interface CallContext {
     name: string;
@@ -515,8 +522,13 @@ export function analyze(source: string): Analysis {
         const start = end - group(match, 2).length;
         const use: UseInfo = { target: group(match, 2), line, indent: group(match, 1).length, start, end };
         const owner = enclosingStruct(structs, line);
-        if (owner && enclosingFunction(functions, line) === undefined) {
+        const isInFunction = enclosingFunction(functions, line) !== undefined;
+        if (owner && !isInFunction) {
             use.owner = owner.name;
+        }
+        const module = moduleOf(modules, line);
+        if (module !== undefined && !isInFunction) {
+            use.module = module;
         }
         uses.push(use);
     }
@@ -617,7 +629,8 @@ export type Resolved =
     | { kind: "struct"; struct: StructInfo; file?: string }
     | { kind: "attribute"; attribute: AttributeInfo; struct: StructInfo; file?: string }
     | { kind: "enum"; enumeration: EnumInfo; file?: string }
-    | { kind: "variant"; variant: VariantInfo; enumeration: EnumInfo; file?: string };
+    | { kind: "variant"; variant: VariantInfo; enumeration: EnumInfo; file?: string }
+    | { kind: "module"; module: ModuleInfo; file?: string };
 
 const fileOf = (found: { file: string }): { file?: string } => (found.file ? { file: found.file } : {});
 
@@ -798,7 +811,13 @@ export function memberContext(analysis: Analysis, imports: Imports, at: Position
 
 // `Scope::name`: a variant of an enum, a method of a struct (`Point::create`),
 // or something declared in a module (`math::add`).
-function resolveScoped(analysis: Analysis, imports: Imports, scope: string, name: string): Resolved | undefined {
+function resolveScoped(
+    analysis: Analysis,
+    imports: Imports,
+    scope: string,
+    name: string,
+    isCall: boolean,
+): Resolved | undefined {
     const enumeration = findEnum(analysis, imports, scope);
     if (enumeration) {
         const variant = enumeration.enumeration.variants.find((v) => v.name === name);
@@ -809,7 +828,7 @@ function resolveScoped(analysis: Analysis, imports: Imports, scope: string, name
         const method = membersOf(analysis, imports, struct).methods.find((m) => m.item.name === name);
         return method ? { kind: "method", function: method.item, struct: method.struct, ...fileOf(method) } : undefined;
     }
-    return resolveName(analysis, imports, name, true);
+    return resolveName(analysis, imports, name, isCall);
 }
 
 // A plain name: a struct or enum (not when called), else a function.
@@ -822,6 +841,14 @@ function resolveName(analysis: Analysis, imports: Imports, name: string, isCall:
         const enumeration = findEnum(analysis, imports, name);
         if (enumeration) {
             return { kind: "enum", enumeration: enumeration.enumeration, ...fileOf(enumeration) };
+        }
+        const local = analysis.modules.find((m) => m.name === name);
+        if (local) {
+            return { kind: "module", module: local };
+        }
+        const other = imports.modules.find((m) => m.module.name === name);
+        if (other) {
+            return { kind: "module", module: other.module, file: other.file };
         }
     }
     const fn = findFunction(analysis, name);
@@ -899,7 +926,7 @@ export function resolve(analysis: Analysis, at: Position, imports: Imports = NO_
 
     const scope = scopeBefore(line, word.start);
     if (scope !== undefined) {
-        return resolveScoped(analysis, imports, scope, word.text);
+        return resolveScoped(analysis, imports, scope, word.text, isCall);
     }
 
     if (!isCall) {

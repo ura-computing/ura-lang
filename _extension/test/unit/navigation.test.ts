@@ -73,6 +73,8 @@ function describeFound(found: Resolved | undefined): string {
             return `enum ${found.enumeration.name}`;
         case "variant":
             return `variant ${found.enumeration.name}::${found.variant.name}`;
+        case "module":
+            return `mod ${found.module.name}`;
     }
 }
 

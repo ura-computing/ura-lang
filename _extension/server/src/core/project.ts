@@ -28,6 +28,7 @@ export interface Project {
     name?: string;
     version?: string;
     main: string; // relative to dir, "main.ura" when not given
+    entry?: string; // a library's @entry: the file `use "@/<dependency>"` loads
     scripts: Map<string, string>;
     dependencies: Dependency[];
 }
@@ -69,6 +70,8 @@ export function parseConfig(dir: string, text: string): Project {
             project.version = value;
         } else if (macro === "main") {
             project.main = value;
+        } else if (macro === "entry") {
+            project.entry = value;
         }
     }
     return project;
@@ -96,10 +99,25 @@ export function dependencyDir(project: string, dependency: Dependency): string {
     return path.join(project, "deps", `${name}@${version ?? "latest"}`);
 }
 
-// The folders where `use "@/name"` looks for name.ura: the project's own
-// folder, then each dependency.
-export function packageDirs(project: Project): string[] {
-    return [project.dir, ...project.dependencies.map((d) => dependencyDir(project.dir, d))];
+// The file `use "@/dep"` or `use "@/dep/path"` loads from `project`, like the
+// compiler's find_package: the dependency's @entry, or path.ura in its folder.
+export function packageFile(
+    project: Project,
+    target: string,
+    read: (file: string) => string | undefined,
+): string | undefined {
+    const [name = "", ...rest] = target.slice(2).split("/");
+    const dependency = project.dependencies.find((d) => d.name === name);
+    if (dependency === undefined) {
+        return undefined;
+    }
+    const dir = dependencyDir(project.dir, dependency);
+    if (rest.length > 0) {
+        return path.join(dir, `${rest.join("/")}.ura`);
+    }
+    const config = read(path.join(dir, CONFIG));
+    const entry = config === undefined ? undefined : parseConfig(dir, config).entry;
+    return entry === undefined ? undefined : path.join(dir, entry);
 }
 
 // The ura.conf for a copy of the project in another folder: the real text,

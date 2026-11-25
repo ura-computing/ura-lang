@@ -6,9 +6,9 @@ import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import type { TextDocuments } from "vscode-languageserver/node";
 import type { TextDocument } from "vscode-languageserver-textdocument";
-import { importsOf, type Reader } from "../core/imports";
+import { importsOf, type PackageFinder, type Reader } from "../core/imports";
 import { analyze, NO_IMPORTS, type Imports } from "../core/parser";
-import { CONFIG, findProject, packageDirs, parseConfig, type Project } from "../core/project";
+import { CONFIG, findProject, packageFile, parseConfig, type Project } from "../core/project";
 import type { FileContext } from "../core/references";
 
 // Folders never searched for .ura files.
@@ -30,7 +30,7 @@ export interface Workspace {
     projectOf(file: string): Project | undefined;
     // where `use "@/name"` looks from `file`: its project and the project's
     // dependencies (nothing outside a project)
-    libs(file: string | undefined): string[];
+    findPackage: PackageFinder;
     read: Reader;
     exists(file: string): boolean;
     // the path of a file: URI; undefined for untitled documents
@@ -87,12 +87,12 @@ export function createWorkspace(documents: TextDocuments<TextDocument>): Workspa
         const text = dir === undefined ? undefined : read(path.join(dir, CONFIG));
         return dir === undefined || text === undefined ? undefined : parseConfig(dir, text);
     };
-    const libs = (file: string | undefined): string[] => {
-        const project = file === undefined ? undefined : projectOf(file);
-        return project ? packageDirs(project) : [];
+    const findPackage: PackageFinder = (from, target) => {
+        const project = projectOf(from);
+        return project === undefined ? undefined : packageFile(project, target, read);
     };
     const context = (file: string | undefined, uri: string, source: string): FileContext => {
-        const imports = file === undefined ? NO_IMPORTS : importsOf(file, source, read, libs(file));
+        const imports = file === undefined ? NO_IMPORTS : importsOf(file, source, read, findPackage);
         return { file: file ?? uri, analysis: analyze(source), imports };
     };
 
@@ -102,14 +102,14 @@ export function createWorkspace(documents: TextDocuments<TextDocument>): Workspa
             rootPath = uri === undefined ? undefined : fileOf(uri);
         },
         projectOf,
-        libs,
+        findPackage,
         read,
         exists,
         fileOf,
         uriOf,
         imports(document: TextDocument): Imports {
             const file = fileOf(document.uri);
-            return file === undefined ? NO_IMPORTS : importsOf(file, document.getText(), read, libs(file));
+            return file === undefined ? NO_IMPORTS : importsOf(file, document.getText(), read, findPackage);
         },
         contextOf(document: TextDocument): FileContext {
             return context(fileOf(document.uri), document.uri, document.getText());
