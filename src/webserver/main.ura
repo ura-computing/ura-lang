@@ -6,26 +6,27 @@ fn main() i32:
 	try:
 		// throw Error::create("hello")
 		server net::Server = net::Server::create(8080, 5)
-		io::out("Waiting for client...\n")
+		io::out($"{typeof(server)}\n")
+		// io::out("Waiting for client...\n")
 
-		client net::Socket = server.accept()
-		io::out("Client connected\n")
-		client.send("Hello from server!\n")
+		// client net::Socket = server.accept()
+		// io::out("Client connected\n")
+		// client.send("Hello from server!\n")
 
-		closed i16 = cstd::POLLHUP | cstd::POLLERR | cstd::POLLNVAL
-		while True:
-			events i16 = client.poll(cstd::POLLIN, -1)
+		// closed i16 = cstd::POLLHUP | cstd::POLLERR | cstd::POLLNVAL
+		// while True:
+		// 	events i16 = client.poll(cstd::POLLIN, -1)
 
-			if (events & cstd::POLLIN) != 0:
-				text String = client.recv(1024)
-				if text.is_empty():
-					break
-				if text[text.size() - 1] == '\n':
-					text.pop()
-				io::out($"Received: {text}\n")
+		// 	if (events & cstd::POLLIN) != 0:
+		// 		text String = client.recv(1024)
+		// 		if text.is_empty():
+		// 			break
+		// 		if text[text.size() - 1] == '\n':
+		// 			text.pop()
+		// 		io::out($"Received: {text}\n")
 
-			if (events & closed) != 0:
-				break
+		// 	if (events & closed) != 0:
+		// 		break
 	catch error &Error:
 		io::err($"i did catch the error\n")
 /*

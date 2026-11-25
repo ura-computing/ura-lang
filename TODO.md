@@ -225,6 +225,7 @@ later: http lib + FastAPI-like framework, ura init SDL2, other architectures (em
     + 30 push dsrl
 	+ what if new failed
 
++ llvm already support i128 ...., we should make use of that
 
 + for preproccesing macros:
 	+ if it's for example awindows but the mahcine is linux
@@ -287,3 +288,25 @@ later: http lib + FastAPI-like framework, ura init SDL2, other architectures (em
 		+ in fopen, fread, ....
 		+ we can nkow the size of the file and read it fully ?????? tat's more optimal
 		+ we shdoul review allll you implemntations one by one
+		+ ooor since we are using State why not read the full file
+	+ for the extenion it has loot of bugs:
+		+ for example when ctrl+clique on struct method it does not take me to the file, same hting for inside mod etc....
+		+ same thing on strl + clqieu on mattribute in struct
+		+ when cliquing on struct type
+		+ fn elapsed() i64:??? hwta does tis name even means
+	+ other wise we can do the following:
+		alias process = Process::process or osmehting close
+		eumm process is a long name is there a better naming try getting inspired from zig or rust or something
+	+ i was htiking about rorginizing all ural ibraries when we finish
+	+ add a testing tool integrated in ura-lang:
+		+ add ci for ura-lang compiler and all complex projects built using ura-lang
+		+ should we keep mit licence or chnage it ?
+	+ for varidic argument:
+		+ use 2 approaches:
+			+ ... (the existing one)
+			+ ...args:
+				+ special stucr thaht get splitted 2:
+				fn foo(...args) -> fn foo(array_of_lements, array_of_there_size)
+				should be supported in ucg
+	+ I added some TODO in .ura file check them all
+	+ waht is the tag thing un .ura folder
