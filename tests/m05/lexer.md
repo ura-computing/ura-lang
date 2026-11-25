@@ -24,6 +24,7 @@
 - 026 — multi-line string: a newline and the spaces after it become one space
 - 027 — multi-line string: as a call argument, blank lines dropped
 - 028 — multi-line string: escapes and quotes inside
+- 029 — sizeof: takes a struct type name
 
 ---
 
@@ -422,5 +423,20 @@ fn main() i32:
         name: \"ura\"\n
         \ttab\n
         ")
+    return 0
+```
+
+## 029 — sizeof: takes a struct type name
+
+```ura
+// stdout: 8
+// expect: 0
+use "@/core"
+struct Pair:
+    a i32
+    b i32
+
+fn main() i32:
+    io::out($"{sizeof(Pair)}\n")
     return 0
 ```

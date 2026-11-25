@@ -1,3 +1,15 @@
+/* *********************************************************** */
+/*                                                             */
+/*    _   _ ____      _        project.c                       */
+/*   | | | |  _ \    / \                                       */
+/*   | | | | |_) |  / _ \      Mohammed Hrima                  */
+/*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
+/*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
+/*                                                             */
+/*   updated: 2026/11/24 22:09:52                              */
+/*                                                             */
+/* *********************************************************** */
+
 // CONFIG
 Node *find_config(Node *config, char *dir) {
     if (config == NULL || strcmp2(config->token->name, dir))
@@ -267,9 +279,10 @@ void add_dependency(char *project, char *spec, char *where) {
         format("%s is a folder, it has no version", where),
         format("ura deps add %s %s", name, where)
     );
-
     if (where == NULL)
-        where = format("https://github.com/ura-computing/ura-%s", name);
+	where = format("https://github.com/ura-computing/ura-%s", name);
+	print("installing %s\n", name);
+	print("from %s\n", where);
     set_dependency(project, name, is_local ? "@path" : "@url", where, version);
     help("added %s to ura.conf\n", spec);
     install_project(load_config(project), NULL, false, 0);

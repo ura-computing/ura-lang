@@ -1,3 +1,15 @@
+/* *********************************************************** */
+/*                                                             */
+/*    _   _ ____      _        ucg.c                           */
+/*   | | | |  _ \    / \                                       */
+/*   | | | | |_) |  / _ \      Mohammed Hrima                  */
+/*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
+/*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
+/*                                                             */
+/*   updated: 2026/11/25 01:23:15                              */
+/*                                                             */
+/* *********************************************************** */
+
 // INCLUDES
 #include "./lib/header.h"
 #include <unistd.h>
@@ -300,19 +312,16 @@ void ucg_check_errors(void) {
         int col = error->s - start;
         int width = snprintf(NULL, 0, "%d", line);
 
-        fprintf(
-            stderr, 
-            "%s: %s:%d:%d %s\n", RED("error"), 
-            path, line, col + 1, error->msg
-        );
+        fprintf(stderr, "%s: %s\n", RED("error"), error->msg);
+        fprintf(stderr, "at %s:%d:%d\n", path, line, col + 1);
         fprintf(stderr, "%*s |\n", width, "");
         fprintf(stderr, "%d | %.*s\n", line, end - start, buff + start);
         fprintf(stderr, "%*s | %*s", width, "", col, "");
         for (int j = error->s; j < error->e || j == error->s; j++)
-            fprintf(stderr, "^");
+            fprintf(stderr, RED("^"));
         fprintf(stderr, "\n");
         if (error->help)
-            fprintf(stderr, "help: %s\n", error->help);
+            fprintf(stderr, "%s: %s\n", CYAN("help"), error->help);
     }
     fprintf(
         stderr,

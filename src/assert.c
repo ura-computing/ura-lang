@@ -1,12 +1,24 @@
+/* *********************************************************** */
+/*                                                             */
+/*    _   _ ____      _        assert.c                        */
+/*   | | | |  _ \    / \                                       */
+/*   | | | | |_) |  / _ \      Mohammed Hrima                  */
+/*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
+/*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
+/*                                                             */
+/*   updated: 2026/11/25 00:42:14                              */
+/*                                                             */
+/* *********************************************************** */
+
 void add_error(int s, int e, char *msg, char *help) {
     File *file = file_at(s);
     ucg_add_error(file, s - file->start, e - file->start, msg, help);
 }
 
-void expect(Type type, char *msg, char *fix) {
+bool expect(Type type, char *msg, char *fix) {
     if (peek(0)->type == type) {
         next();
-        return;
+        return true;
     }
     Token *prev = ura.tokens[ura.exe_pos - 1];
     Token *at = peek(0)->line == prev->line ? peek(0) : prev;
@@ -25,6 +37,7 @@ void expect(Type type, char *msg, char *fix) {
             text_at(prev->e)
         )
     );
+	return false;
 }
 
 bool assert_lexeme(char *buff, int s, int e) {
@@ -812,6 +825,30 @@ Node *assert_copy(Node *value, Node *type) {
     return value;
 }
 
+char *signature_of(Node *fn) {
+    Node *params = fn->args;
+    char *text = "";
+    for (int i = 0; i < params->children_count; i++) {
+        Node *param = params->children[i];
+        char *part = "...";
+        if (param->token->type != VARIADIC)
+            part = format("%s %s", param->token->name, type_name(param->data_type));
+        text = format("%s%s%s", text, i ? ", " : "", part);
+    }
+
+    char *kind = fn->token->type == PROTO ? "proto" : "fn";
+    char *ret = fn->ret_type ? format(" %s", type_name(fn->ret_type)) : "";
+    char *where = format("%s:%d", relative_path(fn->token->filename), fn->token->line);
+    return format(
+        "%s %s(%s)%s\ndeclared at %s",
+        kind,
+        fn->token->name,
+        text,
+        ret,
+        where
+    );
+}
+
 void assert_args(Node *fn, Node **args, int count, int self) {
     for (int i = 0; i < count && i + self < fn->args->children_count; i++) {
         Node *type = fn->args->children[i + self]->data_type;
@@ -828,7 +865,7 @@ void assert_args(Node *fn, Node **args, int count, int self) {
         if (!takes_ref || is_other)
             args[i] = assert_copy(args[i], param);
         if (!is_child)
-            assert_type(args[i], param, NULL);
+            assert_type(args[i], param, signature_of(fn));
         if (!takes_ref)
             continue;
         if (is_address)
@@ -882,8 +919,8 @@ void assert_name(Node *node) {
             add_error(
                 token->s,
                 token->e,
-                format("unknown type '%s'", token->name),
-                format("declare it: struct %s:", token->name)
+                format("unknown symbol '%s'", token->name),
+                NULL
             );
         return;
     }
@@ -1164,12 +1201,8 @@ void assert_function(Node *node, Node *scope) {
         add_error(
             name_s,
             name_e,
-            format(
-                "'%s' is already declared with other parameters, on line %d",
-                token->name,
-                line_at(other->token->s)
-            ),
-            "declare it once, with ... for the optional arguments"
+            format("'%s' is already declared with other parameters", token->name),
+            format("the first one is %s", signature_of(other))
         );
         break;
     }
@@ -1755,15 +1788,6 @@ void assert_arg_count(Node *node) {
     bool is_wrong = is_variadic ? given < needed : given != needed;
     if (!is_wrong)
         return;
-    char *signature = "";
-    for (int i = 0; i < count; i++) {
-        Node *param = params->children[i];
-        char *text = "...";
-        if (param->token->type != VARIADIC)
-            text = format("%s %s", param->token->name, type_name(param->data_type));
-        signature = format("%s%s%s", signature, i ? ", " : "", text);
-    }
-    char *ret = fn->ret_type ? format(" %s", type_name(fn->ret_type)) : "";
     add_error(
         node->token->s,
         node->token->e,
@@ -1775,13 +1799,7 @@ void assert_arg_count(Node *node) {
             needed == 1 ? "" : "s",
             given
         ),
-        format(
-            "%s %s(%s)%s",
-            fn->token->type == PROTO ? "proto" : "fn",
-            fn->token->name,
-            signature,
-            ret
-        )
+        signature_of(fn)
     );
 }
 
@@ -1834,7 +1852,7 @@ void assert_call(Node *node) {
             node->children[i] = arg = ref;
         }
         bool is_variable = arg->token->type != REF && lives_in_variable(arg);
-        char *help = NULL;
+        char *help = signature_of(node->to_call);
         if (takes_ref && is_variable)
             help = format("pass its address: '&%s'", token_text(arg->token));
         node->children[i] = arg = assert_copy(arg, param->data_type);
@@ -1858,6 +1876,12 @@ void assert_builtin(Node *node) {
         );
     for (int i = 0; i < node->children_count; i++) {
         Node *arg = node->children[i];
+        Node *st = arg->token->type == ID ? find_struct(arg->token->name) : NULL;
+        if (token->type == SIZEOF && st) {
+            arg->token->is_type = true;
+            arg->declared = st;
+            continue;
+        }
         analyze(arg);
         bool is_text = token->type == FORMAT;
         if (is_text && arg->token->type == CHARS)

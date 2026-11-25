@@ -36,6 +36,12 @@ i128 / u128                                   ucg: LLVM i128, __divti3, printing
 bigint (in ucg)                               n bigint = 2 ** 200
 any (undecided)                               fn show(x any):      // works like a template
 
+expand a mod (like C++ using namespace)
+    expand time
+    clock Clock = Clock::create()             // no time:: prefix
+    sleep(250)
+    // the mod's names are found without the prefix, the prefixed names still work
+
 bug: wrong place, wrong message
     for x in Range::create(name.size()):
     error: main.ura:13:19 can't loop over '::'
@@ -219,36 +225,17 @@ later: http lib + FastAPI-like framework, ura init SDL2, other architectures (em
     + 30 push dsrl
 	+ what if new failed
 
-(ura-lang) c4r4p3% ura deps add git@github.com:ura-computing/ura-libft.git
-added git@github.com:ura-computing/ura-libft.git to ura.conf
-error: /goinfre/mhrima/workspace/ura-lang/src/hello-world/ura.conf:25:14 version 'github.com:ura-computing/ura-libft.git' is not like 0.0.1
+
++ for preproccesing macros:
+	+ if it's for example awindows but the mahcine is linux
+	+ what's inside should be lack dark background or similar to how vscode does it
++ when i hover over sturct attirbute i much see it's type you know inside {}
++ when {do a new line here it shold luk go one step back or somehting}
++ we should add a code formatter for ura-lang
+
++ add the line and the file where the function is declared
+error: main.ura:36:16 expected 'i32', found 'Server'
    |
-25 |     @version "github.com:ura-computing/ura-libft.git"
-   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: use three numbers: @version "0.0.1"
+36 |         listen(server, listen)
+   |                ^^^^^^
 error: aborting due to 1 error
-(ura-lang) c4r4p3% ura deps add https://github.com/ura-computing/ura-libft.git
-error: 'https://github.com/ura-computing/ura-libft.git' is not a package name
-(ura-lang) c4r4p3% ura deps add ura-libft https://github.com/ura-computing/ura-libft.git
-added ura-libft to ura.conf
-error: /goinfre/mhrima/workspace/ura-lang/src/hello-world/ura.conf:25:14 version 'github.com:ura-computing/ura-libft.git' is not like 0.0.1
-   |
-25 |     @version "github.com:ura-computing/ura-libft.git"
-   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: use three numbers: @version "0.0.1"
-error: aborting due to 1 error
-(ura-lang) c4r4p3% ura deps add https://github.com/ura-computing/ura-libft.git          
-error: 'https://github.com/ura-computing/ura-libft.git' is not a package name
-(ura-lang) c4r4p3% ura deps add https://github.com/ura-computing/ura-libft.git
-error: 'https://github.com/ura-computing/ura-libft.git' is not a package name
-(ura-lang) c4r4p3% ura deps add ura-libft https://github.com/ura-computing/ura-libft.git
-added ura-libft to ura.conf
-error: https://github.com/ura-computing/ura-libft.git has no version tag like 0.0.1
-(ura-lang) c4r4p3% ura deps add ura-libft https://github.com/ura-computing/ura-libft.git 0.0.1
-error: expected: ura deps install | add | update | remove | list
-see them with: ura -help
-(ura-lang) c4r4p3% ura deps add ura-libft https://github.com/ura-computing/ura-libft.git@0.0.1
-added ura-libft to ura.conf
-error: can't read the versions of https://github.com/ura-computing/ura-libft.git@0.0.1
-(ura-lang) c4r4p3% 
-on erro still add the path to ura.conf

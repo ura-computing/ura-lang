@@ -1,3 +1,15 @@
+/* *********************************************************** */
+/*                                                             */
+/*    _   _ ____      _        main.c                          */
+/*   | | | |  _ \    / \                                       */
+/*   | | | | |_) |  / _ \      Mohammed Hrima                  */
+/*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
+/*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
+/*                                                             */
+/*   updated: 2026/11/25 01:18:07                              */
+/*                                                             */
+/* *********************************************************** */
+
 // TYPEDEFS
 typedef struct Token Token;
 typedef struct Node Node;
@@ -33,6 +45,9 @@ struct Token {
     Type type;
     char *name;
     int space;
+#if DEBUG
+	int tk_index;
+#endif
 
     char *filename;
     int line;
@@ -321,7 +336,7 @@ char *escaped[256] = {
 
 // TOKENIZE
 Token *new_token(Type type, Token from) {
-	// TODO: maybe we need to copy also the shift
+    // TODO: maybe we need to copy also the shift
     Token *new = arena_alloc(1, sizeof(Token));
     new->type = type;
     new->filename = from.filename;
@@ -329,6 +344,13 @@ Token *new_token(Type type, Token from) {
     new->space = from.space;
     new->s = from.s;
     new->e = from.e;
+#if DEBUG
+	static int debug_index;
+	new->tk_index = ++debug_index;
+	// if(new->tk_index == 125) {
+	// 	raise(SIGSEGV);
+	// }
+#endif
     append(ura.tokens, new);
     return new;
 }
@@ -439,7 +461,10 @@ Token *parse_id(int s, int e, int space) {
     }
     if (keywords[i].value == NULL)
         new->name = strndup2(buff + s, e - s);
-
+    // if (new->type == RETURN) {
+    //     print("return has %d space in line %d\n", space, ura.line);
+    //     exit(1);
+    // }
     new->filename = ura.file->path;
     new->line = ura.line;
     new->space = space / TAB + ((space % TAB) != 0);
@@ -450,13 +475,16 @@ Token *parse_id(int s, int e, int space) {
 }
 
 Token *parse_num(int s, int e, int space) {
-    Token *new = new_token(INT, (Token){
-		.filename = ura.file->path,
-		.line = ura.line,
-		.space = space / TAB + ((space % TAB) != 0),
-		.s = s,
-		.e = e,
-	});
+    Token *new = new_token(
+        INT,
+        (Token){
+            .filename = ura.file->path,
+            .line = ura.line,
+            .space = space / TAB + ((space % TAB) != 0),
+            .s = s,
+            .e = e,
+        }
+    );
 
     char *buff = ura.file->buff;
     new->num.value = strtoll(buff + s, NULL, 10);
@@ -471,13 +499,16 @@ Token *parse_num(int s, int e, int space) {
 }
 
 Token *parse_string(int s, int e, int space) {
-    Token *new = new_token(CHARS, (Token){
-		.filename = ura.file->path,
-		.line = ura.line,
-		.space = space / TAB + ((space % TAB) != 0),
-		.s = s,
-		.e = e,
-	});
+    Token *new = new_token(
+        CHARS,
+        (Token){
+            .filename = ura.file->path,
+            .line = ura.line,
+            .space = space / TAB + ((space % TAB) != 0),
+            .s = s,
+            .e = e,
+        }
+    );
     char *buff = ura.file->buff;
     new->chars.value = parse_escaped(buff, s + 1, e - 1);
 
@@ -628,6 +659,8 @@ Token *parse_char(int s, int e, int space) {
 
 void tokenize(File *file) {
     ura.file = file;
+	file->buff = clean_text_size(file->buff);
+	file->len = strlen(file->buff);
     int first_token = ura.tokens_count;
     tokenize_range(0, file->len, 0);
     for (int i = first_token; i < ura.tokens_count; i++) {
@@ -637,9 +670,24 @@ void tokenize(File *file) {
     expand_uses(first_token);
 }
 
+char *clean_text_size(char *text) {
+	char *res = arena_alloc(strlen(text) * TAB + 1, 1);
+	int j = 0;
+	for(int i = 0; text[i]; i++) {
+		if(text[i] == '\t') {
+			for(int k = 0; k < TAB; k++)
+				res[j++] = ' ';
+			continue;
+		}
+		res[j++] = text[i];
+	}
+	return res;
+}
+
 void tokenize_range(int start, int end, int space) {
     int s = start;
     int e = start;
+
     char *buff = ura.file->buff;
     while (e < end && buff[e] != '\0') {
         s = e;
@@ -654,8 +702,14 @@ void tokenize_range(int start, int end, int space) {
             }
             while (buff[e] != '\n' && isspace(buff[e])) {
                 // calculated spaces after hitting \n in s position
-                if (buff[s] == '\n')
-                    space++;
+                if (buff[s] == '\n') {
+					if(buff[e] == ' ')
+	                    space++;
+					else { // TODO: check all space types
+						eprint("unhandled space type\n");
+						exit(1);
+					}
+				}
                 e++;
             }
             //  if (buff[s] == '\n' && buff[e] && buff[e] != '\n') // a line with code
@@ -976,11 +1030,25 @@ void prefix_names(Token *mod) {
     while (ura.tokens[end]->space > mod->space)
         end++;
     int space = ura.tokens[start]->space;
+    int macro_space = -1;
     for (int i = start; i < end; i++) {
         Token *curr = ura.tokens[i];
         Token *after = ura.tokens[i + 1];
-        bool is_head = curr->space == space && is_line_start(i);
-        bool is_head_type = includes(curr->type, STRUCT, FN_DEC, ENUM, MODULE, 0);
+        bool starts_line = is_line_start(i);
+        if (starts_line && curr->space <= macro_space)
+            macro_space = -1;
+
+        bool is_macro = includes(curr->type, MACRO_IF, MACRO_ELIF, MACRO_ELSE, 0);
+        if (starts_line && curr->space == space && is_macro)
+            macro_space = curr->space;
+
+        bool is_in_macro = macro_space != -1 && curr->space == macro_space + 1;
+        bool is_head = starts_line && (curr->space == space || is_in_macro);
+        bool is_head_type = includes(
+            curr->type,
+            STRUCT, FN_DEC, PROTO, ENUM, MODULE,
+            0
+        );
         bool is_named = is_head_type && after->type == ID;
         if (is_head && is_named)
             append(names, after->name);
@@ -1019,7 +1087,6 @@ void parse_module_name(Token *token) {
         token->e = member->e;
     }
 }
-
 
 void inherit_from_parent(Node *st, Node *parent) {
     Token *body = parent->token;
@@ -1121,10 +1188,12 @@ Node *parse_type(void) {
     bool is_id = after->type == ID;
     bool is_variable = is_id && find_variable(after->name, after->s);
     bool is_function = is_id && find_function(after->name);
+    bool is_struct = is_id && find_struct(after->name);
     bool is_name = is_id && !is_variable && !is_function;
     bool is_unary = includes(after->type, ADD, SUB, LBRACK, 0);
     bool is_operator = precedence[after->type] && !is_unary;
-    if (is_ref && (after->is_type || is_name || is_operator)) {
+    bool is_type_name = after->is_type || is_name || is_struct;
+    if (is_ref && (is_type_name || is_operator)) {
         next(); // SKIP & or &&
         Node *ref = new_node(token);
         ref->token->is_type = true;
@@ -1207,6 +1276,7 @@ Node *parse_prime() {
     case ID: {
         Token *prev = ura.tokens[ura.exe_pos - 2];
         bool is_member = includes(prev->type, DOT, DOUBLE_DOTS, 0);
+        bool starts_line = prev->line != token->line;
         parse_module_name(token);
         Token *builtin = is_member ? NULL : find_builtin(token->name);
         if (builtin) {
@@ -1235,7 +1305,7 @@ Node *parse_prime() {
         Node *types = is_template_use ? parse_types(token) : NULL;
         if (types && assert_template_use(token, template, types))
             token->name = init_from_template(template, types);
-        Node *type = builtin ? NULL : parse_type();
+        Node *type = builtin || !starts_line ? NULL : parse_type();
         if (type != NULL) {
             node = new_node(new_token(DECLARE, *token));
             node->var = new_node(token);
@@ -1360,9 +1430,12 @@ Node *parse_prime() {
         return node;
     }
     case RETURN: {
+		// print("%s:%d >> return %k\n", FILE, LINE, token);
         node = new_node(token);
         if (peek(0)->line == token->line)
             node->left = parse_expr(0);
+		// print("%s:%d %n\n", FILE, LINE, node);
+		// exit(1);
         return node;
     }
     case IF:
@@ -1505,16 +1578,29 @@ Node *parse_prime() {
     case LCBRACK: {
         node = new_node(token);
         while (peek(0)->type == ID) {
+			// print(RED("%s:%d i found >> %k\n"), FILE, LINE, peek(0));
             Node *attr = new_node(next());
             attr->token->type = ATTR;
             expect(DOTS, "expected ':' after the attribute name", ":");
             attr->left = parse_expr(0);
             append(node->children, attr);
-            if (peek(0)->type != COMA)
+			// print(RED("%s:%d >> \n%n\n"), FILE, LINE, attr);
+            if (peek(0)->type != COMA) {
+				// print(RED("%s:%d break the loop >> %k\n"), FILE, LINE, peek(0));
                 break;
-            next(); // SKIP ,
+			}
+			// print(RED("%s:%d skip >> %k\n"), FILE, LINE, peek(0));
+			while(peek(0)->type == COMA)
+	            next(); // SKIP ,
         }
-        expect(RCBRACK, "expected '}' to close the struct value", "}");
+		// exit(1);
+		// print(RED("%s:%d after loop i found >> %k\n"), FILE, LINE, peek(0));
+        if(!expect(RCBRACK, "expected '}' to close the struct value", "}")){
+			// Token *tmp = peek(0);
+			// print("%s:%d i found >> %k index %d\n", FILE, LINE, tmp, tmp->tk_index);
+			// print(">>> %n\n", node);
+			// exit(1);
+		}
         return node;
     }
     case LBRACK: {
@@ -1528,6 +1614,8 @@ Node *parse_prime() {
             next(); // SKIP ,
         }
         expect(RBRACK, "expected ']' to close the array", "]");
+		// print("%s:%d retuning %n", FILE, LINE, node);
+		// print("curr token is %k\n", peek(0));
         return node;
     }
     case NOT: {
@@ -1722,7 +1810,10 @@ Node *parse_prime() {
             Node *child = parse_expr(0);
             if (!includes(child->token->type, FN_DEC, TEMPLATE, STRUCT, 0)) {
                 bool ok = includes(child->token->type, VAR, MACRO_IF, MACRO_ERROR, 0);
-                assert_attribute(ok, child);
+                if (!assert_attribute(ok, child)) {
+                    // print("%s:%d >>> %n\n", FILE, LINE, child);
+                    // exit(1);
+                }
                 continue;
             }
             append(node->children, child);
@@ -2211,24 +2302,32 @@ Node *type_of(Node *node) {
             return found;
         return first->token->type == REF ? first->data_type : first;
     }
-    case SIZEOF: case ARGC: return new_type(INT, 32, NULL);
-    case TYPEOF: case ALLOC: return chars_type();
-    case FORMAT:  return string_type();
-    case IS_ZERO: return bool_type();
-    case ARGV: return new_type(ARRAY, 0, chars_type());
-    case DROP: case MEMCPY: case FREE: return new_type(VOID, 0, NULL);
+    case SIZEOF: case ARGC:
+		return new_type(INT, 32, NULL);
+    case TYPEOF: case ALLOC:
+		return chars_type();
+    case FORMAT:
+		return string_type();
+    case IS_ZERO: 
+		return bool_type();
+    case ARGV: 
+		return new_type(ARRAY, 0, chars_type());
+    case DROP: case MEMCPY: case FREE: 
+		return new_type(VOID, 0, NULL);
     case LT: case GT: case EQ: case LE: case GE: case NQ:
-    case AND: case OR: case NOT: return bool_type();
-    case ID:        return NULL;
-    case SELF:      return NULL;
-	case MUL: case ADD: case SUB: case DIV: case MOD: {
-		// TODO: to be check later
-		// for structs it might be operator overloading
-		// 
-		return type_of(node->left);
+    case AND: case OR: case NOT: 
+		return bool_type();
+    case ID: case SELF:
 		return NULL;
-		break;
-	}
+	case AND_LIT: case OR_LIT: 
+		return bool_type();
+    case MUL: case ADD: case SUB: case DIV: case MOD:
+    case BAND: case BOR: case BXOR: case LSHIFT: case RSHIFT:
+    case ASSIGN: case ADD_ASSIGN: case SUB_ASSIGN: case MUL_ASSIGN:
+    case DIV_ASSIGN: case MOD_ASSIGN: case BAND_ASSIGN: case BOR_ASSIGN:
+    case BXOR_ASSIGN: case LSHIFT_ASSIGN: case RSHIFT_ASSIGN:
+    case DECLARE: case ATTR: 
+		return type_of(node->left);
     default: {
 		eprint("%s:%d handle this case \n%n\n", FILE, LINE, node);
 		Token *token = node->token;
@@ -2766,6 +2865,10 @@ void codegen_protos(Node *node) {
         if (left && left->token->type == REF)
             left = left->data_type;
         char *name = child->token->name;
+        bool is_proto = child->token->type == PROTO;
+        char *bare = is_proto ? strrchr(name, ':') : NULL;
+        if (bare)
+            name = bare + 1;
         if (left)
             name = format("%s.%s", type_name(left), name);
         if (includes(child->token->type, FN_DEC, PROTO, 0))
@@ -3573,6 +3676,12 @@ void parse_args(int ac, char **av) {
     }
     // with ura.conf
     if (strcmp2(av[1], "deps")) {
+        // TODO: it will be nice if we remove deps add
+        // we use only insstall since install already add neeed ones
+        // install also should be able to take more than one arguments
+        // how we do like uv
+        // ura install <arg> (install arg dependecy)
+        // ura install: install everyhing
         char *command = ac > 2 ? av[2] : "";
         char *name = ac > 3 ? av[3] : NULL;
         if (strcmp2(command, "install") && ac == 3)
