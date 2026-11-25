@@ -14,3 +14,4 @@
 - [Errors in check.c, portable](feedback-errors-portable.md) — add_error only in check.c; build on LLVM 12/15/21 and Linux/macOS/Windows clang
 - [Ask before C](feedback-ask-before-c.md) — no C code edits without the user's yes; tests/.ura are fine
 - [Visual](feedback-visual.md) — explain with a small diagram/table, few words
+- [Feedback 2026-11-25](../FEEDBACK.md) — how to write .ura code (struct literals, chained calls, checked returns, no magic numbers, struct folders), ura-libs, extension bugs, ideas

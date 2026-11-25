@@ -8,6 +8,7 @@ Other files in this folder:
 | file | what it holds | how current |
 |---|---|---|
 | `.claude/CLAUDE.md` (this file) | how to work with the user, project state, plan, next step | current (2026-11-19) |
+| `.claude/FEEDBACK.md` | the user's latest feedback: how to write .ura code, ura-libs, extension bugs, ideas | current (2026-11-25); read before writing .ura code |
 | `.claude/memory/*.md` | Claude's memory from the old machine, one rule per file, `MEMORY.md` is the index | current; same rules as section 1, with the reasons |
 | `.claude/ONBOARDING.md` | older onboarding (2026-10-21): background on the language, history, laptop setup | old; check facts against the code |
 | `.claude/SPECS.md` | measured machine specs, every LLVM version 12..23, platforms ura must run on | still valid |
