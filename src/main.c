@@ -667,14 +667,14 @@ void parse_block(Node *node) {
 
 Node *parse_type(void) {
     Node *type = new_node(next());
-    bool is_array = peek(0)->type == LBRACK && peek(1)->type == RBRACK;
-    if (!is_array)
-        return type;
-    Node *array = new_node(next()); // skip [
-    next();                         // skip ]
-    array->token->type = ARRAY;
-    array->data_type = type;
-    return array;
+    while (peek(0)->type == LBRACK && peek(1)->type == RBRACK) {
+        Node *array = new_node(next()); // skip [
+        next();                         // skip ]
+        array->token->type = ARRAY;
+        array->data_type = type;
+        type = array;
+    }
+    return type;
 }
 
 Node *parse_list(Token *open) {
@@ -720,10 +720,25 @@ Node *parse_return(Token *token) {
 Node *parse_prime(void) {
     Token *token = next();
     switch (token->type) { // clang-format off
-    case INT: case FLOAT: case CHARS: return new_node(token);
     case FN_DEC: case PROTO: return parse_fn(token);
     case RETURN: return parse_return(token);
     case BRK: case CNT: return new_node(token);
+    case INT: case FLOAT: case CHARS: { // clang-format on
+        Node *node = new_node(token);
+        bool is_array = token->is_type && peek(0)->type == LBRACK;
+        if (!is_array)
+            return node;
+        Node *array = new_node(next());
+        array->token->type = ARRAY;
+        array->data_type = node;
+        while (1) {
+            append(array->children, parse_expr(0));
+            expect(RBRACK, "expected ']'", "i32[2][3]");
+            if (peek(0)->type != LBRACK)
+                return array;
+            next();
+        }
+    } // clang-format off
     case SUB: { // clang-format on
         Node *node = new_node(token);
         token->type = NEG;
@@ -979,6 +994,16 @@ Ucg *codegen(Node *node) {
         Ucg *value = node->to_ret ? codegen_as(node->to_ret, ret) : NULL;
         check_type(node, ret, value);
         return ucg_ret(value);
+    }
+    case ARRAY: {
+        expand(Ucg *, sizes);
+        zero_init(sizes);
+        for (int i = 0; i < node->children_count; i++) {
+            Node *size = node->children[i];
+            append(sizes, codegen_as(size, ucg_int_type(32)));
+            check_type(size, ucg_int_type(32), sizes[sizes_count - 1]);
+        }
+        return ucg_stack_array(type_of(node->data_type), sizes, sizes_count);
     }
     case DECLARE: {
         if (token->ucg)

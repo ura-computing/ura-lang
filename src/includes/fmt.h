@@ -209,7 +209,7 @@ const char *to_string(Type type) {
         NAME(MACRO_URL),     NAME(MACRO_PATH),    NAME(MACRO_CMD),
         NAME(SIZEOF),        NAME(TYPEOF),        NAME(DROP),
         NAME(COPY),          NAME(ALLOC),         NAME(MEMCPY),
-        NAME(FREE),          NAME(IS_ZERO),
+        NAME(FREE),          NAME(IS_ZERO),       NAME(STACK_ALLOC),
 
         NAME(IF),            NAME(ELIF),          NAME(ELSE),
         NAME(THEN),          NAME(END),           NAME(BLOC),

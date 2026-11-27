@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/27 11:00:32                              */
+/*   updated: 2026/11/27 11:23:54                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -229,6 +229,57 @@ Ucg *ucg_get_item(Ucg *base, Ucg *index) {
     new->index = index;
     append(gb_ucg.insts, new);
     return new;
+}
+
+Ucg *ucg_ref(Ucg *to_ref) {
+    Ucg *new = ucg_new(REF);
+    new->name = format("&%s", to_ref->name);
+    new->to_ref = to_ref;
+    new->value_type = ucg_ref_type(to_ref->data_type);
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+Ucg *ucg_stack_alloc(Ucg *elem, Ucg *count) {
+    Ucg *new = ucg_new(STACK_ALLOC);
+    new->data_type = elem;
+    new->index = count;
+    new->value_type = ucg_array_type(elem, 0);
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+// TODO: to be verified
+Ucg *ucg_stack_array(Ucg *elem, Ucg **sizes, int count) {
+    Ucg *i32 = ucg_int_type(32);
+    expand(Ucg *, totals);
+    zero_init(totals);
+    append(totals, sizes[0]);
+    for (int i = 1; i < count; i++)
+        append(totals, ucg_op(MUL, totals[i - 1], sizes[i]));
+
+    Ucg *type = ucg_array_type(elem, 0);
+    Ucg *below = ucg_var("", type);
+    ucg_assign(below, ucg_stack_alloc(elem, totals[count - 1]));
+    for (int level = count - 2; level >= 0; level--) {
+        Ucg *table = ucg_var("", ucg_array_type(type, 0));
+        ucg_assign(table, ucg_stack_alloc(type, totals[level]));
+        Ucg *index = ucg_var("", i32);
+        ucg_assign(index, ucg_numeric_value(i32, "0"));
+
+        Ucg *loop = ucg_branch(LOOP, NULL);
+        ucg_then(loop, ucg_op(LT, ucg_load(index), totals[level]));
+        Ucg *offset = ucg_op(MUL, ucg_load(index), sizes[level + 1]);
+        Ucg *row = ucg_ref(ucg_get_item(below, offset));
+        ucg_assign(ucg_get_item(table, ucg_load(index)), row);
+        Ucg *one = ucg_numeric_value(i32, "1");
+        ucg_assign(index, ucg_op(ADD, ucg_load(index), one));
+        ucg_end(loop);
+
+        below = table;
+        type = ucg_array_type(type, 0);
+    }
+    return ucg_load(below);
 }
 
 Ucg *ucg_branch(Type type, Ucg *prev) {
@@ -501,11 +552,25 @@ Ucg *llvm_compile(Ucg *ucg) {
         ucg->elem = LLVMBuildGEP2(lmb, elem, pointer, &index, 1, "");
         break;
     }
+    case REF: ucg->elem = ucg->to_ref->elem; break;
+    case STACK_ALLOC: {
+        llvm_compile(ucg->data_type);
+        TypeRef elem = ucg->data_type->lltype;
+        TypeRef i64 = LLVMInt64TypeInContext(ctx);
+        Value count = ucg->index->elem;
+        ucg->elem = LLVMBuildArrayAlloca(lmb, elem, count, "");
+        Value count64 = LLVMBuildZExt(lmb, count, i64, "");
+        Value bytes = LLVMBuildMul(lmb, LLVMSizeOf(elem), count64, "");
+        Value zero = LLVMConstInt(LLVMInt8TypeInContext(ctx), 0, 0);
+        LLVMBuildMemSet(lmb, ucg->elem, zero, bytes, 1);
+        break;
+    }
     case VAL_CREATE: {
         Ucg *data_type = ucg->data_type;
         int base = 10; // TODO: handle base
         llvm_compile(data_type);
         TypeRef lltype = data_type->lltype;
+		
         if (data_type->type == ARRAY) {
             TypeRef item_type = data_type->arr.elem->lltype;
             expand(Value, values);
@@ -519,9 +584,8 @@ Ucg *llvm_compile(Ucg *ucg) {
             LLVMSetLinkage(global, LLVMPrivateLinkage);
             TypeRef pointer = LLVMPointerType(item_type, 0);
             ucg->elem = LLVMConstPointerCast(global, pointer);
-            break;
         }
-        if (data_type->type == FLOAT)
+        else if (data_type->type == FLOAT)
             ucg->elem = LLVMConstRealOfString(lltype, ucg->value);
         else
             ucg->elem = LLVMConstIntOfString(lltype, ucg->value, base);
