@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/27 21:57:14                              */
+/*   updated: 2026/11/27 22:45:07                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -188,20 +188,23 @@ Ucg *ucg_load(Ucg *to_load) {
     return new;
 }
 
+Ucg *ucg_get_attr_by_index(Ucg *base, int index) {
+    Ucg *attr = base->data_type->obj.attrs[index];
+    Ucg *new = ucg_new(ATTR);
+    if (base->name)
+        new->name = format("%s.%s", base->name, attr->name);
+    new->data_type = attr->data_type;
+    new->base = base;
+    new->obj.index = index;
+    append(gb_ucg.insts, new);
+    return new;
+}
+
 Ucg *ucg_get_attr(Ucg *base, char *name) {
     Ucg *type = base->data_type;
     for (int i = 0; i < type->obj.attrs_count; i++) {
-        Ucg *attr = type->obj.attrs[i];
-        if (!strcmp2(attr->name, name))
-            continue;
-        Ucg *new = ucg_new(ATTR);
-        if (base->name)
-            new->name = format("%s.%s", base->name, name);
-        new->data_type = attr->data_type;
-        new->base = base;
-        new->obj.index = i;
-        append(gb_ucg.insts, new);
-        return new;
+        if (strcmp2(type->obj.attrs[i]->name, name))
+            return ucg_get_attr_by_index(base, i);
     }
     return NULL;
 }
@@ -504,7 +507,6 @@ void ucg_finish(void) {
     gb_ucg.tries_count = 0;
     gb_ucg.blocks_count = 0;
 }
-
 
 void ucg_bin(char *source) {
     if (gb_ucg.errors_count)

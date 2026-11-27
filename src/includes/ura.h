@@ -62,6 +62,7 @@ struct Token {
 struct Node {
 	Token *token;
     Ucg *ucg;
+    Node *type;
     Node *declared;
     expand(Node *, locals);
 

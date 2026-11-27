@@ -610,6 +610,14 @@ Node *new_node(Token *token) {
     return new;
 }
 
+Node *new_type(Type type, int bits, bool is_uint) {
+    Token *token = new_token(type, 0, 0);
+    token->is_type = true;
+    token->bits = bits;
+    token->is_uint = is_uint;
+    return new_node(token);
+}
+
 Token *peek(int pos) {
     int index = ura.exe_pos + pos;
     if (index >= ura.tokens_count)
@@ -800,6 +808,8 @@ Node *analyze_capture(Node *fn, Node *decl) {
     }
     Node *param = new_node(decl->token);
     param->data_type = decl->data_type;
+    analyze(decl->data_type, NULL);
+    param->type = decl->data_type;
     param->from_parent = decl;
     append(fn->params->children, param);
     append(fn->locals, param);
@@ -845,34 +855,109 @@ void analyze_closure(Node *locals, Node *fn, Node *node) {
         analyze_closure(locals, fn, node->children[i]);
 }
 
-void analyze_block(Node *node) {
+void analyze_block(Node *node, Node *type) {
     append(ura.scopes, node);
     ura.scope = node;
-    analyze(node->left);
+    Node *cond_type = NULL;
+    if (includes(node->token->type, IF, ELIF, LOOP, NULL))
+        cond_type = new_type(INT, 1, true);
+    analyze(node->left, cond_type);
     for (int i = 0; i < node->children_count; i++) {
         Node *child = node->children[i];
-        if (child->token->type == FN_DEC && find_scope(FN_DEC))
+        Type kind = child->token->type;
+        if (kind == STRUCT)
+            analyze(child, NULL);
+        bool is_fn = includes(kind, FN_DEC, PROTO, NULL);
+        for (int j = 0; is_fn && j < child->params->children_count; j++) {
+            Node *param = child->params->children[j];
+            analyze(param->data_type, NULL);
+            param->type = param->data_type;
+        }
+        if (is_fn)
+            analyze(child->ret_type, NULL);
+        if (kind == FN_DEC && find_scope(FN_DEC))
             analyze_closure(new_node(child->token), child, child);
     }
     for (int i = 0; i < node->children_count; i++) {
         Node *child = node->children[i];
         if (child->token->type == FN_DEC)
-            analyze(child);
+            analyze(child, NULL);
     }
     for (int i = 0; i < node->children_count; i++) {
         Node *child = node->children[i];
-        if (child->token->type != FN_DEC)
-            analyze(child);
+        if (includes(child->token->type, FN_DEC, STRUCT, NULL))
+            continue;
+        Node *expected = NULL;
+        if (i == node->children_count - 1)
+            expected = type;
+        analyze(child, expected);
     }
     ura.scopes_count--;
     ura.scope = NULL;
     if (ura.scopes_count)
         ura.scope = ura.scopes[ura.scopes_count - 1];
-    if (includes(node->token->type, IF, ELIF, NULL))
-        analyze(node->next);
+    if (includes(node->token->type, IF, ELIF, NULL)) {
+        if (type && node->next == NULL)
+            add_error(
+                node->token, "an if used as a value needs an else", "if a: 1 else: 2"
+            );
+        analyze(node->next, type);
+    }
 }
 
-void analyze(Node *node) {
+bool widens(Node *from, Node *to) {
+    Token *token0 = from->token;
+    Token *token1 = to->token;
+    bool is_int = token0->type == INT && token1->type == INT;
+    bool is_wider = token0->bits < token1->bits;
+    bool same_sign = token0->is_uint == token1->is_uint;
+    bool is_bool = token0->bits == 1;
+    return is_int && is_wider && !is_bool && (same_sign || token0->is_uint);
+}
+
+bool same_type(Node *type0, Node *type1) {
+    Token *token0 = type0->token;
+    Token *token1 = type1->token;
+    if (token0->type != token1->type)
+        return false;
+    if (token0->type == ARRAY)
+        return same_type(type0->data_type, type1->data_type);
+    if (token0->type == STRUCT_CALL)
+        return type0->declared == type1->declared;
+    return token0->bits == token1->bits && token0->is_uint == token1->is_uint;
+}
+
+bool is_number_value(Node *node) {
+    Node *number = node->token->type == NEG ? node->operand : node;
+    return includes(number->token->type, INT, FLOAT, NULL) && !number->token->is_type;
+}
+
+Node *analyze_number(Node *node, Node *type) {
+    bool is_neg = node->token->type == NEG;
+    Node *number = node;
+    if (is_neg)
+        number = node->operand;
+    Token *token = number->token;
+    bool is_same_kind = type && type->token->type == token->type;
+    if (!is_same_kind)
+        return new_type(token->type, token->bits, token->is_uint);
+    Token *expected = type->token;
+    bool fits = fits_int(token->num, is_neg, expected->is_uint, expected->bits);
+    if (token->type == FLOAT) {
+        double value = strtod(token->num, NULL);
+        int bits = expected->bits;
+        double max = bits == 16 ? 65504.0 : bits == 32 ? FLT_MAX : DBL_MAX;
+        fits = !isinf(value) && value <= max;
+    }
+    char *num = token->num;
+    if (is_neg)
+        num = format("-%s", token->num);
+    if (!fits)
+        add_error(node->token, format("%s doesn't fit in %T", num, type), NULL);
+    return type;
+}
+
+void analyze(Node *node, Node *type) {
     if (node == NULL)
         return;
     Token *token = node->token;
@@ -889,28 +974,164 @@ void analyze(Node *node) {
             break;
         }
         token->type = VAR;
+        node->type = node->declared->type;
         break;
     }
     case DECLARE: {
         if (find_node(STRUCT, token->name))
             add_error(token, format("'%s' is a struct name", token->name), NULL);
-        analyze(node->data_type);
+        analyze(node->data_type, NULL);
+        node->type = node->data_type;
+        Node *array = node->data_type;
+        while (array->token->type == ARRAY && array->children_count == 0)
+            array = array->data_type;
+        if (array->token->type == ARRAY)
+            add_error(array->token, "a type has no size", "a i32[] = i32[3]");
         append(ura.scope->locals, node);
+        break;
+    } // clang-format off
+    case INT: case FLOAT: { // clang-format on
+        if (!token->is_type)
+            node->type = analyze_number(node, type);
+        break;
+    }
+    case STRING_VALUE: {
+        node->type = new_type(ARRAY, 0, false);
+        node->type->data_type = new_type(INT, 8, false);
+        break;
+    } // clang-format off
+    case ASSIGN: case ADD_ASSIGN: case SUB_ASSIGN: case MUL_ASSIGN:
+    case DIV_ASSIGN: case MOD_ASSIGN: { // clang-format on
+        analyze(node->var, NULL);
+        analyze(node->value, node->var->type);
+        break;
+    } // clang-format off
+    case ADD: case SUB: case MUL: case DIV: case MOD:
+    case GT: case LT: case GE: case LE: case EQ: case NQ:
+    case AND: case OR: case AND_LIT: case OR_LIT: { // clang-format on
+        Node *first = node->left;
+        Node *second = node->right;
+        if (is_number_value(first)) {
+            first = node->right;
+            second = node->left;
+        }
+        analyze(first, NULL);
+        analyze(second, first->type);
+        node->type = first->type;
+        if (precedence[token->type] <= precedence[GT])
+            node->type = new_type(INT, 1, true);
+        break;
+    }
+    case NEG: {
+        if (is_number_value(node)) {
+            node->type = analyze_number(node, type);
+            break;
+        }
+        analyze(node->operand, NULL);
+        node->type = node->operand->type;
         break;
     }
     case URA: {
         if (ucg_has_errors())
             return;
-        analyze_block(node);
+        analyze_block(node, NULL);
         break;
     } // clang-format off
-    case STRUCT: case PROTO: case FN_DEC:
-    case IF: case ELIF: case ELSE: case LOOP: { // clang-format on
-        analyze_block(node);
+    case STRUCT: case PROTO: case FN_DEC: case LOOP: { // clang-format on
+        analyze_block(node, NULL);
+        break;
+    } // clang-format off
+    case IF: case ELIF: case ELSE: { // clang-format on
+        analyze_block(node, type);
+        node->type = type;
+        break;
+    }
+    case RETURN: {
+        Node *fn = find_scope(FN_DEC);
+        if (fn == NULL) {
+            add_error(token, "'return' outside a function", NULL);
+            break;
+        }
+        analyze(node->to_ret, fn->ret_type);
+        break;
+    } // clang-format off
+    case BRK: case CNT: { // clang-format on
+        char *name = token->type == BRK ? "break" : "continue";
+        if (find_scope(LOOP) == NULL)
+            add_error(token, format("'%s' outside a loop", name), NULL);
         break;
     }
     case DOT: {
-        analyze(node->base);
+        analyze(node->base, NULL);
+        Node *base = node->base->type;
+        if (base == NULL)
+            break;
+        Token *attr = node->attr->token;
+        bool is_struct = base->token->type == STRUCT_CALL;
+        int index = 0;
+        for (int i = 0; is_struct && i < base->declared->children_count; i++) {
+            Node *child = base->declared->children[i];
+            if (child->token->type != DECLARE)
+                continue;
+            if (strcmp2(child->token->name, attr->name)) {
+                node->type = child->type;
+                attr->index = index;
+                break;
+            }
+            index++;
+        }
+        if (node->type == NULL)
+            add_error(attr, format("no attribute '%s'", attr->name), NULL);
+        break;
+    }
+    case ARRAY: {
+        analyze(node->data_type, NULL);
+        for (int i = 0; i < node->children_count; i++)
+            analyze(node->children[i], new_type(INT, 32, false));
+        if (node->children_count)
+            node->type = node;
+        break;
+    }
+    case ARRAY_VALUE: {
+        Node *elem = NULL;
+        if (type && type->token->type == ARRAY)
+            elem = type->data_type;
+        if (node->children_count == 0 && elem == NULL) {
+            add_error(
+                node->token, "can't tell the type of an empty array", "a i32[] = []"
+            );
+            break;
+        }
+        for (int i = 0; i < node->children_count; i++) {
+            Node *child = node->children[i];
+            analyze(child, elem);
+            if (elem == NULL)
+                elem = child->type;
+        }
+        node->type = new_type(ARRAY, 0, false);
+        node->type->data_type = elem;
+        break;
+    }
+    case ACCESS: {
+        analyze(node->base, NULL);
+        analyze(node->index, new_type(INT, 32, false));
+        Node *root = node->base;
+        while (root->token->type == ACCESS)
+            root = root->base;
+        Node *elem = node->base->type;
+        if (node->base->token->type == STRUCT_CALL)
+            elem = node->base;
+        if (root->token->type == STRUCT_CALL) {
+            node->type = new_type(ARRAY, 0, false);
+            node->type->data_type = elem;
+        } else if (elem && elem->token->type == ARRAY)
+            node->type = elem->data_type;
+        break;
+    }
+    case AS: {
+        analyze(node->operand, NULL);
+        analyze(node->to_type, NULL);
+        node->type = node->to_type;
         break;
     }
     case FN_CALL: {
@@ -930,7 +1151,13 @@ void analyze(Node *node) {
             char *msg = format("'%s' takes %d arguments", token->name, expected);
             add_error(token, msg, NULL);
         }
-        analyze(node->params);
+        for (int i = 0; i < node->params->children_count; i++) {
+            Node *param_type = NULL;
+            if (i < expected)
+                param_type = params->children[i]->type;
+            analyze(node->params->children[i], param_type);
+        }
+        node->type = fn->ret_type;
         for (int i = 0; i < params->children_count; i++) {
             Node *param = params->children[i];
             if (param->from_parent == NULL)
@@ -942,13 +1169,19 @@ void analyze(Node *node) {
         break;
     }
     default: {
-        analyze(node->left);
-        analyze(node->right);
+        analyze(node->left, NULL);
+        analyze(node->right, NULL);
         for (int i = 0; i < node->children_count; i++)
-            analyze(node->children[i]);
+            analyze(node->children[i], NULL);
         break;
     }
     }
+    if (type == NULL || node->type == NULL)
+        return;
+    if (widens(node->type, type))
+        node->type = type;
+    if (!same_type(node->type, type))
+        add_error(token, format("expected %T, got %T", type, node->type), NULL);
 }
 
 // CODEGEN
@@ -956,10 +1189,6 @@ Ucg *type_of(Node *node) {
     Token *token = node->token;
     if (includes(token->type, INT, FLOAT, NULL))
         return ucg_number_type(token->type, token->bits, token->is_uint);
-    if (token->type == ARRAY && node->children_count) {
-        add_error(token, "a type has no size", "a i32[] = i32[3]");
-        return NULL;
-    }
     if (token->type == ARRAY)
         return ucg_array_type(type_of(node->data_type), 0);
     if (token->type == STRUCT_CALL)
@@ -982,74 +1211,16 @@ Node *find_node(Type type, char *name) {
     return NULL;
 }
 
-Ucg *find_variable(Node *node) {
+Ucg *codegen_var(Node *node) {
     Token *token = node->token;
-    if (token->type == DOT) {
-        Ucg *base = find_variable(node->base);
-        if (base == NULL)
-            return NULL;
-        Token *attr = node->attr->token;
-        Ucg *var = ucg_get_attr(base, attr->name);
-        if (var == NULL) {
-            char *msg = format("no attribute '%s'", attr->name);
-            add_error(attr, msg, NULL);
-        }
-        return var;
-    }
-    if (token->type == ACCESS) {
-        Ucg *base = find_variable(node->base);
-        Ucg *index = codegen(node->index, ucg_number_type(INT, 32, false));
-        if (base == NULL)
-            return NULL;
-        return ucg_get_item(base, index);
-    }
+    if (token->type == DOT)
+        return ucg_get_attr_by_index(codegen_var(node->base), node->attr->token->index);
+    if (token->type == ACCESS)
+        return ucg_get_item(codegen_var(node->base), codegen(node->index));
     Node *decl = node->declared;
-    if (decl == NULL)
-        return NULL;
     if (decl->from_parent)
         return ucg_point_to(decl->ucg);
     return decl->ucg;
-}
-
-bool is_number_value(Node *node) {
-    Node *number = node->token->type == NEG ? node->operand : node;
-    return includes(number->token->type, INT, FLOAT, NULL) && !number->token->is_type;
-}
-
-Ucg *codegen_number(Node *node, Node *number, Ucg *type) {
-    Token *token = number->token;
-    bool is_neg = node != number;
-    char *num = token->num;
-    if (is_neg)
-        num = format("-%s", token->num);
-    bool is_same_kind = type && type->type == token->type;
-    if (!is_same_kind)
-        return ucg_numeric_value(type_of(number), num);
-    bool fits = fits_int(token->num, is_neg, type->is_uint, type->bits);
-    if (token->type == FLOAT) {
-        double value = strtod(token->num, NULL);
-        double max = type->bits == 16 ? 65504.0 : type->bits == 32 ? FLT_MAX : DBL_MAX;
-        fits = !isinf(value) && value <= max;
-    }
-    if (!fits) {
-        char *msg = format("%s doesn't fit in %t%d", num, type->type, type->bits);
-        add_error(node->token, msg, NULL);
-    }
-    return ucg_numeric_value(type, num);
-}
-
-void check_type(Node *node, Ucg *expected, Ucg *value) {
-    if (!expected || !value || !value->value_type)
-        return;
-    Ucg *got = value->value_type;
-    Ucg *expected_elem = expected;
-    Ucg *got_elem = got;
-    while (expected_elem->type == ARRAY && got_elem->type == ARRAY) {
-        expected_elem = expected_elem->arr.elem;
-        got_elem = got_elem->arr.elem;
-    }
-    if (expected_elem != got_elem)
-        add_error(node->token, format("expected %U, got %U", expected, got), NULL);
 }
 
 Node *find_scope(Type type) {
@@ -1060,7 +1231,7 @@ Node *find_scope(Type type) {
     return NULL;
 }
 
-Ucg *codegen_block(Node *node, Ucg *type) {
+Ucg *codegen_block(Node *node) {
     append(ura.scopes, node);
     ura.scope = node;
     for (int i = 0; i < node->children_count; i++) {
@@ -1073,7 +1244,7 @@ Ucg *codegen_block(Node *node, Ucg *type) {
         if (child->token->type != FN_DEC)
             continue;
         ucg_entry(child->ucg);
-        codegen_block(child, NULL);
+        codegen_block(child);
         ucg_end(child->ucg);
     }
     Ucg *value = NULL;
@@ -1081,10 +1252,7 @@ Ucg *codegen_block(Node *node, Ucg *type) {
         Node *child = node->children[i];
         if (child->token->type == FN_DEC)
             continue;
-        Ucg *expected = NULL;
-        if (i == node->children_count - 1)
-            expected = type;
-        value = codegen(child, expected);
+        value = codegen(child);
         if (includes(child->token->type, RETURN, BRK, CNT, NULL))
             break;
     }
@@ -1095,32 +1263,26 @@ Ucg *codegen_block(Node *node, Ucg *type) {
     return value;
 }
 
-Ucg *codegen_if(Node *node, Ucg *type) {
+Ucg *codegen_if(Node *node) {
     Ucg *result = NULL;
-    if (type)
-        result = ucg_var("result", type);
+    if (node->type)
+        result = ucg_var("result", type_of(node->type));
     Ucg *stmt = ucg_branch(IF, NULL);
-    Node *last = node;
     for (Node *branch = node; branch; branch = branch->next) {
         bool is_first = branch == node;
         Ucg *part = is_first ? stmt : ucg_branch(branch->token->type, stmt);
         Ucg *cond = NULL;
         if (branch->cond)
-            cond = codegen(branch->cond, ucg_number_type(INT, 1, true));
+            cond = codegen(branch->cond);
         ucg_then(part, cond);
-        Ucg *value = codegen_block(branch, type);
+        Ucg *value = codegen_block(branch);
         bool has_value = value && value->value_type;
         if (result && has_value)
             ucg_assign(result, value);
-        last = branch;
     }
     ucg_end(stmt);
     if (result == NULL)
         return stmt;
-    if (last->token->type != ELSE)
-        add_error(
-            node->token, "an if used as a value needs an else", "if a: 1 else: 2"
-        );
     return ucg_load(result);
 }
 
@@ -1185,34 +1347,21 @@ Ucg *codegen_stack_array(Node *node) {
     expand(Ucg *, values);
     zero_init(values);
     for (int i = 0; i < sizes->children_count; i++)
-        append(values, codegen(sizes->children[i], ucg_number_type(INT, 32, false)));
+        append(values, codegen(sizes->children[i]));
     return ucg_stack_array(type_of(elem), values, values_count);
 }
 
 // TODO: to be checked
-Ucg *codegen_array(Node *node, Ucg *type) {
-    Ucg *elem = NULL;
-    if (type && type->type == ARRAY)
-        elem = type->arr.elem;
-    if (node->children_count == 0 && elem == NULL) {
-        add_error(
-            node->token, "can't tell the type of an empty array", "a i32[] = []"
-        );
-        return NULL;
-    }
+Ucg *codegen_array(Node *node) {
+    Ucg *elem = type_of(node->type->data_type);
     expand(Ucg *, items);
     zero_init(items);
-    for (int i = 0; i < node->children_count; i++) {
-        Node *child = node->children[i];
-        Ucg *item = codegen(child, elem);
-        if (elem == NULL && item)
-            elem = item->value_type;
-        append(items, item);
-    }
+    for (int i = 0; i < node->children_count; i++)
+        append(items, codegen(node->children[i]));
     return ucg_array_from(elem, items, items_count);
 }
 
-Ucg *codegen(Node *node, Ucg *type) {
+Ucg *codegen(Node *node) {
     Token *token = node->token;
     Ucg *value = NULL;
     switch (token->type) {
@@ -1220,21 +1369,21 @@ Ucg *codegen(Node *node, Ucg *type) {
         if (ucg_has_errors())
             break;
         ucg_start("ura", OUTPUT_EXE);
-        value = codegen_block(node, NULL);
+        value = codegen_block(node);
         break;
     } // clang-format off
-    case VAR: case DOT: value = ucg_load(find_variable(node)); break;
+    case VAR: case DOT: value = ucg_load(codegen_var(node)); break;
     case DECLARE: { // clang-format on
         if (node->ucg == NULL)
-            node->ucg = ucg_var(token->name, type_of(node->data_type));
+            node->ucg = ucg_var(token->name, type_of(node->type));
         value = node->ucg;
         break;
     } // clang-format off
-    case INT: case FLOAT: value = codegen_number(node, node, type); break;
+    case INT: case FLOAT: value = ucg_numeric_value(type_of(node->type), token->num); break;
     case STRING_VALUE:    value = ucg_string_value(token->string);  break;
     case STRUCT:          value = codegen_struct(node);             break;
     case ARRAY:           value = codegen_stack_array(node);        break;
-    case ARRAY_VALUE:     value = codegen_array(node, type);        break;
+    case ARRAY_VALUE:     value = codegen_array(node);              break;
     case ACCESS: { // clang-format on
         Node *base = node->base;
         while (base->token->type == ACCESS)
@@ -1242,18 +1391,16 @@ Ucg *codegen(Node *node, Ucg *type) {
         if (base->token->type == STRUCT_CALL)
             value = codegen_stack_array(node);
         else
-            value = ucg_load(find_variable(node));
+            value = ucg_load(codegen_var(node));
         break;
     }
     case ASSIGN: {
         Ucg *var = NULL;
         if (node->var->token->type == DECLARE)
-            var = codegen(node->var, NULL);
+            var = codegen(node->var);
         else
-            var = find_variable(node->var);
-        if (var == NULL)
-            break;
-        value = ucg_assign(var, codegen(node->value, var->data_type));
+            var = codegen_var(node->var);
+        value = ucg_assign(var, codegen(node->value));
         break;
     } // clang-format off
     case ADD_ASSIGN: case SUB_ASSIGN: case MUL_ASSIGN:
@@ -1262,48 +1409,26 @@ Ucg *codegen(Node *node, Ucg *type) {
             [ADD_ASSIGN] = ADD, [SUB_ASSIGN] = SUB, [MUL_ASSIGN] = MUL,
             [DIV_ASSIGN] = DIV, [MOD_ASSIGN] = MOD,
         };
-        Ucg *var = find_variable(node->var);
-        if (var == NULL)
-            break;
-        Ucg *right = codegen(node->value, var->data_type);
+        Ucg *var = codegen_var(node->var);
+        Ucg *right = codegen(node->value);
         Ucg *result = ucg_op(ops[token->type], ucg_load(var), right);
         value = ucg_assign(var, result);
         break;
     } // clang-format off
     case ADD: case SUB: case MUL: case DIV: case MOD:
     case GT: case LT: case GE: case LE: case EQ: case NQ:
-    case AND: case OR: case AND_LIT: case OR_LIT: {
-        // clang-format on
-        // TODO: chekc this one
-        Ucg *left = NULL;
-        Ucg *right = NULL;
-        if (is_number_value(node->left)) {
-            right = codegen(node->right, NULL);
-            if (right)
-                left = codegen(node->left, right->value_type);
-        } else {
-            left = codegen(node->left, NULL);
-            Ucg *expected = NULL;
-            if (left && is_number_value(node->right))
-                expected = left->value_type;
-            right = codegen(node->right, expected);
-        }
-        if (left == NULL || right == NULL)
-            break;
-        left = ucg_widen(left, right->value_type);
-        right = ucg_widen(right, left->value_type);
-        check_type(node->right, left->value_type, right);
-        value = ucg_op(token->type, left, right);
+    case AND: case OR: case AND_LIT: case OR_LIT: { // clang-format on
+        Ucg *left = codegen(node->left);
+        value = ucg_op(token->type, left, codegen(node->right));
         break;
     }
     case NEG: {
         if (is_number_value(node)) {
-            value = codegen_number(node, node->operand, type);
+            char *num = format("-%s", node->operand->token->num);
+            value = ucg_numeric_value(type_of(node->type), num);
             break;
         }
-        Ucg *operand = codegen(node->operand, NULL);
-        if (operand == NULL)
-            break;
+        Ucg *operand = codegen(node->operand);
         Ucg *zero = ucg_numeric_value(operand->value_type, "0");
         value = ucg_op(SUB, zero, operand);
         break;
@@ -1316,62 +1441,45 @@ Ucg *codegen(Node *node, Ucg *type) {
         Ucg *proto = node->declared->ucg;
         expand(Ucg *, args);
         zero_init(args);
-        for (int i = 0; i < node->params->children_count; i++) {
-            Ucg *param_type = proto->fn.params[i]->data_type;
-            append(args, codegen(node->params->children[i], param_type));
-        }
+        for (int i = 0; i < node->params->children_count; i++)
+            append(args, codegen(node->params->children[i]));
         for (int i = 0; i < node->children_count; i++)
-            append(args, ucg_ref(find_variable(node->children[i])));
+            append(args, ucg_ref(codegen_var(node->children[i])));
         value = ucg_call(proto, args, args_count);
         break;
     }
     case RETURN: {
-        Node *fn = find_scope(FN_DEC);
-        if (fn == NULL) {
-            add_error(token, "'return' outside a function", NULL);
-            break;
-        }
         Ucg *result = NULL;
         if (node->to_ret)
-            result = codegen(node->to_ret, fn->ucg->fn.ret);
+            result = codegen(node->to_ret);
         value = ucg_ret(result);
         break;
     }
     case AS: {
-        Ucg *operand = codegen(node->operand, NULL);
+        Ucg *operand = codegen(node->operand);
         value = ucg_cast(operand, type_of(node->to_type));
         break;
     }
     case IF:
-        value = codegen_if(node, type);
+        value = codegen_if(node);
         break;
     case LOOP: {
         Ucg *loop = ucg_branch(LOOP, NULL);
         node->ucg = loop;
-        ucg_then(loop, codegen(node->cond, ucg_number_type(INT, 1, true)));
-        codegen_block(node, NULL);
+        ucg_then(loop, codegen(node->cond));
+        codegen_block(node);
         ucg_end(loop);
         value = loop;
         break;
     } // clang-format off
-    case BRK: case CNT: { // clang-format on
-        Node *loop = find_scope(LOOP);
-        if (loop == NULL) {
-            add_error(token, format("%t outside a loop", token->type), NULL);
-            break;
-        }
-        value = ucg_jump(token->type, loop->ucg);
-        break;
-    }
-    default: {
+    case BRK: case CNT: value = ucg_jump(token->type, find_scope(LOOP)->ucg); break;
+    default: { // clang-format on
         add_error(token, format("%t is not supported yet", token->type), NULL);
         break;
     }
     }
-    if (type == NULL || value == NULL)
-        return value;
-    value = ucg_widen(value, type);
-    check_type(node, type, value);
+    if (node->type)
+        value = ucg_widen(value, type_of(node->type));
     return value;
 }
 
@@ -1453,12 +1561,12 @@ int main(int ac, char **av) {
     parse_block(ura.tree);
     // if (ura.print_tree)
     //     print("[AST]:\n%n", ura.tree);
-    analyze(ura.tree);
+    analyze(ura.tree, NULL);
     if (ura.print_tree) {
         print_header("tree");
         print("%n", ura.tree);
     }
-    codegen(ura.tree, NULL);
+    codegen(ura.tree);
     if (ura.print_insts) {
         print_header("ucg");
         ucg_print_insts();

@@ -82,7 +82,7 @@ void format_token(ioFile out, Token *token, int pad) {
     else if (is_number && token->is_type)
         fprintf(out, " %c%d", kind, token->bits);
     else if (is_number)
-        fprintf(out, " " GREEN("%s") " %c%d", token->num, kind, token->bits);
+        fprintf(out, " " GREEN("%s"), token->num);
     else if (type == STRING_VALUE)
         fprintf(out, " " GREEN("\"%s\""), token->string);
 }
@@ -110,10 +110,9 @@ void format_node(ioFile out, Node *node, char *indent, char *branch, int parent_
         fputs("     │ ", out);
     fprintf(out, "%s%s", indent, branch);
     format_token(out, token, 0);
-    bool has_type = token->type == VAR && node->declared->data_type;
-    if (has_type) {
+    if (node->type) {
         fputc(' ', out);
-        format_type(out, node->declared->data_type);
+        format_type(out, node->type);
     }
     fputc('\n', out);
 
@@ -195,6 +194,7 @@ void vfprint2(ioFile out, const char *fmt, va_list ap) {
         switch (conv) { // clang-format off
         case 't': fputs(to_string(va_arg(ap, Type)), out); break;
         case 'U': format_ucg(out, va_arg(ap, Ucg *)); break;
+        case 'T': format_type(out, va_arg(ap, Node *)); break;
         case 'k': format_token(out, va_arg(ap, Token *), 9); break;
         case 'n': format_node(out, va_arg(ap, Node *), "", "", -1); break;
         case 's': {
