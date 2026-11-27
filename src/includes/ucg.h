@@ -73,7 +73,7 @@ enum Type {
 
     // --- functions ---
     PROTO,
-    FN_DEC, ARGS, VARIADIC, FN_CALL, RETURN, FORMAT,
+    FN_DEC, ARGS, PARAMS, VARIADIC, FN_CALL, RETURN, FORMAT,
     FN_ENTRY,
 
     // --- directives (link, use, #macros) ---

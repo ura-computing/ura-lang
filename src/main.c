@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 01:00:44    */
 /*                                                             */
-/*   updated: 2026/11/27 09:23:19                              */
+/*   updated: 2026/11/27 09:58:16                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -289,9 +289,9 @@ bool fits_int(char *num, bool negative, bool is_uint, int bits) {
     for (int i = 0; i < power; i++) {
         int carry = 0;
         for (int j = (int)strlen(limit) - 1; j >= 0; j--) {
-            int n = (limit[j] - '0') * 2 + carry;
-            limit[j] = '0' + n % 10;
-            carry = n / 10;
+            int digit = (limit[j] - '0') * 2 + carry;
+            limit[j] = '0' + digit % 10;
+            carry = digit / 10;
         }
         if (carry) {
             memmove(limit + 1, limit, strlen(limit) + 1);
@@ -439,22 +439,22 @@ int parse_id(int s) {
 Token *parse_char(int s, int e) {
     Token *new = new_token(INT, s, e);
     new->bits = 8;
-    unsigned char *str =
+    unsigned char *bytes =
         (unsigned char *)parse_escaped(escaped, ura.file, s + 1, e - 1);
     int count = 1;
-    int value = str[0];
-    if (str[0] >= 0xF0) {
+    int value = bytes[0];
+    if (bytes[0] >= 0xF0) {
         count = 4;
-        value = str[0] - 0xF0;
-    } else if (str[0] >= 0xE0) {
+        value = bytes[0] - 0xF0;
+    } else if (bytes[0] >= 0xE0) {
         count = 3;
-        value = str[0] - 0xE0;
-    } else if (str[0] >= 0xC0) {
+        value = bytes[0] - 0xE0;
+    } else if (bytes[0] >= 0xC0) {
         count = 2;
-        value = str[0] - 0xC0;
+        value = bytes[0] - 0xC0;
     }
     for (int i = 1; i < count; i++)
-        value = value * 64 + (str[i] - 0x80);
+        value = value * 64 + (bytes[i] - 0x80);
 
     new->num = format("%d", value);
     if (count > 1)
@@ -638,10 +638,10 @@ Node *new_node(Token *token) {
 }
 
 Token *peek(int pos) {
-    int i = ura.exe_pos + pos;
-    if (i >= ura.tokens_count)
-        i = ura.tokens_count - 1;
-    return ura.tokens[i];
+    int index = ura.exe_pos + pos;
+    if (index >= ura.tokens_count)
+        index = ura.tokens_count - 1;
+    return ura.tokens[index];
 }
 
 Token *next(void) {
@@ -665,8 +665,21 @@ void parse_block(Node *node) {
         append(node->children, parse_expr(0));
 }
 
+Node *parse_type(void) {
+    Node *type = new_node(next());
+    bool is_array = peek(0)->type == LBRACK && peek(1)->type == RBRACK;
+    if (!is_array)
+        return type;
+    Node *array = new_node(next()); // skip [
+    next(); // skip ]
+    array->token->type = ARRAY;
+    array->data_type = type;
+    return array;
+}
+
 Node *parse_list(Token *open) {
     Node *list = new_node(open);
+	list->token->type = PARAMS;
     while (!includes(peek(0)->type, RPARENT, LAST, NULL)) {
         append(list->children, parse_expr(0));
         if (peek(0)->type != COMA)
@@ -683,11 +696,12 @@ Node *parse_fn(Token *token) {
     if (name)
         token->name = name->name;
     Token *open = expect(LPARENT, "expected '(' after the function name", NULL);
-    node->args = open ? parse_list(open) : new_node(token);
-    for (int i = 0; i < node->args->children_count; i++)
-        append(node->children, node->args->children[i]);
+    node->params = open ? parse_list(open) : new_node(token);
+	node->params->token->type = PARAMS;
+    for (int i = 0; i < node->params->children_count; i++)
+        append(node->children, node->params->children[i]);
     if (peek(0)->is_type)
-        node->ret_type = new_node(next());
+        node->ret_type = parse_type();
     if (token->type == PROTO)
         return node;
     expect(DOTS, "expected ':' before the function body", NULL);
@@ -706,7 +720,7 @@ Node *parse_return(Token *token) {
 Node *parse_prime(void) {
     Token *token = next();
     switch (token->type) { // clang-format off
-    case INT:    return new_node(token);
+    case INT: case FLOAT: case CHARS: return new_node(token);
     case FN_DEC: case PROTO: return parse_fn(token);
     case RETURN: return parse_return(token);
     case BRK: case CNT: return new_node(token);
@@ -726,13 +740,13 @@ Node *parse_prime(void) {
         bool is_call = peek(0)->type == LPARENT && peek(0)->line == token->line;
         if (is_call) {
             token->type = FN_CALL;
-            node->args = parse_list(next());
+            node->params = parse_list(next());
             return node;
         }
         bool is_declare = peek(0)->is_type && peek(0)->line == token->line;
         if (is_declare) {
             token->type = DECLARE;
-            node->data_type = new_node(next());
+            node->data_type = parse_type();
         }
         return node;
     } // clang-format off
@@ -776,6 +790,8 @@ Ucg *type_of(Node *node) {
         return ucg_int_type(token->bits);
     if (token->type == FLOAT)
         return ucg_float_type(token->bits);
+    if (token->type == ARRAY)
+        return ucg_array_type(type_of(node->data_type), 0);
     add_error(token, format("type %t is not supported yet", token->type), NULL);
     return ucg_int_type(32);
 }
@@ -824,8 +840,15 @@ Ucg *codegen_as(Node *node, Ucg *type) {
 
 void check_type(Node *node, Ucg *expected, Ucg *value) {
     Ucg *got = value ? value->value_type : NULL;
-    bool ok = expected == NULL || got == NULL || expected == got;
-    if (!ok)
+    if (!expected || !got)
+        return;
+    Ucg *expected_elem = expected;
+    Ucg *got_elem = got;
+    while (expected_elem->type == ARRAY && got_elem->type == ARRAY) {
+        expected_elem = expected_elem->arr.elem;
+        got_elem = got_elem->arr.elem;
+    }
+    if (expected_elem != got_elem)
         add_error(node->token, format("expected %U, got %U", expected, got), NULL);
 }
 
@@ -852,14 +875,14 @@ void codegen_block(Node *node) {
 
 Ucg *codegen_proto(Node *node) {
     Ucg *ret = node->ret_type ? type_of(node->ret_type) : ucg_new(VOID);
-    int count = node->args->children_count;
-    Ucg **params = arena_alloc(count + 1, sizeof(Ucg *));
-    for (int i = 0; i < count; i++) {
-        Node *param = node->args->children[i];
+    expand(Ucg *, params);
+    zero_init(params);
+    for (int i = 0; i < node->params->children_count; i++) {
+        Node *param = node->params->children[i];
         Ucg *type = type_of(param->data_type);
-        params[i] = param->token->ucg = ucg_param(param->token->name, type);
+        append(params, param->token->ucg = ucg_param(param->token->name, type));
     }
-    return node->token->ucg = ucg_proto(node->token->name, ret, params, count);
+    return node->token->ucg = ucg_proto(node->token->name, ret, params, params_count);
 }
 
 Ucg *codegen_fn(Node *node) {
@@ -875,6 +898,7 @@ Ucg *codegen(Node *node) {
     switch (token->type) { // clang-format off
     case INT:    return ucg_numeric_value(type_of(node), token->num);
     case FLOAT:  return ucg_numeric_value(type_of(node), token->num);
+    case CHARS:  return ucg_string_value(token->string);
     case FN_DEC: return codegen_fn(node);
     case PROTO:  return token->ucg;
     case ID:     return ucg_load(find_var(token));
@@ -917,21 +941,22 @@ Ucg *codegen(Node *node) {
             return NULL;
         }
         Ucg *proto = fn->token->ucg;
-        int count = node->args->children_count;
+        int count = node->params->children_count;
         if (count != proto->fn.params_count) {
             int expected = proto->fn.params_count;
             char *msg = format("'%s' takes %d arguments", token->name, expected);
             add_error(token, msg, NULL);
             return NULL;
         }
-        Ucg **params = arena_alloc(count + 1, sizeof(Ucg *));
+        expand(Ucg *, params);
+        zero_init(params);
         for (int i = 0; i < count; i++) {
-            Node *arg = node->args->children[i];
+            Node *param = node->params->children[i];
             Ucg *type = proto->fn.params[i]->data_type;
-            params[i] = codegen_as(arg, type);
-            check_type(arg, type, params[i]);
+            append(params, codegen_as(param, type));
+            check_type(param, type, params[params_count - 1]);
         }
-        return ucg_call(proto, params, count);
+        return ucg_call(proto, params, params_count);
     } // clang-format off
     case BRK: case CNT: { // clang-format on
         Node *loop = find_scope(LOOP);
@@ -940,6 +965,19 @@ Ucg *codegen(Node *node) {
             return NULL;
         }
         return ucg_jump(token->type, loop->token->ucg);
+    }
+    // clang-format off
+    case ADD_ASSIGN: case SUB_ASSIGN: case MUL_ASSIGN: 
+	case DIV_ASSIGN: case MOD_ASSIGN: { // clang-format on
+        Type ops[LAST + 1] = {
+            [ADD_ASSIGN] = ADD, [SUB_ASSIGN] = SUB, [MUL_ASSIGN] = MUL,
+            [DIV_ASSIGN] = DIV, [MOD_ASSIGN] = MOD,
+        };
+        Ucg *var = find_var(node->left->token);
+        Ucg *type = var ? var->data_type : NULL;
+        Ucg *value = codegen_as(node->right, type);
+        Ucg *result = ucg_op(ops[token->type], ucg_load(var), value);
+        return ucg_assign(var, result);
     }
     case AS: {
         Ucg *value = codegen(node->left);

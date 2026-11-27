@@ -13,63 +13,64 @@
 #pragma once
 
 char *strdup2(const char *str) {
-    char *res = arena_alloc(strlen(str) + 1, sizeof(char));
-    strcpy(res, str);
-    return res;
+    char *copy = arena_alloc(strlen(str) + 1, sizeof(char));
+    strcpy(copy, str);
+    return copy;
 }
 
-char *strndup2(const char *str, size_t n) {
-    char *res = arena_alloc(n + 1, sizeof(char));
-    strncpy(res, str, n);
-    return res;
+char *strndup2(const char *str, size_t count) {
+    char *copy = arena_alloc(count + 1, sizeof(char));
+    strncpy(copy, str, count);
+    return copy;
 }
 
 bool strcmp2(const char *left, const char *right) {
     return strcmp(left, right) == 0;
 }
 
-bool strncmp2(const char *left, const char *right, size_t n) {
-    return strncmp(left, right, n) == 0;
+bool strncmp2(const char *left, const char *right, size_t count) {
+    return strncmp(left, right, count) == 0;
 }
 
 bool ends_with(const char *str, const char *end) {
-    size_t n = strlen(str);
-    size_t m = strlen(end);
-    return n >= m && strcmp(str + n - m, end) == 0;
+    size_t str_size = strlen(str);
+    size_t end_size = strlen(end);
+    bool fits = str_size >= end_size;
+    return fits && strcmp(str + str_size - end_size, end) == 0;
 }
 
-bool strchr2(char *str, int c) {
-    char *res = strchr(str, c);
-    return c != '\0' && res != NULL && res[0] != '\0';
+bool strchr2(char *str, int to_find) {
+    char *found = strchr(str, to_find);
+    return to_find != '\0' && found != NULL && found[0] != '\0';
 }
 
 char *parse_escaped(char **escaped, ucgFile *file, int s, int e) {
-    char *input = file->buff;
-    char *res = arena_alloc(e - s + 1, sizeof(char));
-    int r = 0;
+    char *text = file->buff;
+    char *out = arena_alloc(e - s + 1, sizeof(char));
+    int count = 0;
 
     while (s < e) {
-        if (input[s] == '"' && s + 1 < e) {
-            s = strchr(input + s + 1, '"') - input + 1;
+        if (text[s] == '"' && s + 1 < e) {
+            s = strchr(text + s + 1, '"') - text + 1;
             continue;
         }
-        if (input[s] != '\\' || s + 1 == e) {
-            res[r++] = input[s++];
+        if (text[s] != '\\' || s + 1 == e) {
+            out[count++] = text[s++];
             continue;
         }
-        char *str = escaped[(unsigned char)input[s + 1]];
-        if (str == NULL) {
+        char *escape = escaped[(unsigned char)text[s + 1]];
+        if (escape == NULL) {
             ucg_error(
                 file,
                 s,
                 s + 2,
-                format("unknown escape '\\%c'", input[s + 1]),
+                format("unknown escape '\\%c'", text[s + 1]),
                 NULL
             );
         } else {
-            res[r++] = str[0];
+            out[count++] = escape[0];
         }
         s += 2;
     }
-    return res;
+    return out;
 }

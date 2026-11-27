@@ -18,9 +18,9 @@ char *getcwd2(void) {
         eprint("%s:%d getcwd failed\n", FILE, LINE);
         exit(1);
     }
-    char *res = strdup2(path);
+    char *copy = strdup2(path);
     free(path);
-    return res;
+    return copy;
 }
 
 char *home2(void) {
@@ -38,16 +38,16 @@ char *realpath2(char *path) {
     char *real = realpath(path, NULL);
     if (real == NULL)
         return path;
-    char *res = strdup2(real);
+    char *copy = strdup2(real);
     free(real);
-    return res;
+    return copy;
 }
 
 char *relative_path(char *path) {
     char *cwd = getcwd2();
-    size_t cwd_len = strlen(cwd);
-    if (strncmp2(path, cwd, cwd_len) && path[cwd_len] == '/')
-        return path + cwd_len + 1;
+    size_t cwd_size = strlen(cwd);
+    if (strncmp2(path, cwd, cwd_size) && path[cwd_size] == '/')
+        return path + cwd_size + 1;
     return path;
 }
 
@@ -85,8 +85,8 @@ void symlink2(char *target, char *path) {
 }
 
 void remove2(char *path) {
-    char *rm[] = { "rm", "-rf", path, NULL };
-    run_command(rm, NULL);
+    char *command[] = { "rm", "-rf", path, NULL };
+    run_command(command, NULL);
 }
 
 char **readdir2(char *path) {

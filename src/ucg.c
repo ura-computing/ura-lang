@@ -125,6 +125,23 @@ Ucg *ucg_numeric_value(Ucg *data_type, char *value) {
     return new;
 }
 
+Ucg *ucg_array_value(Ucg *elem, int count) {
+    Ucg *new = ucg_new(VAL_CREATE);
+    new->data_type = ucg_array_type(elem, count);
+    new->value_type = new->data_type;
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+Ucg *ucg_string_value(char *text) {
+    Ucg *type = ucg_int_type(8);
+    int count = strlen(text) + 1;
+    Ucg *new = ucg_array_value(type, count);
+    for (int i = 0; i < count; i++)
+        append(new->arr.items, ucg_numeric_value(type, format("%d", text[i])));
+    return new;
+}
+
 Ucg *ucg_proto(char *name, Ucg *ret, Ucg **params, int params_count) {
     Ucg *new = ucg_new(FN_DEC);
     new->name = name;
@@ -240,11 +257,11 @@ Ucg *ucg_param(char *name, Ucg *data_type) {
     return new;
 }
 
-Ucg *ucg_call(Ucg *fn, Ucg **args, int args_count) {
+Ucg *ucg_call(Ucg *fn, Ucg **params, int params_count) {
     Ucg *new = ucg_new(FN_CALL);
     new->to_call = fn;
-    for (int i = 0; i < args_count; i++)
-        append(new->fn.params, args[i]);
+    for (int i = 0; i < params_count; i++)
+        append(new->fn.params, params[i]);
     new->value_type = fn->fn.ret;
     append(gb_ucg.insts, new);
     return new;
@@ -412,11 +429,33 @@ Ucg *llvm_compile(Ucg *ucg) {
         }
         break;
     }
+    case ARRAY: {
+        llvm_compile(ucg->arr.elem);
+        TypeRef elem = ucg->arr.elem->lltype;
+        int count = ucg->arr.items_count;
+        ucg->lltype = count ? LLVMArrayType(elem, count) : LLVMPointerType(elem, 0);
+        break;
+    }
     case VAL_CREATE: {
         Ucg *data_type = ucg->data_type;
         int base = 10; // TODO: handle base
         llvm_compile(data_type);
         TypeRef lltype = data_type->lltype;
+        if (data_type->type == ARRAY) {
+            TypeRef item_type = data_type->arr.elem->lltype;
+            expand(Value, values);
+            zero_init(values);
+            for (int i = 0; i < ucg->arr.items_count; i++)
+                append(values, llvm_compile(ucg->arr.items[i])->elem);
+            Value init = LLVMConstArray(item_type, values, values_count);
+            Value global = LLVMAddGlobal(mod, lltype, "");
+            LLVMSetInitializer(global, init);
+            LLVMSetGlobalConstant(global, true);
+            LLVMSetLinkage(global, LLVMPrivateLinkage);
+            TypeRef pointer = LLVMPointerType(item_type, 0);
+            ucg->elem = LLVMConstPointerCast(global, pointer);
+            break;
+        }
         if (data_type->type == FLOAT)
             ucg->elem = LLVMConstRealOfString(lltype, ucg->value);
         else
@@ -936,11 +975,11 @@ bool compile_test(int p) {
 __attribute__((sentinel)) bool includes(Type to_find, ...) {
     va_list ap;
     va_start(ap, to_find);
-    Type curr = va_arg(ap, Type);
-    while (curr) {
-        if (curr == to_find)
+    Type type = va_arg(ap, Type);
+    while (type) {
+        if (type == to_find)
             return true;
-        curr = va_arg(ap, Type);
+        type = va_arg(ap, Type);
     }
     return false;
 }

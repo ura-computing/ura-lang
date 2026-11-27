@@ -60,41 +60,42 @@ void vfprint2(ioFile out, const char *fmt, va_list ap) {
         }
 
         char spec[32] = "%"; // TODO: check this might crash
-        size_t j = 1;
+        size_t spec_size = 1;
+        size_t spec_max = sizeof(spec) - 2;
 
-        while (fmt[i] && strchr("-+ #0", fmt[i]) && j < sizeof(spec) - 2)
-            spec[j++] = fmt[i++];
+        while (fmt[i] && strchr("-+ #0", fmt[i]) && spec_size < spec_max)
+            spec[spec_size++] = fmt[i++];
 
         if (fmt[i] == '*') {
             i++;
             int width = va_arg(ap, int);
-            j += snprintf(spec + j, sizeof(spec) - j - 2, "%d", width);
+            spec_size += snprintf(spec + spec_size, spec_max - spec_size, "%d", width);
         } else {
-            while (fmt[i] >= '0' && fmt[i] <= '9' && j < sizeof(spec) - 2)
-                spec[j++] = fmt[i++];
+            while (isdigit(fmt[i]) && spec_size < spec_max)
+                spec[spec_size++] = fmt[i++];
         }
 
         if (fmt[i] == '.') {
-            spec[j++] = fmt[i++];
+            spec[spec_size++] = fmt[i++];
             if (fmt[i] == '*') {
                 i++;
                 int prec = va_arg(ap, int);
-                j += snprintf(spec + j, sizeof(spec) - j - 2, "%d", prec);
+                spec_size += snprintf(spec + spec_size, spec_max - spec_size, "%d", prec);
             } else {
-                while (fmt[i] >= '0' && fmt[i] <= '9' && j < sizeof(spec) - 2)
-                    spec[j++] = fmt[i++];
+                while (isdigit(fmt[i]) && spec_size < spec_max)
+                    spec[spec_size++] = fmt[i++];
             }
         }
 
-        while (fmt[i] && strchr("hlz", fmt[i]) && j < sizeof(spec) - 2)
-            spec[j++] = fmt[i++];
+        while (fmt[i] && strchr("hlz", fmt[i]) && spec_size < spec_max)
+            spec[spec_size++] = fmt[i++];
 
         if (fmt[i] == '\0')
             break;
 
         char conv = fmt[i];
-        spec[j++] = conv;
-        spec[j] = '\0';
+        spec[spec_size++] = conv;
+        spec[spec_size] = '\0';
 
         bool is_ll = strstr(spec, "ll") != NULL;
         bool is_l = !is_ll && strchr(spec, 'l') != NULL;
@@ -105,8 +106,8 @@ void vfprint2(ioFile out, const char *fmt, va_list ap) {
         case 'U': format_ucg(out, va_arg(ap, Ucg *)); break;
         case 'k': format_token(out, va_arg(ap, Token *)); break;
         case 's': {
-            char *str = va_arg(ap, char *);
-            fprintf(out, spec, str ? str : "(null)");
+            char *text = va_arg(ap, char *);
+            fprintf(out, spec, text ? text : "(null)");
             break;
         }
         case 'c': fprintf(out, spec, va_arg(ap, int)); break;
@@ -135,9 +136,9 @@ void vfprint2(ioFile out, const char *fmt, va_list ap) {
 }
 
 char *format(const char *fmt, ...) {
-    char *buf = NULL;
+    char *text = NULL;
     size_t size = 0;
-    ioFile out = open_memstream(&buf, &size);
+    ioFile out = open_memstream(&text, &size);
     if (out == NULL) {
         fputs("format failed\n", stderr);
         exit(1);
@@ -149,9 +150,9 @@ char *format(const char *fmt, ...) {
     va_end(ap);
 
     fclose(out);
-    char *res = strdup2(buf);
-    free(buf);
-    return res;
+    char *copy = strdup2(text);
+    free(text);
+    return copy;
 }
 
 const char *to_string(Type type) {
@@ -198,7 +199,8 @@ const char *to_string(Type type) {
         NAME(NEG),           NAME(BNOT),
 
         NAME(PROTO),         NAME(FN_ENTRY),      NAME(FN_DEC),
-        NAME(ARGS),          NAME(VARIADIC),      NAME(FN_CALL),
+        NAME(ARGS),          NAME(PARAMS),        NAME(VARIADIC),
+        NAME(FN_CALL),
         NAME(RETURN),        NAME(FORMAT),
         NAME(LINK),          NAME(USE),
         NAME(MACRO_IF),      NAME(MACRO_ELIF),    NAME(MACRO_ELSE),

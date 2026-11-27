@@ -84,7 +84,7 @@ struct Node {
     };
     union {
         Node *right;
-        Node *args;
+        Node *params;
         Node *next;
         Node *declared;
         Node *to_type;

@@ -73,13 +73,13 @@ void *arena_alloc(size_t asked_count, size_t asked_size) {
         else
             curr = curr->next = new;
     }
-    void *res = curr->buff + curr->used;
+    void *memory = curr->buff + curr->used;
     curr->used += asked;
 
     arena_head = head;
     arena_curr = curr;
 
-    return res;
+    return memory;
 }
 
 void arena_free() {
