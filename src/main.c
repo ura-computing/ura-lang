@@ -665,16 +665,24 @@ void parse_block(Node *node) {
         append(node->children, parse_expr(0));
 }
 
-Node *parse_type(void) {
-    Node *type = new_node(next());
-    while (peek(0)->type == LBRACK && peek(1)->type == RBRACK) {
-        Node *array = new_node(next()); // skip [
-        next();                         // skip ]
+Node *parse_type(Token *token) {
+    Node *root = new_node(token);
+    Node *base = root;
+    Node *last = NULL;
+    while (peek(0)->type == LBRACK && peek(0)->line == token->line) {
+        Node *array = new_node(next());
         array->token->type = ARRAY;
-        array->data_type = type;
-        type = array;
+        array->data_type = base;
+        if (last)
+            last->data_type = array;
+        else
+            root = array;
+        last = array;
+        if (peek(0)->type != RBRACK)
+            append(array->children, parse_expr(0));
+        expect(RBRACK, "expected ']'", "i32[2][3]");
     }
-    return type;
+    return root;
 }
 
 Node *parse_list(Token *open, Type close) {
@@ -701,7 +709,7 @@ Node *parse_fn(Token *token) {
     for (int i = 0; i < node->params->children_count; i++)
         append(node->children, node->params->children[i]);
     if (peek(0)->is_type)
-        node->ret_type = parse_type();
+        node->ret_type = parse_type(next());
     if (token->type == PROTO)
         return node;
     expect(DOTS, "expected ':' before the function body", NULL);
@@ -724,20 +732,9 @@ Node *parse_prime(void) {
     case RETURN: return parse_return(token);
     case BRK: case CNT: return new_node(token);
     case INT: case FLOAT: case CHARS: { // clang-format on
-        Node *node = new_node(token);
-        bool is_array = token->is_type && peek(0)->type == LBRACK;
-        if (!is_array)
-            return node;
-        Node *array = new_node(next());
-        array->token->type = ARRAY;
-        array->data_type = node;
-        while (1) {
-            append(array->children, parse_expr(0));
-            expect(RBRACK, "expected ']'", "i32[2][3]");
-            if (peek(0)->type != LBRACK)
-                return array;
-            next();
-        }
+        if (token->is_type)
+            return parse_type(token);
+        return new_node(token);
     } // clang-format off
     case SUB: { // clang-format on
         Node *node = new_node(token);
@@ -777,7 +774,7 @@ Node *parse_prime(void) {
         bool is_declare = is_type && after->line == token->line;
         if (is_declare) {
             token->type = DECLARE;
-            node->data_type = parse_type();
+            node->data_type = parse_type(next());
         }
         return node;
     } // clang-format off
@@ -830,6 +827,10 @@ Ucg *type_of(Node *node) {
         return ucg_int_type(token->bits);
     if (token->type == FLOAT)
         return ucg_float_type(token->bits);
+    if (token->type == ARRAY && node->children_count) {
+        add_error(token, "a type has no size", "a i32[] = i32[3]");
+        return NULL;
+    }
     if (token->type == ARRAY)
         return ucg_array_type(type_of(node->data_type), 0);
     Node *found = token->type == ID ? find_node(STRUCT, token->name) : NULL;
@@ -875,13 +876,13 @@ Ucg *find_variable(Node *node) {
     Node *fn = NULL;
     for (int i = ura.scopes_count - 1; i >= 0; i--) {
         Node *scope = ura.scopes[i];
-        bool is_global = scope->token->type == URA;
         for (int j = 0; j < scope->children_count; j++) {
             Node *child = scope->children[j];
             Node *decl = child->token->type == ASSIGN ? child->var : child;
             bool is_declare = decl->token->type == DECLARE;
             if (!is_declare || !strcmp2(decl->token->name, token->name))
                 continue;
+            bool is_global = decl->token->space == 0;
             if (fn && !is_global)
                 return ucg_point_to(codegen_capture(fn, decl)->token->ucg);
             if (decl->token->ucg == NULL)
@@ -958,7 +959,7 @@ Ucg *codegen_block(Node *node, Ucg *type) {
         if (child->token->type != FN_DEC)
             continue;
         if (find_scope(FN_DEC))
-            codegen_closure(child, new_node(child->token), child);
+            codegen_closure(new_node(child->token), child, child);
         codegen_fn(child);
     }
     Ucg *value = NULL;
@@ -1034,6 +1035,35 @@ Ucg *codegen_struct(Node *node) {
     return type;
 }
 
+Node *sizes_of(Node *sizes, Node *node) {
+    Token *token = node->token;
+    if (token->type == ACCESS) {
+        Node *elem = sizes_of(sizes, node->base);
+        append(sizes->children, node->index);
+        return elem;
+    }
+    if (token->type != ARRAY)
+        return node;
+    if (node->children_count == 0) {
+        add_error(token, "a stack array needs a size", "i32[3]");
+        return NULL;
+    }
+    append(sizes->children, node->children[0]);
+    return sizes_of(sizes, node->data_type);
+}
+
+Ucg *codegen_stack_array(Node *node) {
+    Node *sizes = new_node(node->token);
+    Node *elem = sizes_of(sizes, node);
+    if (elem == NULL)
+        return NULL;
+    expand(Ucg *, values);
+    zero_init(values);
+    for (int i = 0; i < sizes->children_count; i++)
+        append(values, codegen(sizes->children[i], ucg_int_type(32)));
+    return ucg_stack_array(type_of(elem), values, values_count);
+}
+
 // TODO: to be checked
 Ucg *codegen_array(Node *node, Ucg *type) {
     Ucg *elem = NULL;
@@ -1077,7 +1107,7 @@ Node *codegen_capture(Node *fn, Node *decl) {
     return param;
 }
 
-void codegen_closure(Node *fn, Node *locals, Node *node) {
+void codegen_closure(Node *locals, Node *fn, Node *node) {
     if (node == NULL)
         return;
     Token *token = node->token;
@@ -1092,16 +1122,16 @@ void codegen_closure(Node *fn, Node *locals, Node *node) {
     if (decl && decl->token->space > 0)
         codegen_capture(fn, decl);
     switch (token->type) { // clang-format off
-    case DOT:     codegen_closure(fn, locals, node->base);    return;
-    case AS:      codegen_closure(fn, locals, node->operand); return;
+    case DOT:     codegen_closure(locals, fn, node->base);    return;
+    case AS:      codegen_closure(locals, fn, node->operand); return;
     case DECLARE: return;
-    case ARRAY:   break;
+    case ARRAY: case FN_DEC: break;
     default:      // clang-format on
-        codegen_closure(fn, locals, node->left);
-        codegen_closure(fn, locals, node->right);
+        codegen_closure(locals, fn, node->left);
+        codegen_closure(locals, fn, node->right);
     }
     for (int i = 0; i < node->children_count; i++)
-        codegen_closure(fn, locals, node->children[i]);
+        codegen_closure(locals, fn, node->children[i]);
 }
 
 Ucg *codegen_fn(Node *node) {
@@ -1123,7 +1153,8 @@ Ucg *codegen(Node *node, Ucg *type) {
     case STRUCT:          			value = codegen_struct(node);             break;
     case ARRAY_LIT:       			value = codegen_array(node, type);        break;
     case IF:              			value = codegen_if(node, type);           break;
-    case ID: case DOT: case ACCESS: value = ucg_load(find_variable(node));    break;
+    case ID: case DOT:    value = ucg_load(find_variable(node));          break;
+    case ARRAY:           value = codegen_stack_array(node);              break;
     case RETURN: { // clang-format on
         Node *fn = find_scope(FN_DEC);
         Ucg *result = NULL;
@@ -1132,12 +1163,15 @@ Ucg *codegen(Node *node, Ucg *type) {
         value = ucg_ret(result);
         break;
     }
-    case ARRAY: {
-        expand(Ucg *, sizes);
-        zero_init(sizes);
-        for (int i = 0; i < node->children_count; i++)
-            append(sizes, codegen(node->children[i], ucg_int_type(32)));
-        value = ucg_stack_array(type_of(node->data_type), sizes, sizes_count);
+    case ACCESS: {
+        Node *base = node->base;
+        while (base->token->type == ACCESS)
+            base = base->base;
+        bool is_struct = base->token->type == ID && find_node(STRUCT, base->token->name);
+        if (is_struct)
+            value = codegen_stack_array(node);
+        else
+            value = ucg_load(find_variable(node));
         break;
     }
     case DECLARE: {
