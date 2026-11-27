@@ -83,7 +83,7 @@ enum Type {
     MACRO_URL, MACRO_PATH, MACRO_CMD,
 
     // --- built-ins ---
-    SIZEOF, TYPEOF, DROP, COPY, IS_ZERO, ALLOC, STACK_ALLOC, MEMCPY, FREE,
+    SIZEOF, TYPEOF, DROP, COPY, IS_ZERO, STACK_ALLOC, HEAP_ALLOC, MEMCPY, FREE,
 
     // --- keywords and program info ---
     AS, FROM, AND_LIT, OR_LIT, SELF, FOR, IN, MODULE,

@@ -740,40 +740,7 @@ Node *parse_return(Token *token) {
 
 Node *parse_prime(void) {
     Token *token = next();
-    switch (token->type) { // clang-format off
-    case FN_DEC: case PROTO: return parse_fn(token);
-    case RETURN: return parse_return(token);
-    case BRK: case CNT: return new_node(token);
-    case INT: case FLOAT: case CHARS: { // clang-format on
-        if (token->is_type)
-            return parse_type(token);
-        return new_node(token);
-    } // clang-format off
-    case SUB: { // clang-format on
-        Node *node = new_node(token);
-        token->type = NEG;
-        node->operand = parse_prime();
-        return node;
-    }
-    case LBRACK: {
-        Node *node = parse_list(token, RBRACK);
-        node->token->type = ARRAY_LIT;
-        return node;
-    }
-    case LPARENT: {
-        Node *node = parse_expr(0);
-        expect(RPARENT, "expected ')'", NULL);
-        return node;
-    }
-    case STRUCT: {
-        Node *node = new_node(token);
-        Token *name = expect(ID, "expected a struct name", "struct Point:");
-        if (name)
-            token->name = name->name;
-        expect(DOTS, "expected ':' after the struct name", NULL);
-        parse_block(node);
-        return node;
-    }
+    switch (token->type) {
     case ID: {
         Node *node = new_node(token);
         bool is_call = peek(0)->type == LPARENT && peek(0)->line == token->line;
@@ -791,6 +758,38 @@ Node *parse_prime(void) {
         }
         return node;
     } // clang-format off
+    case INT: case FLOAT: case CHARS: { // clang-format on
+        if (token->is_type)
+            return parse_type(token);
+        return new_node(token);
+    }
+    case STRUCT: {
+        Node *node = new_node(token);
+        Token *name = expect(ID, "expected a struct name", "struct Point:");
+        if (name)
+            token->name = name->name;
+        expect(DOTS, "expected ':' after the struct name", NULL);
+        parse_block(node);
+        return node;
+    }
+    case LPARENT: {
+        Node *node = parse_expr(0);
+        expect(RPARENT, "expected ')'", NULL);
+        return node;
+    }
+    case LBRACK: {
+        Node *node = parse_list(token, RBRACK);
+        node->token->type = ARRAY_LIT;
+        return node;
+    }
+    case SUB: {
+        Node *node = new_node(token);
+        token->type = NEG;
+        node->operand = parse_prime();
+        return node;
+    } // clang-format off
+    case PROTO: case FN_DEC: return parse_fn(token);
+    case RETURN:             return parse_return(token);
     case IF: case ELIF: case ELSE: case LOOP: { // clang-format on
         Node *node = new_node(token);
         if (token->type != ELSE)
@@ -808,7 +807,8 @@ Node *parse_prime(void) {
         if (can_chain && is_next && (same_space || same_line))
             node->next = parse_prime();
         return node;
-    }
+    } // clang-format off
+    case BRK: case CNT: return new_node(token); // clang-format on
     default: {
         add_error(token, format("unexpected %t", token->type), NULL);
         return new_node(token);

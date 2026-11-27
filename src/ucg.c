@@ -522,86 +522,14 @@ Ucg *llvm_compile(Ucg *ucg) {
     Builder lmb = gb_ucg.builder;
 
     switch (type) {
-        // clang-format off
-    case VOID: ucg->lltype = LLVMVoidTypeInContext(ctx);          break;
-    case INT:  ucg->lltype = LLVMIntTypeInContext(ctx, ucg->bits); break;
-    // clang-format on
-    case FLOAT: {
-        switch (ucg->bits) {
-            // clang-format off
-        case 16:  ucg->lltype = LLVMHalfTypeInContext(ctx);    break;
-        case 32:  ucg->lltype = LLVMFloatTypeInContext(ctx);   break;
-        case 64:  ucg->lltype = LLVMDoubleTypeInContext(ctx);  break;
-        case 80:  ucg->lltype = LLVMX86FP80TypeInContext(ctx); break;
-        case 128: ucg->lltype = LLVMFP128TypeInContext(ctx);   break;
-        // clang-format on
-        default:
-            assert(0 && "float bits are checked by the front end");
-        }
-        break;
-    }
-    case ARRAY: {
-        llvm_compile(ucg->arr.elem);
-        TypeRef elem = ucg->arr.elem->lltype;
-        int count = ucg->arr.items_count;
-        ucg->lltype = count ? LLVMArrayType(elem, count) : LLVMPointerType(elem, 0);
-        break;
-    }
-    case STRUCT: {
-        ucg->lltype = LLVMStructCreateNamed(ctx, ucg->name);
-        expand(TypeRef, types);
-        zero_init(types);
-        for (int i = 0; i < ucg->obj.attrs_count; i++)
-            append(types, llvm_compile(ucg->obj.attrs[i]->data_type)->lltype);
-        LLVMStructSetBody(ucg->lltype, types, types_count, false);
-        break;
-    }
-    case ATTR: {
-        Ucg *base = ucg->base;
-        TypeRef lltype = base->data_type->lltype;
-        int index = ucg->obj.index;
-        ucg->elem = LLVMBuildStructGEP2(lmb, lltype, base->elem, index, ucg->name);
-        break;
-    }
-    case ACCESS: {
-        Ucg *array = ucg->base->data_type;
-        TypeRef elem = array->arr.elem->lltype;
-        Value index = ucg->index->elem;
-        Value pointer = ucg->base->elem;
-        if (array->arr.items_count) {
-            Value zero = LLVMConstInt(LLVMInt32TypeInContext(ctx), 0, 0);
-            Value indexes[] = { zero, index };
-            ucg->elem = LLVMBuildGEP2(lmb, array->lltype, pointer, indexes, 2, "");
-            break;
-        }
-        pointer = LLVMBuildLoad2(lmb, array->lltype, pointer, "");
-        ucg->elem = LLVMBuildGEP2(lmb, elem, pointer, &index, 1, "");
-        break;
-    }
-    case OWN: {
-        ucg->elem = ucg->to_ref->elem;
-        break;
-    }
-    case REF: {
-        llvm_compile(ucg->to_ref);
-        ucg->lltype = LLVMPointerType(ucg->to_ref->lltype, 0);
-        break;
-    }
-    case POINT_TO: {
-        Ucg *ref = ucg->base;
-        ucg->elem = LLVMBuildLoad2(lmb, ref->data_type->lltype, ref->elem, ref->name);
-        break;
-    }
-    case STACK_ALLOC: {
+    case VAR: {
         llvm_compile(ucg->data_type);
-        TypeRef elem = ucg->data_type->lltype;
-        TypeRef i64 = LLVMInt64TypeInContext(ctx);
-        Value count = ucg->index->elem;
-        ucg->elem = LLVMBuildArrayAlloca(lmb, elem, count, "");
-        Value count64 = LLVMBuildZExt(lmb, count, i64, "");
-        Value bytes = LLVMBuildMul(lmb, LLVMSizeOf(elem), count64, "");
-        Value zero = LLVMConstInt(LLVMInt8TypeInContext(ctx), 0, 0);
-        LLVMBuildMemSet(lmb, ucg->elem, zero, bytes, 1);
+        ucg->elem = LLVMBuildAlloca(lmb, ucg->data_type->lltype, ucg->name);
+        break;
+    }
+    case DREF: {
+        Ucg *var = ucg->to_dref;
+        ucg->elem = LLVMBuildLoad2(lmb, var->data_type->lltype, var->elem, var->name);
         break;
     }
     case VAL_CREATE: {
@@ -628,64 +556,78 @@ Ucg *llvm_compile(Ucg *ucg) {
         else
             ucg->elem = LLVMConstIntOfString(lltype, ucg->value, base);
         break;
+    } // clang-format off
+    case VOID: ucg->lltype = LLVMVoidTypeInContext(ctx);          break;
+    case INT:  ucg->lltype = LLVMIntTypeInContext(ctx, ucg->bits); break;
+    // clang-format on
+    case FLOAT: {
+        switch (ucg->bits) {
+            // clang-format off
+        case 16:  ucg->lltype = LLVMHalfTypeInContext(ctx);    break;
+        case 32:  ucg->lltype = LLVMFloatTypeInContext(ctx);   break;
+        case 64:  ucg->lltype = LLVMDoubleTypeInContext(ctx);  break;
+        case 80:  ucg->lltype = LLVMX86FP80TypeInContext(ctx); break;
+        case 128: ucg->lltype = LLVMFP128TypeInContext(ctx);   break;
+        // clang-format on
+        default:
+            assert(0 && "float bits are checked by the front end");
+        }
+        break;
     }
-    case FN_DEC: {
-        llvm_compile(ucg->fn.ret);
-        char *name = ucg->name;
-        TypeRef ret_type = ucg->fn.ret->lltype;
-        bool is_varg = ucg->fn.is_varg;
-
+    case REF: {
+        llvm_compile(ucg->to_ref);
+        ucg->lltype = LLVMPointerType(ucg->to_ref->lltype, 0);
+        break;
+    }
+    case POINT_TO: {
+        Ucg *ref = ucg->base;
+        ucg->elem = LLVMBuildLoad2(lmb, ref->data_type->lltype, ref->elem, ref->name);
+        break;
+    }
+    case STRUCT: {
+        ucg->lltype = LLVMStructCreateNamed(ctx, ucg->name);
         expand(TypeRef, types);
         zero_init(types);
-
-        for (int i = 0; i < ucg->fn.params_count; i++) {
-            Ucg *param = ucg->fn.params[i];
-            llvm_compile(param->data_type);
-            append(types, param->data_type->lltype);
+        for (int i = 0; i < ucg->obj.attrs_count; i++)
+            append(types, llvm_compile(ucg->obj.attrs[i]->data_type)->lltype);
+        LLVMStructSetBody(ucg->lltype, types, types_count, false);
+        break;
+    }
+    case ATTR: {
+        Ucg *base = ucg->base;
+        TypeRef lltype = base->data_type->lltype;
+        int index = ucg->obj.index;
+        ucg->elem = LLVMBuildStructGEP2(lmb, lltype, base->elem, index, ucg->name);
+        break;
+    }
+    case OWN: {
+        ucg->elem = ucg->to_ref->elem;
+        break;
+    }
+    case ARRAY: {
+        llvm_compile(ucg->arr.elem);
+        TypeRef elem = ucg->arr.elem->lltype;
+        int count = ucg->arr.items_count;
+        ucg->lltype = count ? LLVMArrayType(elem, count) : LLVMPointerType(elem, 0);
+        break;
+    }
+    case ACCESS: {
+        Ucg *array = ucg->base->data_type;
+        TypeRef elem = array->arr.elem->lltype;
+        Value index = ucg->index->elem;
+        Value pointer = ucg->base->elem;
+        if (array->arr.items_count) {
+            Value zero = LLVMConstInt(LLVMInt32TypeInContext(ctx), 0, 0);
+            Value indexes[] = { zero, index };
+            ucg->elem = LLVMBuildGEP2(lmb, array->lltype, pointer, indexes, 2, "");
+            break;
         }
-
-        ucg->lltype = LLVMFunctionType(ret_type, types, types_count, is_varg);
-        ucg->elem = LLVMGetNamedFunction(mod, name);
-        if (ucg->elem == NULL || LLVMGlobalGetValueType(ucg->elem) != ucg->lltype)
-            ucg->elem = LLVMAddFunction(mod, name, ucg->lltype);
-        break;
-    }
-    case FN_ENTRY: {
-        Value fn = ucg->to_enter->elem;
-        ucg->to_enter->caller_bloc = LLVMGetInsertBlock(lmb);
-        ucg->bloc = LLVMAppendBasicBlockInContext(ctx, fn, "entry");
-        LLVMPositionBuilderAtEnd(lmb, ucg->bloc);
-        // in entry declare params as variables
-        for (int i = 0; i < ucg->to_enter->fn.params_count; i++) {
-            Ucg *param = ucg->to_enter->fn.params[i];
-            TypeRef lltype = param->data_type->lltype;
-            param->elem = LLVMBuildAlloca(lmb, lltype, param->name);
-            LLVMBuildStore(lmb, LLVMGetParam(fn, i), param->elem);
-        }
-        break;
-    }
-    case FN_CALL: {
-        Ucg *fn = ucg->to_call;
-        expand(Value, params);
-        zero_init(params);
-        for (int i = 0; i < ucg->fn.params_count; i++)
-            append(params, ucg->fn.params[i]->elem);
-        int count = params_count;
-        ucg->elem = LLVMBuildCall2(lmb, fn->lltype, fn->elem, params, count, "");
-        break;
-    }
-    case VAR: {
-        llvm_compile(ucg->data_type);
-        ucg->elem = LLVMBuildAlloca(lmb, ucg->data_type->lltype, ucg->name);
+        pointer = LLVMBuildLoad2(lmb, array->lltype, pointer, "");
+        ucg->elem = LLVMBuildGEP2(lmb, elem, pointer, &index, 1, "");
         break;
     }
     case ASSIGN: {
         LLVMBuildStore(lmb, ucg->right->elem, ucg->left->elem);
-        break;
-    }
-    case DREF: {
-        Ucg *var = ucg->to_dref;
-        ucg->elem = LLVMBuildLoad2(lmb, var->data_type->lltype, var->elem, var->name);
         break;
     } // clang-format off
     case ADD: case SUB: case MUL: case DIV: case MOD: {
@@ -708,18 +650,6 @@ Ucg *llvm_compile(Ucg *ucg) {
         Value left = ucg->left->elem;
         Value right = ucg->right->elem;
         ucg->elem = LLVMBuildBinOp(lmb, op, left, right, "");
-        break;
-    } // clang-format off
-    case BRK: LLVMBuildBr(lmb, ucg->stmt->end->bloc); break;
-    case CNT: LLVMBuildBr(lmb, ucg->stmt->bloc);      break;
-    case AND: case AND_LIT: case OR: case OR_LIT: {
-        // clang-format on
-        Value left = ucg->left->elem;
-        Value right = ucg->right->elem;
-        if (includes(type, AND, AND_LIT, NULL))
-            ucg->elem = LLVMBuildAnd(lmb, left, right, "");
-        else
-            ucg->elem = LLVMBuildOr(lmb, left, right, "");
         break;
     } // clang-format off
     case GT: case LT: case GE: case LE: case EQ: case NQ: {
@@ -745,6 +675,85 @@ Ucg *llvm_compile(Ucg *ucg) {
             ucg->elem = LLVMBuildICmp(lmb, uint_predicates[type], left, right, "");
         else
             ucg->elem = LLVMBuildICmp(lmb, predicates[type], left, right, "");
+        break;
+    } // clang-format off
+    case AND: case AND_LIT: case OR: case OR_LIT: {
+        // clang-format on
+        Value left = ucg->left->elem;
+        Value right = ucg->right->elem;
+        if (includes(type, AND, AND_LIT, NULL))
+            ucg->elem = LLVMBuildAnd(lmb, left, right, "");
+        else
+            ucg->elem = LLVMBuildOr(lmb, left, right, "");
+        break;
+    }
+    case FN_DEC: {
+        llvm_compile(ucg->fn.ret);
+        char *name = ucg->name;
+        TypeRef ret_type = ucg->fn.ret->lltype;
+        bool is_varg = ucg->fn.is_varg;
+
+        expand(TypeRef, types);
+        zero_init(types);
+
+        for (int i = 0; i < ucg->fn.params_count; i++) {
+            Ucg *param = ucg->fn.params[i];
+            llvm_compile(param->data_type);
+            append(types, param->data_type->lltype);
+        }
+
+        ucg->lltype = LLVMFunctionType(ret_type, types, types_count, is_varg);
+        ucg->elem = LLVMGetNamedFunction(mod, name);
+        if (ucg->elem == NULL || LLVMGlobalGetValueType(ucg->elem) != ucg->lltype)
+            ucg->elem = LLVMAddFunction(mod, name, ucg->lltype);
+        break;
+    }
+    case FN_CALL: {
+        Ucg *fn = ucg->to_call;
+        expand(Value, params);
+        zero_init(params);
+        for (int i = 0; i < ucg->fn.params_count; i++)
+            append(params, ucg->fn.params[i]->elem);
+        int count = params_count;
+        ucg->elem = LLVMBuildCall2(lmb, fn->lltype, fn->elem, params, count, "");
+        break;
+    }
+    case RETURN: {
+        // assert(0);
+        if (is_bloc_terminated())
+            break;
+        if (ucg->to_ret == NULL) {
+            LLVMBuildRetVoid(lmb);
+            break;
+        }
+        llvm_compile(ucg->to_ret);
+        LLVMBuildRet(lmb, ucg->to_ret->elem);
+        break;
+    }
+    case FN_ENTRY: {
+        Value fn = ucg->to_enter->elem;
+        ucg->to_enter->caller_bloc = LLVMGetInsertBlock(lmb);
+        ucg->bloc = LLVMAppendBasicBlockInContext(ctx, fn, "entry");
+        LLVMPositionBuilderAtEnd(lmb, ucg->bloc);
+        // in entry declare params as variables
+        for (int i = 0; i < ucg->to_enter->fn.params_count; i++) {
+            Ucg *param = ucg->to_enter->fn.params[i];
+            TypeRef lltype = param->data_type->lltype;
+            param->elem = LLVMBuildAlloca(lmb, lltype, param->name);
+            LLVMBuildStore(lmb, LLVMGetParam(fn, i), param->elem);
+        }
+        break;
+    }
+    case STACK_ALLOC: {
+        llvm_compile(ucg->data_type);
+        TypeRef elem = ucg->data_type->lltype;
+        TypeRef i64 = LLVMInt64TypeInContext(ctx);
+        Value count = ucg->index->elem;
+        ucg->elem = LLVMBuildArrayAlloca(lmb, elem, count, "");
+        Value count64 = LLVMBuildZExt(lmb, count, i64, "");
+        Value bytes = LLVMBuildMul(lmb, LLVMSizeOf(elem), count64, "");
+        Value zero = LLVMConstInt(LLVMInt8TypeInContext(ctx), 0, 0);
+        LLVMBuildMemSet(lmb, ucg->elem, zero, bytes, 1);
         break;
     }
     case AS: {
@@ -772,14 +781,6 @@ Ucg *llvm_compile(Ucg *ucg) {
         ucg->end->bloc = LLVMAppendBasicBlockInContext(ctx, fn, "end");
         break;
     }
-    case LOOP: {
-        Value fn = LLVMGetBasicBlockParent(LLVMGetInsertBlock(lmb));
-        ucg->end->bloc = LLVMAppendBasicBlockInContext(ctx, fn, "end");
-        ucg->bloc = LLVMAppendBasicBlockInContext(ctx, fn, "loop");
-        LLVMBuildBr(lmb, ucg->bloc);
-        LLVMPositionBuilderAtEnd(lmb, ucg->bloc);
-        break;
-    }
         // clang-format off
     case ELIF: case ELSE: {
         // clang-format on
@@ -803,18 +804,17 @@ Ucg *llvm_compile(Ucg *ucg) {
         LLVMPositionBuilderAtEnd(lmb, then);
         break;
     }
-    case RETURN: {
-        // assert(0);
-        if (is_bloc_terminated())
-            break;
-        if (ucg->to_ret == NULL) {
-            LLVMBuildRetVoid(lmb);
-            break;
-        }
-        llvm_compile(ucg->to_ret);
-        LLVMBuildRet(lmb, ucg->to_ret->elem);
+    case LOOP: {
+        Value fn = LLVMGetBasicBlockParent(LLVMGetInsertBlock(lmb));
+        ucg->end->bloc = LLVMAppendBasicBlockInContext(ctx, fn, "end");
+        ucg->bloc = LLVMAppendBasicBlockInContext(ctx, fn, "loop");
+        LLVMBuildBr(lmb, ucg->bloc);
+        LLVMPositionBuilderAtEnd(lmb, ucg->bloc);
         break;
-    }
+    } // clang-format off
+    case BRK: LLVMBuildBr(lmb, ucg->stmt->end->bloc); break;
+    case CNT: LLVMBuildBr(lmb, ucg->stmt->bloc);      break;
+    // clang-format on
     case END: {
         Ucg *to_end = ucg->to_end;
         bool is_branch = includes(to_end->type, IF, LOOP, NULL);
