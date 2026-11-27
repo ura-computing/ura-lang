@@ -22,9 +22,8 @@ void format_ucg(ioFile out, Ucg *ucg) {
         fprintf(out, "%d", ucg->bits);
     if (ucg->name)
         fprintf(out, " [%s]", ucg->name);
-    if (includes(ucg->type, INT, FLOAT, 0) && ucg->is_val) {
+    if (ucg->type == VAL_CREATE)
         fprintf(out, "(%s)", ucg->value);
-    }
 }
 
 void format_token(ioFile out, Token *token) {

@@ -100,7 +100,6 @@ Ucg *ucg_float_type(int bits) {
 
     new = ucg_new(FLOAT);
     new->bits = bits;
-    new->is_val = true;
     return (gb_ucg.floats[bits] = new);
 }
 
@@ -120,10 +119,7 @@ Ucg *ucg_array_type(Ucg *elem, int count) {
 Ucg *ucg_numeric_value(Ucg *data_type, char *value) {
     Ucg *new = ucg_new(VAL_CREATE);
     new->data_type = data_type;
-    new->to_create = ucg_new(data_type->type);
-    new->to_create->value = value;
-    new->to_create->bits = data_type->bits;
-    new->to_create->is_val = true;
+    new->value = value;
     new->value_type = data_type;
     append(gb_ucg.insts, new);
     return new;
@@ -151,12 +147,6 @@ Ucg *ucg_entry(Ucg *fn) {
     new->to_enter = fn;
     append(gb_ucg.insts, new);
     // append(gb_ucg.blocks, fn);
-    return new;
-}
-
-Ucg *ucg_fn(char *name, Ucg *ret, Ucg **params, int params_count) {
-    Ucg *new = ucg_proto(name, ret, params, params_count);
-    ucg_entry(new);
     return new;
 }
 
@@ -218,13 +208,51 @@ Ucg *ucg_cast(Ucg *value, Ucg *to_type) {
     return new;
 }
 
+Ucg *ucg_widen(Ucg *value, Ucg *type) {
+    Ucg *from = value ? value->value_type : NULL;
+    bool is_int = from && type && from->type == INT && type->type == INT;
+    if (!is_int || from == type)
+        return value;
+    bool is_wider = from->bits < type->bits;
+    bool same_sign = from->is_uint == type->is_uint;
+    bool is_bool = from->bits == 1;
+    bool widens = is_wider && !is_bool && (same_sign || from->is_uint);
+    return widens ? ucg_cast(value, type) : value;
+}
+
 Ucg *ucg_op(Type type, Ucg *left, Ucg *right) {
     Ucg *new = ucg_new(type);
     new->left = left;
     new->right = right;
     bool is_cmp = includes(type, GT, LT, GE, LE, EQ, NQ, NULL);
+    bool is_logic = includes(type, AND, OR, AND_LIT, OR_LIT, NULL);
+    is_cmp = is_cmp || is_logic;
     Ucg *left_type = left ? left->value_type : NULL;
     new->value_type = is_cmp ? ucg_int_type(1) : left_type;
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+Ucg *ucg_param(char *name, Ucg *data_type) {
+    Ucg *new = ucg_new(PARAM);
+    new->name = name;
+    new->data_type = data_type;
+    return new;
+}
+
+Ucg *ucg_call(Ucg *fn, Ucg **args, int args_count) {
+    Ucg *new = ucg_new(FN_CALL);
+    new->to_call = fn;
+    for (int i = 0; i < args_count; i++)
+        append(new->fn.params, args[i]);
+    new->value_type = fn->fn.ret;
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+Ucg *ucg_jump(Type type, Ucg *loop) {
+    Ucg *new = ucg_new(type);
+    new->stmt = loop;
     append(gb_ucg.insts, new);
     return new;
 }
@@ -367,61 +395,32 @@ Ucg *llvm_compile(Ucg *ucg) {
     Builder lmb = gb_ucg.builder;
 
     switch (type) {
-    case VOID: {
-        ucg->lltype = LLVMVoidTypeInContext(ctx);
-        break;
-    }
-    case INT: {
-        if (ucg->is_val) {
-            print("%s:%d implement it\n", FILE, LINE);
-            exit(1);
-        } else {
-            ucg->lltype = LLVMIntTypeInContext(ctx, ucg->bits);
-        }
-        break;
-    }
+    // clang-format off
+    case VOID: ucg->lltype = LLVMVoidTypeInContext(ctx);          break;
+    case INT:  ucg->lltype = LLVMIntTypeInContext(ctx, ucg->bits); break;
+    // clang-format on
     case FLOAT: {
-        if (ucg->is_val) {
-            print("%s:%d implement it\n", FILE, LINE);
-            exit(1);
-        } else {
-            switch (ucg->bits) { // clang-format off
-			case 16:  ucg->lltype = LLVMHalfTypeInContext(ctx);    break;
-			case 32:  ucg->lltype = LLVMFloatTypeInContext(ctx);   break;
-			case 64:  ucg->lltype = LLVMDoubleTypeInContext(ctx);  break;
-			case 80:  ucg->lltype = LLVMX86FP80TypeInContext(ctx); break;
-			case 128: ucg->lltype = LLVMFP128TypeInContext(ctx);   break;
-			default: { // clang-format on
-                eprint("%s:%d invalid float type %d\n", FILE, LINE, ucg->bits);
-                exit(1);
-                break;
-            }
-            }
+        switch (ucg->bits) {
+        // clang-format off
+        case 16:  ucg->lltype = LLVMHalfTypeInContext(ctx);    break;
+        case 32:  ucg->lltype = LLVMFloatTypeInContext(ctx);   break;
+        case 64:  ucg->lltype = LLVMDoubleTypeInContext(ctx);  break;
+        case 80:  ucg->lltype = LLVMX86FP80TypeInContext(ctx); break;
+        case 128: ucg->lltype = LLVMFP128TypeInContext(ctx);   break;
+        // clang-format on
+        default: assert(0 && "float bits are checked by the front end");
         }
         break;
     }
     case VAL_CREATE: {
-        Ucg *to_create = ucg->to_create;
         Ucg *data_type = ucg->data_type;
-        Value elem = NULL;
         int base = 10; // TODO: handle base
-
-        llvm_compile(ucg->data_type);
-        switch (data_type->type) {
-        case INT: {
-            elem = LLVMConstIntOfString(data_type->lltype, to_create->value, base);
-            break;
-        }
-        case FLOAT: {
-            elem = LLVMConstRealOfString(data_type->lltype, to_create->value);
-            break;
-        }
-        default: {
-            eprint("%s:%d handle this case %t\n", FILE, LINE, type);
-            break;
-        }
-        }
-        ucg->elem = to_create->elem = elem;
+        llvm_compile(data_type);
+        TypeRef lltype = data_type->lltype;
+        if (data_type->type == FLOAT)
+            ucg->elem = LLVMConstRealOfString(lltype, ucg->value);
+        else
+            ucg->elem = LLVMConstIntOfString(lltype, ucg->value, base);
         break;
     }
     case FN_DEC: {
@@ -434,6 +433,9 @@ Ucg *llvm_compile(Ucg *ucg) {
         zero_init(types);
 
         for (int i = 0; i < ucg->fn.params_count; i++) {
+            Ucg *param = ucg->fn.params[i];
+            llvm_compile(param->data_type);
+            append(types, param->data_type->lltype);
         }
 
         ucg->lltype = LLVMFunctionType(ret_type, types, types_count, is_varg);
@@ -447,10 +449,22 @@ Ucg *llvm_compile(Ucg *ucg) {
         ucg->bloc = LLVMAppendBasicBlockInContext(ctx, fn, "entry");
         LLVMPositionBuilderAtEnd(lmb, ucg->bloc);
         // in entry declare params as variables
-        // for (int i = 0; i < ucg->fn.params_count; i++) {
-        // // Ucg *param = ir->fn.params[i];
-        // // param->elem = LLVMGetParam(ir->elem, i);
-        // }
+        for (int i = 0; i < ucg->to_enter->fn.params_count; i++) {
+            Ucg *param = ucg->to_enter->fn.params[i];
+            TypeRef lltype = param->data_type->lltype;
+            param->elem = LLVMBuildAlloca(lmb, lltype, param->name);
+            LLVMBuildStore(lmb, LLVMGetParam(fn, i), param->elem);
+        }
+        break;
+    }
+    case FN_CALL: {
+        Ucg *fn = ucg->to_call;
+        expand(Value, params);
+        zero_init(params);
+        for (int i = 0; i < ucg->fn.params_count; i++)
+            append(params, ucg->fn.params[i]->elem);
+        int count = params_count;
+        ucg->elem = LLVMBuildCall2(lmb, fn->lltype, fn->elem, params, count, "");
         break;
     }
     case VAR: {
@@ -476,6 +490,18 @@ Ucg *llvm_compile(Ucg *ucg) {
         Value left = ucg->left->elem;
         Value right = ucg->right->elem;
         ucg->elem = LLVMBuildBinOp(lmb, opcodes[type], left, right, "");
+        break;
+    } // clang-format off
+    case BRK: LLVMBuildBr(lmb, ucg->stmt->end->bloc); break;
+    case CNT: LLVMBuildBr(lmb, ucg->stmt->bloc);      break;
+    case AND: case AND_LIT: case OR: case OR_LIT: {
+        // clang-format on
+        Value left = ucg->left->elem;
+        Value right = ucg->right->elem;
+        if (includes(type, AND, AND_LIT, NULL))
+            ucg->elem = LLVMBuildAnd(lmb, left, right, "");
+        else
+            ucg->elem = LLVMBuildOr(lmb, left, right, "");
         break;
     } // clang-format off
     case GT: case LT: case GE: case LE: case EQ: case NQ: {
@@ -611,7 +637,7 @@ void ucg_print() {
 
         switch (ucg->type) {
         case VAL_CREATE: {
-            print("%U %U %U\n", ucg, ucg->to_create, ucg->data_type);
+            print("%U %U\n", ucg, ucg->data_type);
             break;
         }
         case FN_DEC: {

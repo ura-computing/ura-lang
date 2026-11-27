@@ -113,7 +113,6 @@ struct Ucg {
 
     Type type;
     int bits;
-    bool is_val;
     bool is_set;
     bool is_uint;
     bool is_throwing;
@@ -174,7 +173,6 @@ struct Ucg {
         Ucg *end;
     };
     union {
-		Ucg *to_create;
         Ucg *right;
         Ucg *to_type;
         Ucg *attr;

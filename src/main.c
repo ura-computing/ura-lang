@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 01:00:44    */
 /*                                                             */
-/*   updated: 2026/11/27 08:24:40                              */
+/*   updated: 2026/11/27 09:19:25                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -216,6 +216,7 @@ int precedence[LAST + 1] = {
 
     // Logical
     [OR] = 11,          [AND] = 12,
+    [OR_LIT] = 11,      [AND_LIT] = 12,
 
     // Comparison
     [EQ] = 21,           [NQ] = 21,
@@ -662,15 +663,31 @@ void parse_block(Node *node) {
         append(node->children, parse_expr(0));
 }
 
+Node *parse_list(Token *open) {
+    Node *list = new_node(open);
+    while (!includes(peek(0)->type, RPARENT, LAST, NULL)) {
+        append(list->children, parse_expr(0));
+        if (peek(0)->type != COMA)
+            break;
+        next();
+    }
+    expect(RPARENT, "expected ')'", NULL);
+    return list;
+}
+
 Node *parse_fn(Token *token) {
     Node *node = new_node(token);
     Token *name = expect(ID, "expected a function name", "fn main() i32:");
     if (name)
         token->name = name->name;
-    expect(LPARENT, "expected '(' after the function name", NULL);
-    expect(RPARENT, "expected ')'", NULL);
+    Token *open = expect(LPARENT, "expected '(' after the function name", NULL);
+    node->args = open ? parse_list(open) : new_node(token);
+    for (int i = 0; i < node->args->children_count; i++)
+        append(node->children, node->args->children[i]);
     if (peek(0)->is_type)
         node->ret_type = new_node(next());
+    if (token->type == PROTO)
+        return node;
     expect(DOTS, "expected ':' before the function body", NULL);
     parse_block(node);
     return node;
@@ -689,11 +706,29 @@ Node *parse_prime(void) {
     switch (token->type) {
         // clang-format off
     case INT:    return new_node(token);
-    case FN_DEC: return parse_fn(token);
+    case FN_DEC: case PROTO: return parse_fn(token);
     case RETURN: return parse_return(token);
+    case BRK: case CNT: return new_node(token);
     // clang-format on
+    case SUB: {
+        Node *node = new_node(token);
+        Node *operand = parse_prime();
+        if (operand->token->type != INT) {
+            token->type = NEG;
+            node->operand = operand;
+            return node;
+        }
+        operand->token->num = format("-%s", operand->token->num);
+        return operand;
+    }
     case ID: {
         Node *node = new_node(token);
+        bool is_call = peek(0)->type == LPARENT && peek(0)->line == token->line;
+        if (is_call) {
+            token->type = FN_CALL;
+            node->args = parse_list(next());
+            return node;
+        }
         bool is_declare = peek(0)->is_type && peek(0)->line == token->line;
         if (is_declare) {
             token->type = DECLARE;
@@ -761,21 +796,15 @@ Ucg *codegen_as(Node *node, Ucg *type) {
     if (!type || type->type != INT)
         return codegen(node);
     if (token->type == INT) {
-        if (!fits_int(token->num, false, type->is_uint, type->bits)) {
+        bool negative = token->num[0] == '-';
+        char *digits = token->num + negative;
+        if (!fits_int(digits, negative, type->is_uint, type->bits)) {
             char *msg = format("%s doesn't fit in %d bits", token->num, type->bits);
             add_error(token, msg, NULL);
         }
         return ucg_numeric_value(type, token->num);
     }
-    Ucg *value = codegen(node);
-    Ucg *from = value ? value->value_type : NULL;
-    if (!from || from == type || from->type != INT)
-        return value;
-    bool is_wider = from->bits < type->bits;
-    bool same_sign = from->is_uint == type->is_uint;
-    bool is_bool = from->bits == 1;
-    bool widens = is_wider && !is_bool && (same_sign || from->is_uint);
-    return widens ? ucg_cast(value, type) : value;
+    return ucg_widen(codegen(node), type);
 }
 
 void check_type(Node *node, Ucg *expected, Ucg *value) {
@@ -785,19 +814,42 @@ void check_type(Node *node, Ucg *expected, Ucg *value) {
         add_error(node->token, format("expected %U, got %U", expected, got), NULL);
 }
 
+Node *find_scope(Type type) {
+    for (int i = ura.scopes_count - 1; i >= 0; i--) {
+        if (ura.scopes[i]->token->type == type)
+            return ura.scopes[i];
+    }
+    return NULL;
+}
+
 void codegen_block(Node *node) {
     append(ura.scopes, node);
     ura.scope = node;
-    for (int i = 0; i < node->children_count; i++)
-        codegen(node->children[i]);
+    for (int i = 0; i < node->children_count; i++) {
+        Node *child = node->children[i];
+        codegen(child);
+        if (includes(child->token->type, RETURN, BRK, CNT, NULL))
+            break;
+    }
     ura.scopes_count--;
     ura.scope = ura.scopes_count ? ura.scopes[ura.scopes_count - 1] : NULL;
 }
 
-Ucg *codegen_fn(Node *node) {
+Ucg *codegen_proto(Node *node) {
     Ucg *ret = node->ret_type ? type_of(node->ret_type) : ucg_new(VOID);
-    Ucg *fn = ucg_fn(node->token->name, ret, NULL, 0);
-    node->token->ucg = fn;
+    int count = node->args->children_count;
+    Ucg **params = arena_alloc(count + 1, sizeof(Ucg *));
+    for (int i = 0; i < count; i++) {
+        Node *param = node->args->children[i];
+        Ucg *type = type_of(param->data_type);
+        params[i] = param->token->ucg = ucg_param(param->token->name, type);
+    }
+    return node->token->ucg = ucg_proto(node->token->name, ret, params, count);
+}
+
+Ucg *codegen_fn(Node *node) {
+    Ucg *fn = node->token->ucg;
+    ucg_entry(fn);
     codegen_block(node);
     ucg_end(fn);
     return fn;
@@ -809,33 +861,77 @@ Ucg *codegen(Node *node) {
         // clang-format off
     case INT:    return ucg_numeric_value(ucg_int_type(token->bits), token->num);
     case FN_DEC: return codegen_fn(node);
+    case PROTO:  return token->ucg;
     case ID:     return ucg_load(find_var(token));
     // clang-format on
     case RETURN: {
-        Node *fn = NULL;
-        for (int i = 0; i < ura.scopes_count; i++) {
-            if (ura.scopes[i]->token->type == FN_DEC)
-                fn = ura.scopes[i];
-        }
+        Node *fn = find_scope(FN_DEC);
         Ucg *ret = fn->token->ucg->fn.ret;
         Ucg *value = node->to_ret ? codegen_as(node->to_ret, ret) : NULL;
         check_type(node, ret, value);
         return ucg_ret(value);
     }
     case DECLARE: {
+        if (token->ucg)
+            return token->ucg;
         Ucg *type = type_of(node->data_type);
         return token->ucg = ucg_var(token->name, type);
     } // clang-format off
     case ADD: case SUB: case MUL: case DIV: case MOD:
-    case GT: case LT: case GE: case LE: case EQ: case NQ: {
+    case GT: case LT: case GE: case LE: case EQ: case NQ:
+    case AND: case OR: case AND_LIT: case OR_LIT: {
         // clang-format on
         bool is_left_literal = node->left->token->type == INT;
         Ucg *left = is_left_literal ? NULL : codegen(node->left);
         Ucg *right = codegen_as(node->right, left ? left->value_type : NULL);
         if (is_left_literal)
             left = codegen_as(node->left, right ? right->value_type : NULL);
+        left = ucg_widen(left, right ? right->value_type : NULL);
         check_type(node->right, left ? left->value_type : NULL, right);
         return ucg_op(token->type, left, right);
+    }
+    case FN_CALL: {
+        Node *fn = NULL;
+        for (int i = 0; i < ura.tree->children_count; i++) {
+            Node *child = ura.tree->children[i];
+            bool is_fn = includes(child->token->type, FN_DEC, PROTO, NULL);
+            if (is_fn && strcmp2(child->token->name, token->name))
+                fn = child;
+        }
+        if (fn == NULL) {
+            add_error(token, format("'%s' is not declared", token->name), NULL);
+            return NULL;
+        }
+        Ucg *proto = fn->token->ucg;
+        int count = node->args->children_count;
+        if (count != proto->fn.params_count) {
+            int expected = proto->fn.params_count;
+            char *msg = format("'%s' takes %d arguments", token->name, expected);
+            add_error(token, msg, NULL);
+            return NULL;
+        }
+        Ucg **params = arena_alloc(count + 1, sizeof(Ucg *));
+        for (int i = 0; i < count; i++) {
+            Node *arg = node->args->children[i];
+            Ucg *type = proto->fn.params[i]->data_type;
+            params[i] = codegen_as(arg, type);
+            check_type(arg, type, params[i]);
+        }
+        return ucg_call(proto, params, count);
+    } // clang-format off
+    case BRK: case CNT: { // clang-format on
+        Node *loop = find_scope(LOOP);
+        if (loop == NULL) {
+            add_error(token, format("%t outside a loop", token->type), NULL);
+            return NULL;
+        }
+        return ucg_jump(token->type, loop->token->ucg);
+    }
+    case NEG: {
+        Ucg *operand = codegen(node->operand);
+        Ucg *type = operand ? operand->value_type : NULL;
+        Ucg *zero = type ? ucg_numeric_value(type, "0") : NULL;
+        return ucg_op(SUB, zero, operand);
     }
     case ASSIGN: {
         bool is_declare = node->left->token->type == DECLARE;
@@ -861,6 +957,7 @@ Ucg *codegen(Node *node) {
     }
     case LOOP: {
         Ucg *loop = ucg_branch(LOOP, NULL);
+        token->ucg = loop;
         Ucg *cond = codegen(node->cond);
         check_type(node->cond, ucg_int_type(1), cond);
         ucg_then(loop, cond);
@@ -902,6 +999,11 @@ int main(int ac, char **av) {
     ucg_check_errors();
 
     ucg_asm_start("ura", OUTPUT_EXE);
+    for (int i = 0; i < ura.tree->children_count; i++) {
+        Node *child = ura.tree->children[i];
+        if (includes(child->token->type, FN_DEC, PROTO, NULL))
+            codegen_proto(child);
+    }
     for (int i = 0; i < ura.tree->children_count; i++)
         codegen(ura.tree->children[i]);
     ucg_check_errors();
