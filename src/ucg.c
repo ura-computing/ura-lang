@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/27 12:19:32                              */
+/*   updated: 2026/11/27 12:32:52                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -236,6 +236,15 @@ Ucg *ucg_ref(Ucg *to_ref) {
     new->name = format("&%s", to_ref->name);
     new->to_ref = to_ref;
     new->value_type = ucg_ref_type(to_ref->data_type);
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+Ucg *ucg_point_to(Ucg *ref) {
+    Ucg *new = ucg_new(POINT_TO);
+    new->name = ref->name;
+    new->data_type = ref->data_type->to_ref;
+    new->base = ref;
     append(gb_ucg.insts, new);
     return new;
 }
@@ -551,11 +560,21 @@ Ucg *llvm_compile(Ucg *ucg) {
         pointer = LLVMBuildLoad2(lmb, array->lltype, pointer, "");
         ucg->elem = LLVMBuildGEP2(lmb, elem, pointer, &index, 1, "");
         break;
-    } 
+    }
     case OWN: {
-		ucg->elem = ucg->to_ref->elem;
+        ucg->elem = ucg->to_ref->elem;
         break;
-	}
+    }
+    case REF: {
+        llvm_compile(ucg->to_ref);
+        ucg->lltype = LLVMPointerType(ucg->to_ref->lltype, 0);
+        break;
+    }
+    case POINT_TO: {
+        Ucg *ref = ucg->base;
+        ucg->elem = LLVMBuildLoad2(lmb, ref->data_type->lltype, ref->elem, ref->name);
+        break;
+    }
     case STACK_ALLOC: {
         llvm_compile(ucg->data_type);
         TypeRef elem = ucg->data_type->lltype;
