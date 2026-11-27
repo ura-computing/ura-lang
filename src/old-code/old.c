@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/26 08:02:59                              */
+/*   updated: 2026/11/27 02:45:07                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -109,8 +109,8 @@ struct Node {
     };
 
     expand(Node *, children);
-    expand(Ucg *, temporaries);
-    expand(Node *, temporary_types);
+    expand(Ucg *, drops);
+    expand(Node *, drops_types);
 };
 
 struct NodePrint {
@@ -2595,12 +2595,12 @@ void codegen_global_drops(Node *scope) {
     }
 }
 
-void codegen_drop_temporaries(void) {
+void codegen_drop_drops(void) {
     Node *scope = ura.scope;
-    for (int i = scope->temporaries_count - 1; i >= 0; i--)
-        codegen_drop(scope->temporaries[i], scope->temporary_types[i]);
-    scope->temporaries_count = 0;
-    scope->temporary_types_count = 0;
+    for (int i = scope->drops_count - 1; i >= 0; i--)
+        codegen_drop(scope->drops[i], scope->drops_types[i]);
+    scope->drops_count = 0;
+    scope->drops_types_count = 0;
 }
 
 void codegen_statement(Node *node) {
@@ -2610,7 +2610,7 @@ void codegen_statement(Node *node) {
         codegen_in_variable(node);
     else
         codegen(node);
-    codegen_drop_temporaries();
+    codegen_drop_drops();
 }
 
 void codegen_branch(Node *node, Ucg *stmt) {
@@ -2619,7 +2619,7 @@ void codegen_branch(Node *node, Ucg *stmt) {
     if (node->cond) {
         codegen(node->cond);
         cond = node->cond->token->ucg;
-        codegen_drop_temporaries();
+        codegen_drop_drops();
     }
     ucg_then(stmt, cond);
     enter_scope(node);
@@ -2838,8 +2838,8 @@ Ucg *codegen_in_variable(Node *node) {
     Ucg *tmp = ucg_var("tmp", type->token->ucg);
     ucg_assign(tmp, ucg);
     if (needs_drop(type)) {
-        append(ura.scope->temporaries, tmp);
-        append(ura.scope->temporary_types, type);
+        append(ura.scope->drops, tmp);
+        append(ura.scope->drops_types, type);
     }
     return tmp;
 }
@@ -3075,7 +3075,7 @@ void codegen(Node *node) {
             Ucg *value = node->left->token->ucg;
             if (!is_local)
                 value = ucg_value(value);
-            codegen_drop_temporaries();
+            codegen_drop_drops();
             ucg = ucg_ret(value);
         } else
             ucg = ucg_return();
@@ -3149,7 +3149,7 @@ void codegen(Node *node) {
     case THROW: {
         codegen(node->left);
         Ucg *value = ucg_value(node->left->token->ucg);
-        codegen_drop_temporaries();
+        codegen_drop_drops();
         node->token->ucg = ucg_throw(value);
         break;
     }

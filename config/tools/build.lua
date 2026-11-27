@@ -179,7 +179,7 @@ local function build_binary(source, name, extra_flags)
     -- generate_compile_commands(flags, cflags)
 
     os.execute("mkdir -p " .. quote(BIN_DIR))
-    local ok = os.execute("cd " .. quote(SRC_DIR) .. " && clang " .. quote_all(flags) .. " " ..
+    local ok = base.run("cd " .. quote(SRC_DIR) .. " && clang " .. quote_all(flags) .. " " ..
         quote_all(cflags) .. " " .. quote(source) .. " " .. quote_all(libs) ..
         " -o " .. quote(BIN_DIR .. "/" .. name))
     if shim then os.execute("rm -rf " .. quote(shim)) end
@@ -239,7 +239,7 @@ local function set_llvm(args)
 end
 
 local function extension()
-    if os.execute("make -C " .. quote(REPO .. "/_extension") .. " install") then
+    if base.run("make -C " .. quote(REPO .. "/_extension") .. " install") then
         green("extension: installed, reload VS Code to use it")
     else
         die("extension: failed")

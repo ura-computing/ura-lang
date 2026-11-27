@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 02:23:33    */
 /*                                                             */
-/*   updated: 2026/11/26 03:37:02                              */
+/*   updated: 2026/11/27 06:21:57                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -46,9 +46,15 @@
 #    define DEBUG 1
 #endif
 
-#define print(...) (DEBUG ? fputs(format(__VA_ARGS__), stdout) : 0)
-#define eprint(...) fputs(format(__VA_ARGS__), stderr)
+#if defined(__GNUC__) || defined(__clang__)
+#  define PRINTF_ATTR(f, a) __attribute__((__format__(__printf__, f, a)))
+#else
+#  define PRINTF_ATTR(f, a)
+#endif
 
+#define print(...)  (DEBUG ? fputs(format(__VA_ARGS__), stdout) : 0)
+#define eprint(...) fputs(format(__VA_ARGS__), stderr)
+#define help(...) fputs(format(__VA_ARGS__), stdout)
 // DYNAMIC ARRAY
 #define expand(T, e)  \
     T *e;             \

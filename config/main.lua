@@ -39,4 +39,4 @@ if not command then
     print("commands: build, ucg, tests, record, copy, run, extension, set-llvm")
     os.exit(1)
 end
-command({ table.unpack(arg, 2) })
+command({ (table.unpack or unpack)(arg, 2) })

@@ -15,22 +15,35 @@ local function quote_all(list)
     return table.concat(out, " ")
 end
 
--- runs a shell command, returns what it printed and its exit code
+-- runs a shell command, returns whether it succeeded and its exit code, on
+-- every Lua: 5.1 gives the raw wait status, 5.2+ gives true/nil, "exit", code
+local function run(command)
+    local first, _, code = os.execute(command)
+    if type(first) == "number" then
+        local status = first >= 256 and math.floor(first / 256) or first
+        return status == 0, status
+    end
+    return first == true, code or 1
+end
+
+-- runs a shell command, returns what it printed and its exit code; the code
+-- is printed after the output because 5.1's pipe:close() doesn't return it
 local function capture(command)
-    local pipe = io.popen(command)
-    local output = pipe:read("a")
-    local _, _, code = pipe:close()
-    return output, code or 1
+    local pipe = io.popen(command .. "; printf '\\n%d' $?")
+    local output = pipe:read("*a")
+    pipe:close()
+    local text, code = output:match("^(.*)\n(%d+)$")
+    return text or output, tonumber(code) or 1
 end
 
 local function succeeds(command)
-    return os.execute(command .. " >/dev/null 2>&1") == true
+    return (run(command .. " >/dev/null 2>&1"))
 end
 
 local function read_file(path)
     local file = io.open(path, "rb")
     if not file then return nil end
-    local text = file:read("a")
+    local text = file:read("*a")
     file:close()
     return text
 end
@@ -150,7 +163,7 @@ local function link_projects()
 end
 
 return {
-    quote = quote, quote_all = quote_all, capture = capture, succeeds = succeeds,
+    quote = quote, quote_all = quote_all, run = run, capture = capture, succeeds = succeeds,
     read_file = read_file, write_file = write_file,
     lines = lines, command_lines = command_lines, words = words, append = append,
     trim = trim, starts_with = starts_with, has_line = has_line,

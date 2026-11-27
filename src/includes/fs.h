@@ -12,37 +12,24 @@
 
 #pragma once
 
-typedef struct ucgFile ucgFile;
-struct ucgFile {
-    char *path;
-    char *buff;
-    int len;
-    int start;
-    bool opened;
-};
-
 ucgFile *new_file(char *path) {
     ucgFile *new = arena_alloc(1, sizeof(ucgFile));
     new->path = path;
     return new;
 }
 
-void open_file(ucgFile *file) {
+bool open_file(ucgFile *file) {
     char *path = realpath(file->path, NULL);
-    if (path == NULL) {
-        eprint("%s:%d realpath failed (%s)\n", FILE, LINE, file->path);
-        exit(1);
-    }
+    if (path == NULL)
+        return false;
     file->path = strdup2(path);
     free(path);
     ioFile fp = fopen(file->path, "r");
-    if (fp == NULL) {
-        eprint("%s:%d fopen failed (%s)\n", FILE, LINE, file->path);
-        exit(1);
-    }
-    if (fseek(fp, sizeof(char), SEEK_END) != 0) {
-        eprint("%s:%d fseek failed (%s)\n", FILE, LINE, file->path);
-        exit(1);
+    if (fp == NULL)
+        return false;
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        fclose(fp);
+        return false;
     }
     file->len = ftell(fp);
     rewind(fp);
@@ -50,6 +37,7 @@ void open_file(ucgFile *file) {
     fread(file->buff, file->len, sizeof(char), fp);
     fclose(fp);
     file->opened = true;
+    return true;
 }
 
 void close_file(ucgFile *file) {

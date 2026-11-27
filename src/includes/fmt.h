@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 03:22:12    */
 /*                                                             */
-/*   updated: 2026/11/26 11:24:33                              */
+/*   updated: 2026/11/27 01:40:30                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -18,10 +18,34 @@ void format_ucg(ioFile out, Ucg *ucg) {
         return;
     }
     fputs(to_string(ucg->type), out);
+    if (ucg->bits)
+        fprintf(out, "%d", ucg->bits);
     if (ucg->name)
-        fprintf(out, " %s", ucg->name);
-    if (includes(ucg->type, INT, FLOAT, 0) && ucg->is_val)
+        fprintf(out, " [%s]", ucg->name);
+    if (includes(ucg->type, INT, FLOAT, 0) && ucg->is_val) {
         fprintf(out, "(%s)", ucg->value);
+    }
+}
+
+void format_token(ioFile out, Token *token) {
+    if (token == NULL) {
+        fputs("(null token)", out);
+        return;
+    }
+    fprintf(
+        out,
+        "%-12s line %3d space %d",
+        to_string(token->type),
+        token->line,
+        token->space
+    );
+    if (token->name)
+        fprintf(out, " [%s]", token->name);
+    bool is_number = includes(token->type, INT, FLOAT, 0) && !token->is_type;
+    if (is_number)
+        fprintf(out, " %s (%d bits)", token->num, token->bits);
+    if (token->type == CHARS)
+        fprintf(out, " \"%s\"", token->string);
 }
 
 void vfprint2(ioFile out, const char *fmt, va_list ap) {
@@ -36,13 +60,39 @@ void vfprint2(ioFile out, const char *fmt, va_list ap) {
             continue;
         }
 
-        // flags, width, precision, length: "-5.2ld"
-        char spec[32] = "%";
+        char spec[32] = "%"; // TODO: check this might crash
         size_t j = 1;
-        while (fmt[i] && strchr("-+ #0123456789.hlz", fmt[i]) && j < sizeof(spec) - 2)
+
+        while (fmt[i] && strchr("-+ #0", fmt[i]) && j < sizeof(spec) - 2)
             spec[j++] = fmt[i++];
+
+        if (fmt[i] == '*') {
+            i++;
+            int width = va_arg(ap, int);
+            j += snprintf(spec + j, sizeof(spec) - j - 2, "%d", width);
+        } else {
+            while (fmt[i] >= '0' && fmt[i] <= '9' && j < sizeof(spec) - 2)
+                spec[j++] = fmt[i++];
+        }
+
+        if (fmt[i] == '.') {
+            spec[j++] = fmt[i++];
+            if (fmt[i] == '*') {
+                i++;
+                int prec = va_arg(ap, int);
+                j += snprintf(spec + j, sizeof(spec) - j - 2, "%d", prec);
+            } else {
+                while (fmt[i] >= '0' && fmt[i] <= '9' && j < sizeof(spec) - 2)
+                    spec[j++] = fmt[i++];
+            }
+        }
+
+        while (fmt[i] && strchr("hlz", fmt[i]) && j < sizeof(spec) - 2)
+            spec[j++] = fmt[i++];
+
         if (fmt[i] == '\0')
             break;
+
         char conv = fmt[i];
         spec[j++] = conv;
         spec[j] = '\0';
@@ -54,40 +104,36 @@ void vfprint2(ioFile out, const char *fmt, va_list ap) {
         switch (conv) { // clang-format off
         case 't': fputs(to_string(va_arg(ap, Type)), out); break;
         case 'U': format_ucg(out, va_arg(ap, Ucg *)); break;
-
+        case 'k': format_token(out, va_arg(ap, Token *)); break;
         case 's': {
             char *str = va_arg(ap, char *);
             fprintf(out, spec, str ? str : "(null)");
             break;
         }
         case 'c': fprintf(out, spec, va_arg(ap, int)); break;
-        case 'f': fprintf(out, spec, va_arg(ap, double)); break;
         case 'p': fprintf(out, spec, va_arg(ap, void *)); break;
-
-        case 'd': case 'i':
-            if (is_ll)     fprintf(out, spec, va_arg(ap, long long));
+        case 'd': case 'i': {
+			if (is_ll)     fprintf(out, spec, va_arg(ap, long long));
             else if (is_l) fprintf(out, spec, va_arg(ap, long));
             else if (is_z) fprintf(out, spec, va_arg(ap, ssize_t));
             else           fprintf(out, spec, va_arg(ap, int));
             break;
-        case 'u': case 'x': case 'X': case 'o':
-            if (is_ll)     fprintf(out, spec, va_arg(ap, unsigned long long));
+		}
+        case 'u': case 'x': case 'X': case 'o': {	
+			if (is_ll)     fprintf(out, spec, va_arg(ap, unsigned long long));
             else if (is_l) fprintf(out, spec, va_arg(ap, unsigned long));
             else if (is_z) fprintf(out, spec, va_arg(ap, size_t));
             else           fprintf(out, spec, va_arg(ap, unsigned));
             break;
-
+		}
+		case 'f': case 'F': case 'e': case 'E': case 'g': case 'G': case 'a': case 'A':  {
+			fprintf(out, spec, va_arg(ap, double));
+			break;
+		}
         default: fputs(spec, out); break;
         } // clang-format on
     }
 }
-
-// void fprint2(ioFile out, const char *fmt, ...) {
-//     va_list ap;
-//     va_start(ap, fmt);
-//     vfprint2(out, fmt, ap);
-//     va_end(ap);
-// }
 
 char *format(const char *fmt, ...) {
     char *buf = NULL;
@@ -181,8 +227,7 @@ const char *to_string(Type type) {
     }; // clang-format on
 #undef NAME
 
-    if (types[type] == NULL)
+    if ((unsigned)type > LAST || types[type] == NULL)
         return format("UNKNOWN(%d)", type);
-
     return types[type];
 }

@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 01:31:05    */
 /*                                                             */
-/*   updated: 2026/11/26 10:00:53                              */
+/*   updated: 2026/11/27 05:15:13                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -17,6 +17,7 @@ typedef struct Ucg Ucg;
 typedef struct UcgError UcgError;
 typedef struct Arena Arena;
 typedef struct ucgFile ucgFile;
+typedef struct Token Token;
 typedef enum UcgOutputMode UcgOutputMode;
 
 enum UcgOutputMode {
@@ -120,7 +121,7 @@ struct Ucg {
 
     // llvm stuff
     struct {
-        TypeRef rtype;
+        TypeRef lltype;
         Value elem;
         Bloc bloc;
         Bloc then;
@@ -135,7 +136,7 @@ struct Ucg {
 	char *value;
 	
     struct {
-        bool varg;
+        bool is_varg;
         Ucg *ret;
         expand(Ucg *, params);
     } fn;
@@ -179,6 +180,16 @@ struct Ucg {
         Ucg *index;
     };
     expand(Ucg *, cleans);
+};
+
+struct ucgFile {
+    char *path;
+    char *buff;
+    int len;
+    int start;
+    bool opened;
+    expand(Token *, tokens);
+    bool parsed;
 };
 
 struct UcgError {

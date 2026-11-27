@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 02:26:05    */
 /*                                                             */
-/*   updated: 2026/11/26 09:13:01                              */
+/*   updated: 2026/11/27 03:25:28                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -19,6 +19,10 @@
 #include <llvm-c/Target.h>
 #include <llvm-c/TargetMachine.h>
 #include <llvm/Config/llvm-config.h>
+// LLVM JIT STUFF
+#include <llvm-c/Core.h>
+#include <llvm-c/LLJIT.h>
+#include <llvm-c/Orc.h>
 
 #if LLVM_VERSION_MAJOR >= 13
 #    undef LLVM_C_STRICT_PROTOTYPES_BEGIN

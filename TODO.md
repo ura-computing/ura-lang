@@ -311,3 +311,7 @@ later: http lib + FastAPI-like framework, ura init SDL2, other architectures (em
 	+ I added some TODO in .ura file check them all
 	+ waht is the tag thing in ura-lang github repo
 	+ test with multiple oss and llvm versions
+	+ function inside function can access its parent variables
+	+ llvm SIMD / vector types
+	+ llvm Matrix types
+	+ add const in all varibles that does not modify the value, best practices stuff

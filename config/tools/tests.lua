@@ -506,7 +506,7 @@ local function run(args)
         os.execute("rm -rf " .. quote(dir))
         die("run: test " .. number .. " doesn't compile")
     end
-    local _, _, code = os.execute("cd " .. quote(dir) .. " && ./program")
+    local _, code = base.run("cd " .. quote(dir) .. " && ./program")
     os.execute("rm -rf " .. quote(dir))
     print("exit code: " .. tostring(code))
 end

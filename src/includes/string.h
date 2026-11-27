@@ -43,25 +43,33 @@ bool strchr2(char *str, int c) {
     return c != '\0' && res != NULL && res[0] != '\0';
 }
 
-char *parse_escaped(char **escaped, char *input, int s, int e) {
+char *parse_escaped(char **escaped, ucgFile *file, int s, int e) {
+    char *input = file->buff;
     char *res = arena_alloc(e - s + 1, sizeof(char));
     int r = 0;
 
     while (s < e) {
-        unsigned char c = input[s];
-        // if (c == '\n') {
-        //     while (s < e && isspace((unsigned char)input[s]))
-        //         s++;
-        //     if (r > 0 && !isspace((unsigned char)res[r - 1]) && s < e)
-        //         res[r++] = ' ';
-        // } else
-		if (c == '\\' && s + 1 < e && escaped[(unsigned char)input[s + 1]]) {
-            res[r++] = escaped[(unsigned char)input[s + 1]][0];
-            s += 2;
-        } else {
-            res[r++] = c;
-            s++;
+        if (input[s] == '"' && s + 1 < e) {
+            s = strchr(input + s + 1, '"') - input + 1;
+            continue;
         }
+        if (input[s] != '\\' || s + 1 == e) {
+            res[r++] = input[s++];
+            continue;
+        }
+        char *str = escaped[(unsigned char)input[s + 1]];
+        if (str == NULL) {
+            ucg_error(
+                file,
+                s,
+                s + 2,
+                format("unknown escape '\\%c'", input[s + 1]),
+                NULL
+            );
+        } else {
+            res[r++] = str[0];
+        }
+        s += 2;
     }
     return res;
 }
