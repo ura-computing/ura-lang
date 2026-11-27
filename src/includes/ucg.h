@@ -170,13 +170,13 @@ struct Ucg {
 		Ucg *cond;
         Ucg *next;
         Ucg *end;
+        Ucg *base;
     };
     union {
         Ucg *right;
         Ucg *to_type;
         Ucg *attr;
         Ucg *index;
-        Ucg *base;
     };
     expand(Ucg *, cleans);
 };

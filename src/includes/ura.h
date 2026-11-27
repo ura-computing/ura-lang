@@ -69,6 +69,7 @@ struct Node {
 	union {
         Node *left;
         Node *var;
+        Node *base;
         Node *data_type;
         Node *ret_type;
         Node *to_ret;
@@ -85,6 +86,8 @@ struct Node {
     union {
         Node *right;
         Node *params;
+        Node *attr;
+        Node *value;
         Node *next;
         Node *declared;
         Node *to_type;

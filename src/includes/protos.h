@@ -39,6 +39,7 @@ Ucg *ucg_end(Ucg *stmt);
 Ucg *ucg_entry(Ucg *fn);
 Ucg *ucg_float_type(int bits);
 Ucg *ucg_get_attr(Ucg *base, char *name);
+Ucg *ucg_get_item(Ucg *base, Ucg *index);
 Ucg *ucg_int_type(int bits);
 Ucg *ucg_jump(Type type, Ucg *loop);
 Ucg *ucg_load(Ucg *var);

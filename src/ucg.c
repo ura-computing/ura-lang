@@ -211,7 +211,7 @@ Ucg *ucg_get_attr(Ucg *base, char *name) {
         if (!strcmp2(attr->name, name))
             continue;
         Ucg *new = ucg_new(ATTR);
-        new->name = name;
+        new->name = format("%s.%s", base->name, name);
         new->data_type = attr->data_type;
         new->base = base;
         new->obj.index = i;
@@ -219,6 +219,16 @@ Ucg *ucg_get_attr(Ucg *base, char *name) {
         return new;
     }
     return NULL;
+}
+
+Ucg *ucg_get_item(Ucg *base, Ucg *index) {
+    Ucg *new = ucg_new(ACCESS);
+    new->name = format("%s[]", base->name);
+    new->data_type = base->data_type->arr.elem;
+    new->base = base;
+    new->index = index;
+    append(gb_ucg.insts, new);
+    return new;
 }
 
 Ucg *ucg_branch(Type type, Ucg *prev) {
@@ -474,6 +484,21 @@ Ucg *llvm_compile(Ucg *ucg) {
         TypeRef lltype = base->data_type->lltype;
         int index = ucg->obj.index;
         ucg->elem = LLVMBuildStructGEP2(lmb, lltype, base->elem, index, ucg->name);
+        break;
+    }
+    case ACCESS: {
+        Ucg *array = ucg->base->data_type;
+        TypeRef elem = array->arr.elem->lltype;
+        Value index = ucg->index->elem;
+        Value pointer = ucg->base->elem;
+        if (array->arr.items_count) {
+            Value zero = LLVMConstInt(LLVMInt32TypeInContext(ctx), 0, 0);
+            Value indexes[] = { zero, index };
+            ucg->elem = LLVMBuildGEP2(lmb, array->lltype, pointer, indexes, 2, "");
+            break;
+        }
+        pointer = LLVMBuildLoad2(lmb, array->lltype, pointer, "");
+        ucg->elem = LLVMBuildGEP2(lmb, elem, pointer, &index, 1, "");
         break;
     }
     case VAL_CREATE: {
