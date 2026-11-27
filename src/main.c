@@ -40,6 +40,12 @@ struct {
 
     int exe_pos;
     bool throws;
+
+    expand(char *, paths);
+    bool print_tokens;
+    bool print_tree;
+    bool print_insts;
+    bool print_ll;
 } ura;
 
 Keyword keywords[] = {
@@ -589,20 +595,20 @@ void tokenize_range(int start, int end) {
     }
 }
 
-void ura_tokenize(ucgFile *file) {
+void tokenize_file(ucgFile *file) {
     ura.file = file;
     ura.line = 1;
     ura.space = 0;
     tokenize_range(0, file->len);
 }
 
-ucgFile *ura_open_file(char *path) {
+ucgFile *open_file(char *path) {
     ucgFile *found = ucg_find_file(realpath2(path));
     if (found)
         return found;
     ucgFile *file = ucg_open_file(path);
     if (file)
-        ura_tokenize(file);
+        tokenize_file(file);
     return file;
 }
 
@@ -621,7 +627,7 @@ void use_file(ucgFile *file, int space) {
         }
         i++;
         char *path = format("%s/%s.ura", dirname2(file->path), name->string);
-        ucgFile *used = ura_open_file(path);
+        ucgFile *used = open_file(path);
         if (used == NULL) {
             ucg_error(
                 file,
@@ -942,8 +948,14 @@ void analyze(Node *node) {
         analyze(node->data_type);
         append(ura.scope->locals, node);
         break;
+    }
+    case URA: {
+        if (ucg_has_errors())
+            return;
+        analyze_block(node);
+        break;
     } // clang-format off
-    case URA: case STRUCT: case PROTO: case FN_DEC:
+    case STRUCT: case PROTO: case FN_DEC:
     case IF: case ELIF: case ELSE: case LOOP: { // clang-format on
         analyze_block(node);
         break;
@@ -1263,7 +1275,14 @@ Ucg *codegen_fn(Node *node) {
 Ucg *codegen(Node *node, Ucg *type) {
     Token *token = node->token;
     Ucg *value = NULL;
-    switch (token->type) { // clang-format off
+    switch (token->type) {
+    case URA: {
+        if (ucg_has_errors())
+            break;
+        ucg_start("ura", OUTPUT_EXE);
+        value = codegen_block(node, NULL);
+        break;
+    } // clang-format off
     case ID: case DOT: value = ucg_load(find_variable(node)); break;
     case DECLARE: { // clang-format on
         if (node->ucg == NULL)
@@ -1416,41 +1435,72 @@ Ucg *codegen(Node *node, Ucg *type) {
     return value;
 }
 
-int main(int ac, char **av) {
-    atexit(arena_free);
-    arena_reserve(10000);
-
-    if (ac < 2)
-        ucg_error(NULL, 0, 0, "expected a .ura file", "ura main.ura");
+void read_args(int ac, char **av) {
     for (int i = 1; i < ac; i++) {
-        ucgFile *file = ura_open_file(av[i]);
+        char *arg = av[i];
+        if (arg[0] != '-') {
+            append(ura.paths, arg);
+            continue;
+        }
+        if (strcmp2(arg, "-tokens"))
+            ura.print_tokens = true;
+        else if (strcmp2(arg, "-tree"))
+            ura.print_tree = true;
+        else if (strcmp2(arg, "-ucg"))
+            ura.print_insts = true;
+        else if (strcmp2(arg, "-ll"))
+            ura.print_ll = true;
+        else
+            ucg_error(
+                NULL,
+                0,
+                0,
+                format("unknown flag %s", arg),
+                "ura main.ura -tokens -tree -ucg -ll"
+            );
+    }
+    if (ura.paths_count == 0)
+        ucg_error(NULL, 0, 0, "expected a .ura file", "ura main.ura");
+    ucg_check_errors();
+}
+
+void tokenize(void) {
+    for (int i = 0; i < ura.paths_count; i++) {
+        char *path = ura.paths[i];
+        ucgFile *file = open_file(path);
         if (file == NULL)
-            ucg_error(NULL, 0, 0, format("can't open %s", av[i]), "check the path");
+            ucg_error(NULL, 0, 0, format("can't open %s", path), "check the path");
         else if (!file->parsed)
             use_file(file, 0);
     }
     ucg_check_errors();
-
     ura.space = -1;
     append(ura.tokens, new_token(LAST, ura.file->len, ura.file->len));
-    for (int i = 0; i < ura.tokens_count; i++)
+}
+
+int main(int ac, char **av) {
+    atexit(arena_free);
+    arena_reserve(10000);
+    read_args(ac, av);
+    tokenize();
+    for (int i = 0; ura.print_tokens && i < ura.tokens_count; i++)
         print("%k\n", ura.tokens[i]);
-
     ura.tree = new_node(new_token(URA, 0, 0));
-    while (peek(0)->type != LAST)
-        append(ura.tree->children, parse_expr(0));
-    ucg_check_errors();
-
+    parse_block(ura.tree);
+    if (ura.print_tree)
+        print("%n", ura.tree);
     analyze(ura.tree);
+    if (ura.print_tree)
+        print("%n", ura.tree);
+    codegen(ura.tree, NULL);
+    if (ura.print_insts)
+        ucg_print_insts();
+    ucg_compile();
+    if (ura.print_ll)
+        ucg_print_ll();
+    ucg_bin(ura.paths[0]);
     ucg_check_errors();
-
-    ucg_asm_start("ura", OUTPUT_EXE);
-    codegen_block(ura.tree, NULL);
-    ucg_check_errors();
-    ucg_asm_compile();
-    ucg_asm_print();
-    ucg_bin(av[1]);
-    ucg_asm_end();
+    ucg_finish();
 
     // Ucg *fn_main = ucg_fn("main", ucg_int_type(32), NULL, 0);
     // {

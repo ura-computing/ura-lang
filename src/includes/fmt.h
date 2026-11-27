@@ -47,6 +47,18 @@ void format_token(ioFile out, Token *token) {
         fprintf(out, " \"%s\"", token->string);
 }
 
+void format_node(ioFile out, Node *node, int depth) {
+    if (node == NULL)
+        return;
+    fprintf(out, "%*s", depth * 4, "");
+    format_token(out, node->token);
+    fputc('\n', out);
+    format_node(out, node->left, depth + 1);
+    format_node(out, node->right, depth + 1);
+    for (int i = 0; i < node->children_count; i++)
+        format_node(out, node->children[i], depth + 1);
+}
+
 void vfprint2(ioFile out, const char *fmt, va_list ap) {
     for (int i = 0; fmt[i]; i++) {
         if (fmt[i] != '%') {
@@ -105,6 +117,7 @@ void vfprint2(ioFile out, const char *fmt, va_list ap) {
         case 't': fputs(to_string(va_arg(ap, Type)), out); break;
         case 'U': format_ucg(out, va_arg(ap, Ucg *)); break;
         case 'k': format_token(out, va_arg(ap, Token *)); break;
+        case 'n': format_node(out, va_arg(ap, Node *), 0); break;
         case 's': {
             char *text = va_arg(ap, char *);
             fprintf(out, spec, text ? text : "(null)");

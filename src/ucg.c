@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/27 13:50:32                              */
+/*   updated: 2026/11/27 20:41:53                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -397,7 +397,7 @@ Ucg *ucg_end(Ucg *stmt) {
 }
 
 // LLVM ABI
-void ucg_asm_start(char *name, UcgOutputMode mode) {
+void ucg_start(char *name, UcgOutputMode mode) {
     gb_ucg.ctx = LLVMContextCreate();
     zero_init(gb_ucg.runtime);
     zero_init(gb_ucg.libs);
@@ -462,11 +462,18 @@ void ucg_asm_start(char *name, UcgOutputMode mode) {
     LLVMDisposeMessage(target_name);
 }
 
-void ucg_asm_print() {
+void ucg_print_ll(void) {
+    if (gb_ucg.errors_count)
+        return;
     LLVMDumpModule(gb_ucg.module);
 }
 
-void ucg_asm_end(void) {
+void ucg_print_insts(void) {
+    for (int i = 0; i < gb_ucg.insts_count; i++)
+        print("%U\n", gb_ucg.insts[i]);
+}
+
+void ucg_finish(void) {
     LLVMDisposeBuilder(gb_ucg.builder);
     LLVMDisposeModule(gb_ucg.module);
     LLVMDisposeTargetMachine(gb_ucg.machine);
@@ -484,6 +491,8 @@ void ucg_asm_end(void) {
 
 
 void ucg_bin(char *source) {
+    if (gb_ucg.errors_count)
+        return;
     Module mod = gb_ucg.module;
     TargetMachine machine = gb_ucg.machine;
     char *slash = strrchr(source, '/');
@@ -847,7 +856,9 @@ Ucg *llvm_compile(Ucg *ucg) {
     return ucg;
 }
 
-void ucg_asm_compile() {
+void ucg_compile(void) {
+    if (gb_ucg.errors_count)
+        return;
     for (int i = 0; i < gb_ucg.insts_count; i++) {
         Ucg *ucg = gb_ucg.insts[i];
         if (!includes(ucg->type, FN_DEC, PROTO, 0))
@@ -967,6 +978,10 @@ ucgFile *ucg_open_file(char *path) {
 void ucg_error(ucgFile *file, int s, int e, char *msg, char *help) {
     UcgError error = { .file = file, .s = s, .e = e, .msg = msg, .help = help };
     append(gb_ucg.errors, error);
+}
+
+bool ucg_has_errors(void) {
+    return gb_ucg.errors_count > 0;
 }
 
 void ucg_check_errors(void) {
