@@ -1,55 +1,83 @@
 {
-    "C_Cpp.errorSquiggles": "disabled",
-    "C_Cpp.formatting": "clangFormat",
-    "C_Cpp.clang_format_style": "file",
-    "C_Cpp.clang_format_fallbackStyle": "LLVM",
-    "[c]": {
-        "editor.defaultFormatter": "ms-vscode.cpptools",
-        "editor.formatOnSave": true
-    },
-    "[cpp]": {
-        "editor.defaultFormatter": "ms-vscode.cpptools",
-        "editor.formatOnSave": true
-    },
-    "hidefiles.configurationType": "local",
-    "hidefiles.globalConfig": {
-        "profiles": [
-            {
-                "name": "Default",
-                "detail": "",
-                "description": "Test",
-                "hidden": [
-                    ".vscode/",
-                    "README.md",
-                    "LICENSE",
-                    ".gitignore",
-                    ".clang-format",
-                    "0.old-code/.gitignore",
-                    "0.old-code/.gitattributes"
-                ]
-            },
-            {
-                "name": "Strict",
-                "detail": "Hide everything not immediately required",
-                "hidden": [
-                    "$Default"
-                ]
-            }
+  "C_Cpp.errorSquiggles": "disabled",
+  "C_Cpp.formatting": "clangFormat",
+  "C_Cpp.clang_format_style": "file",
+  "C_Cpp.clang_format_fallbackStyle": "LLVM",
+  "[c]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools",
+    "editor.formatOnSave": true
+  },
+  "[cpp]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools",
+    "editor.formatOnSave": true
+  },
+  "hidefiles.configurationType": "local",
+  "hidefiles.globalConfig": {
+    "profiles": [
+      {
+        "name": "Default",
+        "detail": "",
+        "description": "Test",
+        "hidden": [
+          ".vscode/",
+          "README.md",
+          "LICENSE",
+          ".gitignore",
+          ".clang-format",
+          "0.old-code/.gitignore",
+          "0.old-code/.gitattributes"
         ]
-    },
-    "files.exclude": {
-        "**/.git": true,
-        "**/.svn": true,
-        "**/.hg": true,
-        "**/CVS": true,
-        "**/.DS_Store": true,
-        ".vscode/": true,
-        "README.md": true,
-        "LICENSE": true,
-        ".gitignore": true,
-        ".clang-format": true,
-        "0.old-code/.gitignore": true,
-        "0.old-code/.gitattributes": true
-    },
-    "hidefiles.selectedProfile": "Default"
+      },
+      {
+        "name": "Strict",
+        "detail": "Hide everything not immediately required",
+        "hidden": [
+          "$Default"
+        ]
+      }
+    ]
+  },
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    ".vscode/": true,
+    "README.md": true,
+    "LICENSE": true,
+    ".gitignore": true,
+    ".clang-format": true,
+    "0.old-code/.gitignore": true,
+    "0.old-code/.gitattributes": true
+  },
+  "hidefiles.selectedProfile": "Default",
+  "mcp": {
+    "servers": {
+      "context7": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@context7/mcp-server"
+        ],
+        "type": "stdio",
+        "env": {}
+      },
+      "token-cache": {
+        "command": "node",
+        "args": [
+          "/home/mhrima/.vscode/extensions/ai-token-optimizer.ai-token-optimize-claude-0.1.1/dist/cache-server.js",
+          "/goinfre/mhrima/workspace/ura-lang"
+        ],
+        "type": "stdio"
+      },
+      "codegraph": {
+        "command": "codegraph",
+        "args": [
+          "mcp"
+        ],
+        "type": "stdio"
+      }
+    }
+  }
 }

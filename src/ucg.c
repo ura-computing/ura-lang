@@ -928,13 +928,14 @@ bool compile_test(int p) {
 __attribute__((sentinel)) bool includes(Type to_find, ...) {
     va_list ap;
     va_start(ap, to_find);
+    bool found = false;
     Type type = va_arg(ap, Type);
-    while (type) {
-        if (type == to_find)
-            return true;
+    while (type && !found) {
+        found = type == to_find;
         type = va_arg(ap, Type);
     }
-    return false;
+    va_end(ap);
+    return found;
 }
 
 // UCG FILES

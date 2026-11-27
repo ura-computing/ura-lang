@@ -3,6 +3,22 @@
 Claude Code loads this file by itself in every session of this repo. Read it fully before doing anything.
 It was written on 2026-11-19, at commit `f61a7fa` of the `refactor` branch, when the user moved to another machine.
 
+## 0. Current state (2026-11-27, commit `81f24c8`): the compiler rewrite
+
+Sections 2 to 9 below describe the **old** compiler, now kept only as reference in `src/old-code/old.c`. Since 2026-11-26 the compiler is being rewritten from scratch:
+
+| file | what |
+|---|---|
+| `src/main.c` | ura front end: tokenizer, `use` paste, parser (`parse_prime`, `parse_expr`, `parse_type`), codegen (`codegen(Node *node, Ucg *type)`) |
+| `src/ucg.c` | ucg, the IR over LLVM: `ucg_*` records instructions, `llvm_compile` emits them, `ucg_bin` links with clang |
+| `src/includes/*.h` | `ucg.h` (Type enum, Ucg, ucgFile), `ura.h` (Token, Node), `fmt.h` (`format`, `%k`, `to_string`), `string.h`, `fs.h`, `arena.h`, `libc.h` |
+| `src/main.ura` | the one scratch test file: the current test live, earlier ones commented out |
+
+- Build: `lua config/main.lua build` (or `make dev` then `build`). Run: `cd src && ura main.ura && ./main; echo $?`.
+- Working features, the next step and open questions: `TODO.md` ("rewrite" section) and Claude's memory `rewrite-plan.md`.
+- Workflow: show the next 3-4 changes, wait for "go", apply exactly those with the Edit tool (never sed or scripts), build, test, then commit only the compiler files (`src/main.c src/ucg.c src/includes/`) with a short lowercase `rewrite: ...` message when the user says.
+- Style rules added during the rewrite: fewer, bigger functions (no tiny helpers); `T *x = NULL; if (cond) x = ...;` instead of a `: NULL` ternary; a function that fills a list takes it first (`sizes_of(sizes, node)`); switch cases in Type-enum order; union aliases with real names (`node->base`, `node->attr`, `node->value`, `node->from_parent`) instead of `left`/`right` when the slot isn't a binary operand; no hardcoded workarounds.
+
 Other files in this folder:
 
 | file | what it holds | how current |

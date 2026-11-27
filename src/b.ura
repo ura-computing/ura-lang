@@ -1,0 +1,3 @@
+use "./a"
+fn helper():
+    use "./c"

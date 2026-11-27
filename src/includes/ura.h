@@ -50,8 +50,6 @@ struct Token {
     bool is_uint;
     bool is_used; // for optimization
 
-    Ucg *ucg;
-
 #if DEBUG
 	int tk_index;
 #endif
@@ -65,7 +63,8 @@ struct Token {
 
 struct Node {
 	Token *token;
-	
+    Ucg *ucg;
+
 	union {
         Node *left;
         Node *var;

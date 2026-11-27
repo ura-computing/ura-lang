@@ -4,9 +4,33 @@
 
 # 2 language features (now)
 
+## rewrite (src/main.c + src/ucg.c, state 2026-11-27, commit 81f24c8)
+
+working, each tested (exit 42): ints / floats / uints / bool, `as` casts, ops with lossless widening,
+literal fit checks, if / elif / else, while, break / continue, fns, params, calls, proto, strings as char arrays,
+structs (p.x, by value), indexing, stack arrays `i32[2][3]` and `Point[3]`, array literals,
+if as a value and inline `if a: x else: y`, local fns and closures, float exponents
+
+next, in order:
+1. struct and array values (shown, waiting for go): `make().x`, `[0, 10][1]`, `f()[0]` without a temp var,
+   ucg_is_location, extractvalue, assigning to a value is an error, struct return types
+2. anonymous structs (below)
+3. heap allocation with new (below)
+4. tests: move what the rewrite can't compile yet to tests/pending, delete `a i32[3]` declaration tests,
+   add the shorthand-if tests (below), then run `tests`
+5. rename ura::argc, ura::argv, ura::line, ura::filename, ura::function to @argc, @argv, @line, @filename, @function
+
+done after 81f24c8 (not committed yet): ucg moved from Token to Node, va_end in includes,
+local fns named with their block line (main.3.add, main.7.add)
+
 done: unic, ura::line / ura::filename / ura::function, mod, os::argc / os::argv, array literals, for in, null / isZero
 
-sized arrays                                  milestone 4, tests: tests/pending/sized-arrays.md
+tests for the shorthand if (rewrite, not covered yet)
+    if x == 30: y = 0 else: y = 100           // inline statement, else on the same line
+    return if b == 10: 12 else: 15             // if as a value
+    x i32 = if a: 1 elif b: 2 else: 3          // value with elif
+    x i32 = if a: 1                            // error: an if used as a value needs an else
+    while n > 0: n -= 1                        // inline loop body
 
 throw records where it happened (later)
     throw Error::create("no file")
@@ -17,10 +41,16 @@ throw records where it happened (later)
 variadic functions in ura
     fn sum(count i32, ...) i32:
 
-tuples
-    fn divmod(a i32, b i32) (i32, i32):
-        return a / b, a % b
-    q, r = divmod(7, 2)
+anonymous structs (replace tuples)
+    fn divmod(a i32, b i32) {q i32, r i32}:   // type: same form as a struct body (name type)
+        return {q: a / b, r: a % b}           // literal: name: value
+    d {q i32, r i32} = divmod(7, 2)           // keep the whole value: d.q, d.r
+    {q i32, r i32} = divmod(7, 2)             // destructure by field name, order doesn't matter
+    {q i32} = divmod(7, 2)                    // take only some fields
+    p Point = {x: 1, y: 2}                    // same literal for named structs, typed by the target
+    // rule: a colon means a value, a space means a type
+    // decided: structural equality, same field names and types in the same order = same type
+    // needs: struct values (extractvalue for foo().q), ':' inside { } must not bump ura.space
 
 function values                               tests: tests/pending/function-values.md
     fn apply(f fn(i32) i32, x i32) i32:
@@ -95,9 +125,21 @@ bitmap arena allocator (default)
     // behind alloc / free: Array, String unchanged
 
 stack and heap arrays
-    rooms Room[] = Room[2]                    // zeroed, stack, runtime size ok
+    a i32[] = i32[10]                         // done in the rewrite (zeroed, stack, runtime size ok)
+    rooms Room[] = Room[2]                    // struct elements: not yet
     grid Room[][] = Room[2][3]
-    a i32[] = new<i32>(5)                     // heap; no .len on raw arrays
+
+heap allocation: new
+    a i32[] = [1, 2, 3]                       // stack (STACK_ALLOC)
+    a i32[] = new [1, 2, 3]                   // heap (HEAP_ALLOC)
+    a i32[] = new i32[n]                      // heap, zeroed
+    a Point[] = new Point[n]
+    p &Point = new {x: 10, y: 10}             // heap copy of any value
+    p &Point = new Point::create(1, 2)
+    b &i32 = new [1, 2]                       // arrays and refs are the same under the hood
+    // no automatic freeing: containers free through their drop operator, drop(x) frees heap memory
+    // needs: struct values (#9) for new Point::create(...)
+    // never a size in a type: a i32[3] is an error
 
 memory builtins renamed
     memory_alloc(W * H) as char[]    ->   new<char[]>(W * H)
@@ -171,7 +213,7 @@ benchmark
     - cache compiled dependencies (one .o per version)
 
 VS Code extension
-    - highlight ura::argc, ura::argv, ura::line, ura::filename, ura::function
+    - highlight @argc, @argv, @line, @filename, @function (renamed from ura::argc, ura::argv, ura::line, ura::filename, ura::function)
     - ctrl + click: definitions, use "file"
     - stale errors after ura install / build: re-check on dependencies/, ura.conf, compiler change
     - files pasted into a struct (x/methods.ura): check through the project's entry, not alone
@@ -203,6 +245,7 @@ later: http lib + FastAPI-like framework, ura init SDL2, other architectures (em
 - format, remove unused files, move helpers to lib/header.h
 - ALLOC / MEMCPY in ucg: how handled?
 - every repo: description + README
+- ura-lang README: mention closures (nested fns capture outer locals by reference, hidden pointer params; globals not captured)
 
 # 8 release (only when you say)
 
