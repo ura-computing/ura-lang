@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 01:00:44    */
 /*                                                             */
-/*   updated: 2026/11/27 07:02:56                              */
+/*   updated: 2026/11/27 08:24:40                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -25,10 +25,6 @@
 #include "./ucg.c"
 
 struct {
-    expand(ucgFile *, files);
-    expand(ucgFile *, uses);
-    expand(ucgFile *, configs);
-    Node *config;
     ucgFile *file;
     int line;
     int space;
@@ -527,19 +523,25 @@ int parse_indent(int s) {
 
 int parse_special(int s) {
     char *buff = ura.file->buff;
+    int found = -1;
+    int found_len = 0;
     for (int i = 0; specials[i].value; i++) {
-        char *value = specials[i].value;
-        Type type = specials[i].token.type;
-        int len = (int)strlen(value);
-        if (!strncmp2(value, buff + s, len))
-            continue;
-        new_token(type, s, s + len);
-        if (type == DOTS)
-            ura.space++;
-        return s + len;
+        int len = (int)strlen(specials[i].value);
+        bool is_longer = len > found_len;
+        if (is_longer && strncmp2(specials[i].value, buff + s, len)) {
+            found = i;
+            found_len = len;
+        }
     }
-    ucg_error(ura.file, s, s + 1, format("unexpected '%c'", buff[s]), NULL);
-    return s + 1;
+    if (found < 0) {
+        ucg_error(ura.file, s, s + 1, format("unexpected '%c'", buff[s]), NULL);
+        return s + 1;
+    }
+    Type type = specials[found].token.type;
+    new_token(type, s, s + found_len);
+    if (type == DOTS)
+        ura.space++;
+    return s + found_len;
 }
 
 void tokenize_range(int start, int end) {
@@ -575,24 +577,20 @@ void tokenize_range(int start, int end) {
     }
 }
 
-void tokenize(ucgFile *file) {
+void ura_tokenize(ucgFile *file) {
     ura.file = file;
     ura.line = 1;
     ura.space = 0;
     tokenize_range(0, file->len);
 }
 
-ucgFile *add_file(char *path) {
-    char *real = realpath2(path);
-    for (int i = 0; i < ura.files_count; i++) {
-        if (strcmp2(ura.files[i]->path, real))
-            return ura.files[i];
-    }
-    ucgFile *file = new_file(real);
-    if (!open_file(file))
-        return NULL;
-    append(ura.files, file);
-    tokenize(file);
+ucgFile *ura_open_file(char *path) {
+    ucgFile *found = ucg_find_file(realpath2(path));
+    if (found)
+        return found;
+    ucgFile *file = ucg_open_file(path);
+    if (file)
+        ura_tokenize(file);
     return file;
 }
 
@@ -609,7 +607,7 @@ void use_file(ucgFile *file, int space) {
         }
         i++;
         char *path = format("%s/%s.ura", dirname2(file->path), name->string);
-        ucgFile *used = add_file(path);
+        ucgFile *used = ura_open_file(path);
         if (used == NULL) {
             ucg_error(
                 file,
@@ -625,8 +623,256 @@ void use_file(ucgFile *file, int space) {
     }
 }
 
+// AST
+void add_error(Token *token, char *msg, char *help) {
+    ucg_error(ucg_find_file(token->filename), token->s, token->e, msg, help);
+}
 
-void codegen() {
+Node *new_node(Token *token) {
+    Node *new = arena_alloc(1, sizeof(Node));
+    new->token = token;
+    return new;
+}
+
+Token *peek(int pos) {
+    int i = ura.exe_pos + pos;
+    if (i >= ura.tokens_count)
+        i = ura.tokens_count - 1;
+    return ura.tokens[i];
+}
+
+Token *next(void) {
+    Token *token = peek(0);
+    if (token->type != LAST)
+        ura.exe_pos++;
+    return token;
+}
+
+Token *expect(Type type, char *msg, char *help) {
+    Token *token = peek(0);
+    if (token->type == type)
+        return next();
+    add_error(token, msg, help);
+    return NULL;
+}
+
+void parse_block(Node *node) {
+    int space = node->token->space;
+    while (peek(0)->space > space)
+        append(node->children, parse_expr(0));
+}
+
+Node *parse_fn(Token *token) {
+    Node *node = new_node(token);
+    Token *name = expect(ID, "expected a function name", "fn main() i32:");
+    if (name)
+        token->name = name->name;
+    expect(LPARENT, "expected '(' after the function name", NULL);
+    expect(RPARENT, "expected ')'", NULL);
+    if (peek(0)->is_type)
+        node->ret_type = new_node(next());
+    expect(DOTS, "expected ':' before the function body", NULL);
+    parse_block(node);
+    return node;
+}
+
+Node *parse_return(Token *token) {
+    Node *node = new_node(token);
+    bool has_value = peek(0)->line == token->line && peek(0)->type != LAST;
+    if (has_value)
+        node->to_ret = parse_expr(0);
+    return node;
+}
+
+Node *parse_prime(void) {
+    Token *token = next();
+    switch (token->type) {
+        // clang-format off
+    case INT:    return new_node(token);
+    case FN_DEC: return parse_fn(token);
+    case RETURN: return parse_return(token);
+    // clang-format on
+    case ID: {
+        Node *node = new_node(token);
+        bool is_declare = peek(0)->is_type && peek(0)->line == token->line;
+        if (is_declare) {
+            token->type = DECLARE;
+            node->data_type = new_node(next());
+        }
+        return node;
+    } // clang-format off
+    case IF: case ELIF: case ELSE: case LOOP: { // clang-format on
+        Node *node = new_node(token);
+        if (token->type != ELSE)
+            node->cond = parse_expr(0);
+        expect(DOTS, "expected ':'", NULL);
+        parse_block(node);
+        bool can_chain = includes(token->type, IF, ELIF, NULL);
+        bool is_next = includes(peek(0)->type, ELIF, ELSE, NULL);
+        bool same_space = peek(0)->space == token->space;
+        if (can_chain && is_next && same_space)
+            node->next = parse_prime();
+        return node;
+    }
+    default: {
+        add_error(token, format("unexpected %t", token->type), NULL);
+        return new_node(token);
+    }
+    }
+}
+
+Node *parse_expr(int level) {
+    Node *left = parse_prime();
+    while (precedence[peek(0)->type] > level) {
+        Node *node = new_node(next());
+        node->left = left;
+        node->right = parse_expr(precedence[node->token->type]);
+        left = node;
+    }
+    return left;
+}
+
+// CODEGEN
+Ucg *type_of(Node *node) {
+    Token *token = node->token;
+    if (token->type == INT)
+        return ucg_int_type(token->bits);
+    add_error(token, format("type %t is not supported yet", token->type), NULL);
+    return ucg_int_type(32);
+}
+
+Ucg *find_var(Token *name) {
+    for (int i = ura.scopes_count - 1; i >= 0; i--) {
+        Node *scope = ura.scopes[i];
+        for (int j = 0; j < scope->children_count; j++) {
+            Node *child = scope->children[j];
+            Node *decl = child->token->type == ASSIGN ? child->left : child;
+            bool is_var = decl->token->type == DECLARE && decl->token->ucg;
+            if (is_var && strcmp2(decl->token->name, name->name))
+                return decl->token->ucg;
+        }
+    }
+    add_error(name, format("'%s' is not declared", name->name), NULL);
+    return NULL;
+}
+
+Ucg *codegen_as(Node *node, Ucg *type) {
+    Token *token = node->token;
+    if (!type || type->type != INT)
+        return codegen(node);
+    if (token->type == INT) {
+        if (!fits_int(token->num, false, type->is_uint, type->bits)) {
+            char *msg = format("%s doesn't fit in %d bits", token->num, type->bits);
+            add_error(token, msg, NULL);
+        }
+        return ucg_numeric_value(type, token->num);
+    }
+    Ucg *value = codegen(node);
+    Ucg *from = value ? value->value_type : NULL;
+    if (!from || from == type || from->type != INT)
+        return value;
+    bool is_wider = from->bits < type->bits;
+    bool same_sign = from->is_uint == type->is_uint;
+    bool is_bool = from->bits == 1;
+    bool widens = is_wider && !is_bool && (same_sign || from->is_uint);
+    return widens ? ucg_cast(value, type) : value;
+}
+
+void check_type(Node *node, Ucg *expected, Ucg *value) {
+    Ucg *got = value ? value->value_type : NULL;
+    bool ok = expected == NULL || got == NULL || expected == got;
+    if (!ok)
+        add_error(node->token, format("expected %U, got %U", expected, got), NULL);
+}
+
+void codegen_block(Node *node) {
+    append(ura.scopes, node);
+    ura.scope = node;
+    for (int i = 0; i < node->children_count; i++)
+        codegen(node->children[i]);
+    ura.scopes_count--;
+    ura.scope = ura.scopes_count ? ura.scopes[ura.scopes_count - 1] : NULL;
+}
+
+Ucg *codegen_fn(Node *node) {
+    Ucg *ret = node->ret_type ? type_of(node->ret_type) : ucg_new(VOID);
+    Ucg *fn = ucg_fn(node->token->name, ret, NULL, 0);
+    node->token->ucg = fn;
+    codegen_block(node);
+    ucg_end(fn);
+    return fn;
+}
+
+Ucg *codegen(Node *node) {
+    Token *token = node->token;
+    switch (token->type) {
+        // clang-format off
+    case INT:    return ucg_numeric_value(ucg_int_type(token->bits), token->num);
+    case FN_DEC: return codegen_fn(node);
+    case ID:     return ucg_load(find_var(token));
+    // clang-format on
+    case RETURN: {
+        Node *fn = NULL;
+        for (int i = 0; i < ura.scopes_count; i++) {
+            if (ura.scopes[i]->token->type == FN_DEC)
+                fn = ura.scopes[i];
+        }
+        Ucg *ret = fn->token->ucg->fn.ret;
+        Ucg *value = node->to_ret ? codegen_as(node->to_ret, ret) : NULL;
+        check_type(node, ret, value);
+        return ucg_ret(value);
+    }
+    case DECLARE: {
+        Ucg *type = type_of(node->data_type);
+        return token->ucg = ucg_var(token->name, type);
+    } // clang-format off
+    case ADD: case SUB: case MUL: case DIV: case MOD:
+    case GT: case LT: case GE: case LE: case EQ: case NQ: {
+        // clang-format on
+        bool is_left_literal = node->left->token->type == INT;
+        Ucg *left = is_left_literal ? NULL : codegen(node->left);
+        Ucg *right = codegen_as(node->right, left ? left->value_type : NULL);
+        if (is_left_literal)
+            left = codegen_as(node->left, right ? right->value_type : NULL);
+        check_type(node->right, left ? left->value_type : NULL, right);
+        return ucg_op(token->type, left, right);
+    }
+    case ASSIGN: {
+        bool is_declare = node->left->token->type == DECLARE;
+        Ucg *var = is_declare ? codegen(node->left) : find_var(node->left->token);
+        Ucg *type = var ? var->data_type : NULL;
+        Ucg *value = codegen_as(node->right, type);
+        check_type(node->right, type, value);
+        return ucg_assign(var, value);
+    }
+    case IF: {
+        Ucg *stmt = ucg_branch(IF, NULL);
+        for (Node *branch = node; branch; branch = branch->next) {
+            bool is_first = branch == node;
+            Ucg *part = is_first ? stmt : ucg_branch(branch->token->type, stmt);
+            Ucg *cond = branch->cond ? codegen(branch->cond) : NULL;
+            if (cond)
+                check_type(branch->cond, ucg_int_type(1), cond);
+            ucg_then(part, cond);
+            codegen_block(branch);
+        }
+        ucg_end(stmt);
+        return stmt;
+    }
+    case LOOP: {
+        Ucg *loop = ucg_branch(LOOP, NULL);
+        Ucg *cond = codegen(node->cond);
+        check_type(node->cond, ucg_int_type(1), cond);
+        ucg_then(loop, cond);
+        codegen_block(node);
+        ucg_end(loop);
+        return loop;
+    }
+    default: {
+        add_error(token, format("%t is not supported yet", token->type), NULL);
+        return NULL;
+    }
+    }
 }
 
 
@@ -634,16 +880,35 @@ int main(int ac, char **av) {
     atexit(arena_free);
     arena_reserve(10000);
 
+    if (ac < 2)
+        ucg_error(NULL, 0, 0, "expected a .ura file", "ura main.ura");
     for (int i = 1; i < ac; i++) {
-        ucgFile *file = add_file(av[i]);
+        ucgFile *file = ura_open_file(av[i]);
         if (file == NULL)
             ucg_error(NULL, 0, 0, format("can't open %s", av[i]), "check the path");
         else if (!file->parsed)
             use_file(file, 0);
     }
     ucg_check_errors();
+
+    ura.space = -1;
+    append(ura.tokens, new_token(LAST, ura.file->len, ura.file->len));
     for (int i = 0; i < ura.tokens_count; i++)
         print("%k\n", ura.tokens[i]);
+
+    ura.tree = new_node(NULL);
+    while (peek(0)->type != LAST)
+        append(ura.tree->children, parse_expr(0));
+    ucg_check_errors();
+
+    ucg_asm_start("ura", OUTPUT_EXE);
+    for (int i = 0; i < ura.tree->children_count; i++)
+        codegen(ura.tree->children[i]);
+    ucg_check_errors();
+    ucg_asm_compile();
+    ucg_asm_print();
+    ucg_bin(av[1]);
+    ucg_asm_end();
 
     // Ucg *fn_main = ucg_fn("main", ucg_int_type(32), NULL, 0);
     // {
@@ -675,19 +940,19 @@ void parse_args(int ac, char **av) {
         print_help();
         exit(1);
     }
-	if (strcmp2(av[1], "-help") || strcmp2(av[1], "-h")) {
+    if (strcmp2(av[1], "-help") || strcmp2(av[1], "-h")) {
         print_help();
         exit(0);
     }
-	if (strcmp2(av[1], "-version") || strcmp2(av[1], "-v")) {
+    if (strcmp2(av[1], "-version") || strcmp2(av[1], "-v")) {
         help("ura %s (LLVM %s)\n", URA_VERSION, LLVM_VERSION_STRING);
         exit(0);
     }
-	// if (strcmp2(av[1], "compile")) {
+    // if (strcmp2(av[1], "compile")) {
     // //     parse_compile_args(ac, av);
     // //     return;
     // // }
-	// if (strcmp2(av[1], "init")) {
+    // if (strcmp2(av[1], "init")) {
     //     if (ac < 3) {
     //         eprint("expected a project name:\n");
     //         help("ura init <name>\n");
@@ -696,7 +961,6 @@ void parse_args(int ac, char **av) {
     //     init_project(av[2]);
     //     exit(0);
     // }
-	
 }
 
 char *compile_flags[][2] = {

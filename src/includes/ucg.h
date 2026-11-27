@@ -134,7 +134,8 @@ struct Ucg {
 		+ i32, i64, i128... 
 	*/ 
 	char *value;
-	
+    Ucg *value_type;
+
     struct {
         bool is_varg;
         Ucg *ret;
@@ -186,8 +187,6 @@ struct ucgFile {
     char *path;
     char *buff;
     int len;
-    int start;
-    bool opened;
     expand(Token *, tokens);
     bool parsed;
 };

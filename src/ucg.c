@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/27 03:34:29                              */
+/*   updated: 2026/11/27 08:23:36                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -30,6 +30,7 @@ struct {
     char *obj_path;
     char *exe_path;
     expand(char *, libs);
+    expand(ucgFile *, files);
 
     Ucg *ints[UCG_MAX_INT_BITS + 1];
     Ucg *uints[UCG_MAX_INT_BITS + 1];
@@ -123,6 +124,7 @@ Ucg *ucg_numeric_value(Ucg *data_type, char *value) {
     new->to_create->value = value;
     new->to_create->bits = data_type->bits;
     new->to_create->is_val = true;
+    new->value_type = data_type;
     append(gb_ucg.insts, new);
     return new;
 }
@@ -161,6 +163,68 @@ Ucg *ucg_fn(char *name, Ucg *ret, Ucg **params, int params_count) {
 Ucg *ucg_ret(Ucg *ucg) {
     Ucg *new = ucg_new(RETURN);
     new->to_ret = ucg;
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+Ucg *ucg_var(char *name, Ucg *data_type) {
+    Ucg *new = ucg_new(VAR);
+    new->name = name;
+    new->data_type = data_type;
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+Ucg *ucg_assign(Ucg *var, Ucg *value) {
+    Ucg *new = ucg_new(ASSIGN);
+    new->left = var;
+    new->right = value;
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+Ucg *ucg_load(Ucg *var) {
+    Ucg *new = ucg_new(DREF);
+    new->to_dref = var;
+    new->value_type = var ? var->data_type : NULL;
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+Ucg *ucg_branch(Type type, Ucg *prev) {
+    Ucg *new = ucg_new(type);
+    while (prev && prev->next)
+        prev = prev->next;
+    if (prev)
+        prev->next = new;
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+Ucg *ucg_then(Ucg *stmt, Ucg *cond) {
+    Ucg *new = ucg_new(THEN);
+    stmt->cond = cond;
+    new->stmt = stmt;
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+Ucg *ucg_cast(Ucg *value, Ucg *to_type) {
+    Ucg *new = ucg_new(AS);
+    new->left = value;
+    new->to_type = to_type;
+    new->value_type = to_type;
+    append(gb_ucg.insts, new);
+    return new;
+}
+
+Ucg *ucg_op(Type type, Ucg *left, Ucg *right) {
+    Ucg *new = ucg_new(type);
+    new->left = left;
+    new->right = right;
+    bool is_cmp = includes(type, GT, LT, GE, LE, EQ, NQ, NULL);
+    Ucg *left_type = left ? left->value_type : NULL;
+    new->value_type = is_cmp ? ucg_int_type(1) : left_type;
     append(gb_ucg.insts, new);
     return new;
 }
@@ -263,16 +327,31 @@ void ucg_asm_end(void) {
     gb_ucg.blocks_count = 0;
 }
 
-void ucg_write_ll() {
-}
 
-void ucg_bin() {
-}
+void ucg_bin(char *source) {
+    Module mod = gb_ucg.module;
+    TargetMachine machine = gb_ucg.machine;
+    char *slash = strrchr(source, '/');
+    char *name = strdup2(slash ? slash + 1 : source);
+    char *dot = strrchr(name, '.');
+    if (dot)
+        *dot = '\0';
+    char *bin = WINDOWS_MACHINE ? format("%s.exe", name) : name;
+    char *obj = format("%s.o", bin);
 
-// void llvm_create_value(Ucg *ucg) {
-//     Ucg *to_create = ucg->to_create;
-//     char *value = to_create->value;
-// }
+    char *error = NULL;
+    bool failed =
+        LLVMTargetMachineEmitToFile(machine, mod, obj, LLVMObjectFile, &error);
+    if (failed)
+        ucg_error(NULL, 0, 0, format("can't write %s: %s", obj, error), NULL);
+    ucg_check_errors();
+
+    char *link[] = { "clang", obj, "-o", bin, NULL };
+    if (run_command(link, NULL) != 0)
+        ucg_error(NULL, 0, 0, format("can't link %s", bin), "is clang installed?");
+    remove(obj);
+    ucg_check_errors();
+}
 
 bool is_bloc_terminated() {
     Bloc bloc = LLVMGetInsertBlock(gb_ucg.builder);
@@ -288,6 +367,10 @@ Ucg *llvm_compile(Ucg *ucg) {
     Builder lmb = gb_ucg.builder;
 
     switch (type) {
+    case VOID: {
+        ucg->lltype = LLVMVoidTypeInContext(ctx);
+        break;
+    }
     case INT: {
         if (ucg->is_val) {
             print("%s:%d implement it\n", FILE, LINE);
@@ -370,17 +453,110 @@ Ucg *llvm_compile(Ucg *ucg) {
         // }
         break;
     }
+    case VAR: {
+        llvm_compile(ucg->data_type);
+        ucg->elem = LLVMBuildAlloca(lmb, ucg->data_type->lltype, ucg->name);
+        break;
+    }
+    case ASSIGN: {
+        LLVMBuildStore(lmb, ucg->right->elem, ucg->left->elem);
+        break;
+    }
+    case DREF: {
+        Ucg *var = ucg->to_dref;
+        ucg->elem = LLVMBuildLoad2(lmb, var->data_type->lltype, var->elem, var->name);
+        break;
+    } // clang-format off
+    case ADD: case SUB: case MUL: case DIV: case MOD: {
+        // clang-format on
+        OpCode opcodes[LAST + 1] = {
+            [ADD] = LLVMAdd,  [SUB] = LLVMSub,  [MUL] = LLVMMul,
+            [DIV] = LLVMSDiv, [MOD] = LLVMSRem,
+        };
+        Value left = ucg->left->elem;
+        Value right = ucg->right->elem;
+        ucg->elem = LLVMBuildBinOp(lmb, opcodes[type], left, right, "");
+        break;
+    } // clang-format off
+    case GT: case LT: case GE: case LE: case EQ: case NQ: {
+        // clang-format on
+        LLVMIntPredicate predicates[LAST + 1] = {
+            [GT] = LLVMIntSGT, [LT] = LLVMIntSLT, [GE] = LLVMIntSGE,
+            [LE] = LLVMIntSLE, [EQ] = LLVMIntEQ,  [NQ] = LLVMIntNE,
+        };
+        Value left = ucg->left->elem;
+        Value right = ucg->right->elem;
+        ucg->elem = LLVMBuildICmp(lmb, predicates[type], left, right, "");
+        break;
+    }
+    case AS: {
+        llvm_compile(ucg->to_type);
+        Value value = ucg->left->elem;
+        TypeRef to = ucg->to_type->lltype;
+        if (ucg->left->value_type->is_uint)
+            ucg->elem = LLVMBuildZExt(lmb, value, to, "");
+        else
+            ucg->elem = LLVMBuildSExt(lmb, value, to, "");
+        break;
+    }
+    case IF: {
+        Value fn = LLVMGetBasicBlockParent(LLVMGetInsertBlock(lmb));
+        ucg->end->bloc = LLVMAppendBasicBlockInContext(ctx, fn, "end");
+        break;
+    }
+    case LOOP: {
+        Value fn = LLVMGetBasicBlockParent(LLVMGetInsertBlock(lmb));
+        ucg->end->bloc = LLVMAppendBasicBlockInContext(ctx, fn, "end");
+        ucg->bloc = LLVMAppendBasicBlockInContext(ctx, fn, "loop");
+        LLVMBuildBr(lmb, ucg->bloc);
+        LLVMPositionBuilderAtEnd(lmb, ucg->bloc);
+        break;
+    }
+    // clang-format off
+    case ELIF: case ELSE: {
+        // clang-format on
+        if (!is_bloc_terminated())
+            LLVMBuildBr(lmb, ucg->end->bloc);
+        LLVMPositionBuilderAtEnd(lmb, ucg->bloc);
+        break;
+    }
+    case THEN: {
+        Ucg *stmt = ucg->stmt;
+        if (stmt->cond == NULL)
+            break;
+        Value fn = LLVMGetBasicBlockParent(LLVMGetInsertBlock(lmb));
+        Bloc then = LLVMAppendBasicBlockInContext(ctx, fn, "then");
+        if (stmt->next) {
+            char *label = stmt->next->type == ELSE ? "else" : "elif";
+            stmt->next->bloc = LLVMAppendBasicBlockInContext(ctx, fn, label);
+        }
+        Bloc other = stmt->next ? stmt->next->bloc : stmt->end->bloc;
+        LLVMBuildCondBr(lmb, stmt->cond->elem, then, other);
+        LLVMPositionBuilderAtEnd(lmb, then);
+        break;
+    }
     case RETURN: {
         // assert(0);
-        llvm_compile(ucg->to_ret);
         if (is_bloc_terminated())
             break;
-        LLVMBuildRet(gb_ucg.builder, ucg->to_ret->elem);
+        if (ucg->to_ret == NULL) {
+            LLVMBuildRetVoid(lmb);
+            break;
+        }
+        llvm_compile(ucg->to_ret);
+        LLVMBuildRet(lmb, ucg->to_ret->elem);
         break;
     }
     case END: {
-        // if it's fn: return default
         Ucg *to_end = ucg->to_end;
+        bool is_branch = includes(to_end->type, IF, LOOP, NULL);
+        if (is_branch) {
+            Bloc back = to_end->type == LOOP ? to_end->bloc : ucg->bloc;
+            if (!is_bloc_terminated())
+                LLVMBuildBr(lmb, back);
+            LLVMPositionBuilderAtEnd(lmb, ucg->bloc);
+            break;
+        }
         if (to_end->type == FN_DEC) {
             if (is_bloc_terminated())
                 break;
@@ -707,6 +883,31 @@ __attribute__((sentinel)) bool includes(Type to_find, ...) {
         curr = va_arg(ap, Type);
     }
     return false;
+}
+
+// UCG FILES
+ucgFile *ucg_find_file(char *path) {
+    for (int i = 0; i < gb_ucg.files_count; i++) {
+        if (strcmp2(gb_ucg.files[i]->path, path))
+            return gb_ucg.files[i];
+    }
+    return NULL;
+}
+
+ucgFile *ucg_open_file(char *path) {
+    ucgFile *file = arena_alloc(1, sizeof(ucgFile));
+    file->path = realpath2(path);
+    ioFile fp = fopen(file->path, "r");
+    if (fp == NULL)
+        return NULL;
+    fseek(fp, 0, SEEK_END);
+    file->len = ftell(fp);
+    rewind(fp);
+    file->buff = arena_alloc(file->len + 1, sizeof(char));
+    fread(file->buff, file->len, sizeof(char), fp);
+    fclose(fp);
+    append(gb_ucg.files, file);
+    return file;
 }
 
 // UCG ERRORS

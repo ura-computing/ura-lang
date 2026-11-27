@@ -12,38 +12,6 @@
 
 #pragma once
 
-ucgFile *new_file(char *path) {
-    ucgFile *new = arena_alloc(1, sizeof(ucgFile));
-    new->path = path;
-    return new;
-}
-
-bool open_file(ucgFile *file) {
-    char *path = realpath(file->path, NULL);
-    if (path == NULL)
-        return false;
-    file->path = strdup2(path);
-    free(path);
-    ioFile fp = fopen(file->path, "r");
-    if (fp == NULL)
-        return false;
-    if (fseek(fp, 0, SEEK_END) != 0) {
-        fclose(fp);
-        return false;
-    }
-    file->len = ftell(fp);
-    rewind(fp);
-    file->buff = arena_alloc(file->len + 1, sizeof(char));
-    fread(file->buff, file->len, sizeof(char), fp);
-    fclose(fp);
-    file->opened = true;
-    return true;
-}
-
-void close_file(ucgFile *file) {
-    file->opened = false;
-}
-
 char *getcwd2(void) {
     char *path = getcwd(NULL, 0);
     if (path == NULL) {
