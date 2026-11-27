@@ -173,7 +173,7 @@ const char *to_string(Type type) {
         NAME(POINT_TO),      NAME(ZERO),
 
         NAME(STRUCT),        NAME(DOT),           NAME(ATTR),
-        NAME(ENUM),          NAME(DREF),
+        NAME(ENUM),          NAME(DREF),          NAME(OWN),
 
         NAME(LPARENT),       NAME(RPARENT),       NAME(LBRACK),
         NAME(RBRACK),        NAME(LCBRACK),       NAME(RCBRACK),

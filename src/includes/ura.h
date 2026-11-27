@@ -89,7 +89,7 @@ struct Node {
         Node *attr;
         Node *value;
         Node *next;
-        Node *declared;
+        Node *from_parent;
         Node *to_type;
         Node *index;
         Node *to_copy;

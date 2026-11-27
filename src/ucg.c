@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/27 11:23:54                              */
+/*   updated: 2026/11/27 12:19:32                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -232,7 +232,7 @@ Ucg *ucg_get_item(Ucg *base, Ucg *index) {
 }
 
 Ucg *ucg_ref(Ucg *to_ref) {
-    Ucg *new = ucg_new(REF);
+    Ucg *new = ucg_new(OWN);
     new->name = format("&%s", to_ref->name);
     new->to_ref = to_ref;
     new->value_type = ucg_ref_type(to_ref->data_type);
@@ -551,8 +551,11 @@ Ucg *llvm_compile(Ucg *ucg) {
         pointer = LLVMBuildLoad2(lmb, array->lltype, pointer, "");
         ucg->elem = LLVMBuildGEP2(lmb, elem, pointer, &index, 1, "");
         break;
-    }
-    case REF: ucg->elem = ucg->to_ref->elem; break;
+    } 
+    case OWN: {
+		ucg->elem = ucg->to_ref->elem;
+        break;
+	}
     case STACK_ALLOC: {
         llvm_compile(ucg->data_type);
         TypeRef elem = ucg->data_type->lltype;
@@ -570,7 +573,7 @@ Ucg *llvm_compile(Ucg *ucg) {
         int base = 10; // TODO: handle base
         llvm_compile(data_type);
         TypeRef lltype = data_type->lltype;
-		
+
         if (data_type->type == ARRAY) {
             TypeRef item_type = data_type->arr.elem->lltype;
             expand(Value, values);
@@ -584,8 +587,7 @@ Ucg *llvm_compile(Ucg *ucg) {
             LLVMSetLinkage(global, LLVMPrivateLinkage);
             TypeRef pointer = LLVMPointerType(item_type, 0);
             ucg->elem = LLVMConstPointerCast(global, pointer);
-        }
-        else if (data_type->type == FLOAT)
+        } else if (data_type->type == FLOAT)
             ucg->elem = LLVMConstRealOfString(lltype, ucg->value);
         else
             ucg->elem = LLVMConstIntOfString(lltype, ucg->value, base);
@@ -614,6 +616,7 @@ Ucg *llvm_compile(Ucg *ucg) {
     }
     case FN_ENTRY: {
         Value fn = ucg->to_enter->elem;
+        ucg->to_enter->caller_bloc = LLVMGetInsertBlock(lmb);
         ucg->bloc = LLVMAppendBasicBlockInContext(ctx, fn, "entry");
         LLVMPositionBuilderAtEnd(lmb, ucg->bloc);
         // in entry declare params as variables
@@ -787,14 +790,14 @@ Ucg *llvm_compile(Ucg *ucg) {
             break;
         }
         if (to_end->type == FN_DEC) {
-            if (is_bloc_terminated())
-                break;
-            if (to_end->fn.ret->type == VOID)
-                LLVMBuildRetVoid(gb_ucg.builder);
-            else {
-                assert(to_end->fn.ret->is_set);
-                LLVMBuildRet(gb_ucg.builder, LLVMConstNull(to_end->fn.ret->lltype));
-            }
+            Ucg *ret = to_end->fn.ret;
+            bool is_open = !is_bloc_terminated();
+            if (is_open && ret->type == VOID)
+                LLVMBuildRetVoid(lmb);
+            else if (is_open)
+                LLVMBuildRet(lmb, LLVMConstNull(ret->lltype));
+            if (to_end->caller_bloc)
+                LLVMPositionBuilderAtEnd(lmb, to_end->caller_bloc);
             break;
         }
         break;

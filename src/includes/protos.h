@@ -93,6 +93,7 @@ Token *parse_int(int s, int e);
 Token *peek(int pos);
 Ucg *codegen(Node *node);
 Ucg *codegen_as(Node *node, Ucg *type);
+Ucg *codegen_capture(Node *fn, Node *decl);
 Ucg *codegen_fn(Node *node);
 Ucg *codegen_proto(Node *node);
 Ucg *codegen_struct(Node *node);
