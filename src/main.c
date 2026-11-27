@@ -704,8 +704,10 @@ Node *parse_fn(Token *token) {
     if (name)
         token->name = name->name;
     Token *open = expect(LPARENT, "expected '(' after the function name", NULL);
-    node->params = open ? parse_list(open, RPARENT) : new_node(token);
-    node->params->token->type = PARAMS;
+    if (open)
+        node->params = parse_list(open, RPARENT);
+    else
+        node->params = new_node(new_token(PARAMS, token->s, token->e));
     for (int i = 0; i < node->params->children_count; i++)
         append(node->children, node->params->children[i]);
     if (peek(0)->is_type)
@@ -1148,7 +1150,6 @@ Ucg *codegen(Node *node, Ucg *type) {
     switch (token->type) { // clang-format off
     case INT: case FLOAT: 			value = codegen_number(node, node, type); break;
     case CHARS:           			value = ucg_string_value(token->string);  break;
-    case FN_DEC:          			value = codegen_fn(node);                 break;
     case PROTO:           			value = token->ucg;                       break;
     case STRUCT:          			value = codegen_struct(node);             break;
     case ARRAY_LIT:       			value = codegen_array(node, type);        break;
@@ -1157,6 +1158,10 @@ Ucg *codegen(Node *node, Ucg *type) {
     case ARRAY:           value = codegen_stack_array(node);              break;
     case RETURN: { // clang-format on
         Node *fn = find_scope(FN_DEC);
+        if (fn == NULL) {
+            add_error(token, "'return' outside a function", NULL);
+            break;
+        }
         Ucg *result = NULL;
         if (node->to_ret)
             result = codegen(node->to_ret, fn->token->ucg->fn.ret);
