@@ -468,7 +468,44 @@ void ucg_start(char *name, UcgOutputMode mode) {
 void ucg_print_ll(void) {
     if (gb_ucg.errors_count)
         return;
-    LLVMDumpModule(gb_ucg.module);
+    char *text = LLVMPrintModuleToString(gb_ucg.module);
+    bool is_kind = true;
+    for (int i = 0; text[i]; i++) {
+        char c = text[i];
+        int end = i + 1;
+        if (c == ';' || c == '"') {
+            char close = c == ';' ? '\n' : '"';
+            while (text[end] && text[end] != close)
+                end++;
+            if (c == '"' && text[end])
+                end++;
+            print("%.*s", end - i, text + i);
+            i = end - 1;
+            continue;
+        }
+        if (c == '%' || c == '@') {
+            while (isalnum(text[end]) || text[end] == '.' || text[end] == '_')
+                end++;
+            print(GREEN("%.*s"), end - i, text + i);
+            i = end - 1;
+            is_kind = false;
+            continue;
+        }
+        if (isalpha(c) && is_kind) {
+            while (isalnum(text[end]) || text[end] == '_')
+                end++;
+            print(CYAN("%.*s"), end - i, text + i);
+            i = end - 1;
+            is_kind = false;
+            continue;
+        }
+        if (c == '\n' || c == '=')
+            is_kind = true;
+        else if (c != ' ')
+            is_kind = false;
+        print("%c", c);
+    }
+    LLVMDisposeMessage(text);
 }
 
 void ucg_finish(void) {

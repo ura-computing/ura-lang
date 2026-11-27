@@ -76,14 +76,29 @@ void format_token(ioFile out, Token *token, int pad) {
     Type type = token->type;
     fprintf(out, CYAN("%-*s"), pad, to_string(type));
     bool is_number = includes(type, INT, FLOAT, NULL);
+    char kind = type == FLOAT ? 'f' : token->is_uint ? 'u' : 'i';
     if (token->name)
         fprintf(out, " " GREEN("%s"), token->name);
     else if (is_number && token->is_type)
-        fprintf(out, " %c%d", type == FLOAT ? 'f' : token->is_uint ? 'u' : 'i', token->bits);
+        fprintf(out, " %c%d", kind, token->bits);
     else if (is_number)
-        fprintf(out, " " GREEN("%s"), token->num);
+        fprintf(out, " " GREEN("%s") " %c%d", token->num, kind, token->bits);
     else if (type == CHARS)
         fprintf(out, " " GREEN("\"%s\""), token->string);
+}
+
+void format_type(ioFile out, Node *type) {
+    Token *token = type->token;
+    if (token->type == ARRAY) {
+        format_type(out, type->data_type);
+        fputs("[]", out);
+        return;
+    }
+    if (token->name) {
+        fputs(token->name, out);
+        return;
+    }
+    fprintf(out, "%c%d", token->type == FLOAT ? 'f' : token->is_uint ? 'u' : 'i', token->bits);
 }
 
 void format_node(ioFile out, Node *node, char *indent, char *branch, int parent_line) {
@@ -95,6 +110,11 @@ void format_node(ioFile out, Node *node, char *indent, char *branch, int parent_
         fputs("     │ ", out);
     fprintf(out, "%s%s", indent, branch);
     format_token(out, token, 0);
+    bool has_type = token->type == VAR && node->declared->data_type;
+    if (has_type) {
+        fputc(' ', out);
+        format_type(out, node->declared->data_type);
+    }
     fputc('\n', out);
 
     expand(Node *, kids);

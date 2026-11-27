@@ -892,8 +892,11 @@ void analyze(Node *node) {
             break;
         }
         node->declared = find_local(token);
-        if (node->declared == NULL)
+        if (node->declared == NULL) {
             add_error(token, format("'%s' is not declared", token->name), NULL);
+            break;
+        }
+        token->type = VAR;
         break;
     }
     case DECLARE: {
@@ -1232,7 +1235,7 @@ Ucg *codegen(Node *node, Ucg *type) {
         value = codegen_block(node, NULL);
         break;
     } // clang-format off
-    case ID: case DOT: value = ucg_load(find_variable(node)); break;
+    case VAR: case DOT: value = ucg_load(find_variable(node)); break;
     case DECLARE: { // clang-format on
         if (node->ucg == NULL)
             node->ucg = ucg_var(token->name, type_of(node->data_type));
@@ -1435,11 +1438,20 @@ void tokenize(void) {
     append(ura.tokens, new_token(LAST, ura.file->len, ura.file->len));
 }
 
+void print_header(char *name) {
+    char *rule = "";
+    for (int i = strlen(name); i < 50; i++)
+        rule = format("%s─", rule);
+    print(GREEN("──── %s %s") "\n", name, rule);
+}
+
 int main(int ac, char **av) {
     atexit(arena_free);
     arena_reserve(10000);
     read_args(ac, av);
     tokenize();
+    if (ura.print_tokens)
+        print_header("tokens");
     for (int i = 0; ura.print_tokens && i < ura.tokens_count; i++) {
         Token *token = ura.tokens[i];
         bool is_new_line = i == 0 || token->line != ura.tokens[i - 1]->line;
@@ -1454,14 +1466,20 @@ int main(int ac, char **av) {
     // if (ura.print_tree)
     //     print("[AST]:\n%n", ura.tree);
     analyze(ura.tree);
-    if (ura.print_tree)
+    if (ura.print_tree) {
+        print_header("tree");
         print("%n", ura.tree);
+    }
     codegen(ura.tree, NULL);
-    if (ura.print_insts)
+    if (ura.print_insts) {
+        print_header("ucg");
         ucg_print_insts();
+    }
     ucg_compile();
-    if (ura.print_ll)
+    if (ura.print_ll) {
+        print_header("llvm");
         ucg_print_ll();
+    }
     ucg_bin(ura.paths[0]);
     ucg_check_errors();
     ucg_finish();
