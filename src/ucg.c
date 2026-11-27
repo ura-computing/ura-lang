@@ -258,6 +258,18 @@ Ucg *ucg_stack_alloc(Ucg *elem, Ucg *count) {
     return new;
 }
 
+Ucg *ucg_array_from(Ucg *elem, Ucg **items, int count) {
+    Ucg *i32 = ucg_int_type(32);
+    Ucg *array = ucg_var("", ucg_array_type(elem, 0));
+    Ucg *size = ucg_numeric_value(i32, format("%d", count));
+    ucg_assign(array, ucg_stack_alloc(elem, size));
+    for (int i = 0; i < count; i++) {
+        Ucg *index = ucg_numeric_value(i32, format("%d", i));
+        ucg_assign(ucg_get_item(array, index), items[i]);
+    }
+    return ucg_load(array);
+}
+
 // TODO: to be verified
 Ucg *ucg_stack_array(Ucg *elem, Ucg **sizes, int count) {
     Ucg *i32 = ucg_int_type(32);

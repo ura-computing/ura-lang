@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 01:00:44    */
 /*                                                             */
-/*   updated: 2026/11/27 12:27:02                              */
+/*   updated: 2026/11/27 13:12:43                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -677,16 +677,16 @@ Node *parse_type(void) {
     return type;
 }
 
-Node *parse_list(Token *open) {
+Node *parse_list(Token *open, Type close) {
     Node *list = new_node(open);
     list->token->type = PARAMS;
-    while (!includes(peek(0)->type, RPARENT, LAST, NULL)) {
+    while (!includes(peek(0)->type, close, LAST, NULL)) {
         append(list->children, parse_expr(0));
         if (peek(0)->type != COMA)
             break;
         next();
     }
-    expect(RPARENT, "expected ')'", NULL);
+    expect(close, close == RBRACK ? "expected ']'" : "expected ')'", NULL);
     return list;
 }
 
@@ -696,7 +696,7 @@ Node *parse_fn(Token *token) {
     if (name)
         token->name = name->name;
     Token *open = expect(LPARENT, "expected '(' after the function name", NULL);
-    node->params = open ? parse_list(open) : new_node(token);
+    node->params = open ? parse_list(open, RPARENT) : new_node(token);
     node->params->token->type = PARAMS;
     for (int i = 0; i < node->params->children_count; i++)
         append(node->children, node->params->children[i]);
@@ -745,6 +745,11 @@ Node *parse_prime(void) {
         node->operand = parse_prime();
         return node;
     }
+    case LBRACK: {
+        Node *node = parse_list(token, RBRACK);
+        node->token->type = ARRAY_LIT;
+        return node;
+    }
     case LPARENT: {
         Node *node = parse_expr(0);
         expect(RPARENT, "expected ')'", NULL);
@@ -764,7 +769,7 @@ Node *parse_prime(void) {
         bool is_call = peek(0)->type == LPARENT && peek(0)->line == token->line;
         if (is_call) {
             token->type = FN_CALL;
-            node->params = parse_list(next());
+            node->params = parse_list(next(), RPARENT);
             return node;
         }
         Token *after = peek(0);
@@ -781,11 +786,16 @@ Node *parse_prime(void) {
         if (token->type != ELSE)
             node->cond = parse_expr(0);
         expect(DOTS, "expected ':'", NULL);
-        parse_block(node);
+        bool is_inline = peek(0)->line == token->line;
+        if (!is_inline)
+            parse_block(node);
+        else
+            append(node->children, parse_expr(0));
         bool can_chain = includes(token->type, IF, ELIF, NULL);
         bool is_next = includes(peek(0)->type, ELIF, ELSE, NULL);
         bool same_space = peek(0)->space == token->space;
-        if (can_chain && is_next && same_space)
+        bool same_line = peek(0)->line == token->line;
+        if (can_chain && is_next && (same_space || same_line))
             node->next = parse_prime();
         return node;
     }
@@ -859,8 +869,7 @@ Ucg *find_variable(Node *node) {
     }
     if (token->type == ACCESS) {
         Ucg *base = find_variable(node->base);
-        Ucg *index = codegen(node->index);
-        check_type(node->index, ucg_int_type(32), index);
+        Ucg *index = codegen(node->index, ucg_int_type(32));
         return base ? ucg_get_item(base, index) : NULL;
     }
     Node *fn = NULL;
@@ -888,31 +897,30 @@ Ucg *find_variable(Node *node) {
     return NULL;
 }
 
-Ucg *codegen_as(Node *node, Ucg *type) {
-    Token *token = node->token;
-    if (!type || !includes(type->type, INT, FLOAT, NULL))
-        return codegen(node);
-    Node *operand = token->type == NEG ? node->operand : NULL;
-    bool is_neg = operand && includes(operand->token->type, INT, FLOAT, NULL);
-    Token *lit = is_neg ? operand->token : token;
-    char *num = is_neg ? format("-%s", lit->num) : lit->num;
-    if (lit->type == FLOAT && type->type == FLOAT) {
-        double value = strtod(lit->num, NULL);
+bool is_literal(Node *node) {
+    Node *lit = node->token->type == NEG ? node->operand : node;
+    return includes(lit->token->type, INT, FLOAT, NULL) && !lit->token->is_type;
+}
+
+Ucg *codegen_number(Node *node, Node *lit, Ucg *type) {
+    Token *token = lit->token;
+    bool is_neg = node != lit;
+    char *num = token->num;
+    if (is_neg) num = format("-%s", token->num);
+    bool is_same_kind = type && type->type == token->type;
+    if (!is_same_kind)
+        return ucg_numeric_value(type_of(lit), num);
+    bool fits = fits_int(token->num, is_neg, type->is_uint, type->bits);
+    if (token->type == FLOAT) {
+        double value = strtod(token->num, NULL);
         double max = type->bits == 16 ? 65504.0 : type->bits == 32 ? FLT_MAX : DBL_MAX;
-        if (isinf(value) || value > max) {
-            char *msg = format("%s doesn't fit in f%d", num, type->bits);
-            add_error(token, msg, NULL);
-        }
-        return ucg_numeric_value(type, num);
+        fits = !isinf(value) && value <= max;
     }
-    if (lit->type == INT && type->type == INT) {
-        if (!fits_int(lit->num, is_neg, type->is_uint, type->bits)) {
-            char *msg = format("%s doesn't fit in %d bits", num, type->bits);
-            add_error(token, msg, NULL);
-        }
-        return ucg_numeric_value(type, num);
+    if (!fits) {
+        char *msg = format("%s doesn't fit in %t%d", num, type->type, type->bits);
+        add_error(node->token, msg, NULL);
     }
-    return ucg_widen(codegen(node), type);
+    return ucg_numeric_value(type, num);
 }
 
 void check_type(Node *node, Ucg *expected, Ucg *value) {
@@ -937,7 +945,7 @@ Node *find_scope(Type type) {
     return NULL;
 }
 
-void codegen_block(Node *node) {
+Ucg *codegen_block(Node *node, Ucg *type) {
     append(ura.scopes, node);
     ura.scope = node;
     for (int i = 0; i < node->children_count; i++) {
@@ -953,16 +961,46 @@ void codegen_block(Node *node) {
             codegen_closure(child, new_node(child->token), child);
         codegen_fn(child);
     }
+    Ucg *value = NULL;
     for (int i = 0; i < node->children_count; i++) {
         Node *child = node->children[i];
         if (child->token->type == FN_DEC)
             continue;
-        codegen(child);
+        Ucg *expected = NULL;
+        if (i == node->children_count - 1)
+            expected = type;
+        value = codegen(child, expected);
         if (includes(child->token->type, RETURN, BRK, CNT, NULL))
             break;
     }
     ura.scopes_count--;
     ura.scope = ura.scopes_count ? ura.scopes[ura.scopes_count - 1] : NULL;
+    return value;
+}
+
+Ucg *codegen_if(Node *node, Ucg *type) {
+    Ucg *result = NULL;
+    if (type) result = ucg_var("if", type);
+    Ucg *stmt = ucg_branch(IF, NULL);
+    Node *last = node;
+    for (Node *branch = node; branch; branch = branch->next) {
+        bool is_first = branch == node;
+        Ucg *part = is_first ? stmt : ucg_branch(branch->token->type, stmt);
+        Ucg *cond = NULL;
+        if (branch->cond)
+            cond = codegen(branch->cond, ucg_uint_type(1));
+        ucg_then(part, cond);
+        Ucg *value = codegen_block(branch, type);
+        bool has_value = value && value->value_type;
+        if (result && has_value)
+            ucg_assign(result, value);
+        last = branch;
+    }
+    ucg_end(stmt);
+    if (result == NULL) return stmt;
+    if (last->token->type != ELSE)
+        add_error(node->token, "an if used as a value needs an else", "if a: 1 else: 2");
+    return ucg_load(result);
 }
 
 Ucg *codegen_proto(Node *node) {
@@ -997,6 +1035,26 @@ Ucg *codegen_struct(Node *node) {
 }
 
 // TODO: to be checked
+Ucg *codegen_array(Node *node, Ucg *type) {
+    Ucg *elem = NULL;
+    if (type && type->type == ARRAY)
+        elem = type->arr.elem;
+    if (node->children_count == 0 && elem == NULL) {
+        add_error(node->token, "can't tell the type of an empty array", "a i32[] = []");
+        return NULL;
+    }
+    expand(Ucg *, items);
+    zero_init(items);
+    for (int i = 0; i < node->children_count; i++) {
+        Node *child = node->children[i];
+        Ucg *item = codegen(child, elem);
+        if (elem == NULL && item)
+            elem = item->value_type;
+        append(items, item);
+    }
+    return ucg_array_from(elem, items, items_count);
+}
+
 Node *codegen_capture(Node *fn, Node *decl) {
     Node *list = fn->params;
     for (int i = 0; i < list->children_count; i++) {
@@ -1049,63 +1107,76 @@ void codegen_closure(Node *fn, Node *locals, Node *node) {
 Ucg *codegen_fn(Node *node) {
     Ucg *fn = node->token->ucg;
     ucg_entry(fn);
-    codegen_block(node);
+    codegen_block(node, NULL);
     ucg_end(fn);
     return fn;
 }
 
-Ucg *codegen(Node *node) {
+Ucg *codegen(Node *node, Ucg *type) {
     Token *token = node->token;
+    Ucg *value = NULL;
     switch (token->type) { // clang-format off
-    case INT:    return ucg_numeric_value(type_of(node), token->num);
-    case FLOAT:  return ucg_numeric_value(type_of(node), token->num);
-    case CHARS:  return ucg_string_value(token->string);
-    case FN_DEC: return codegen_fn(node);
-    case PROTO:  return token->ucg;
-    case STRUCT: return codegen_struct(node);
-    case ID: case DOT: case ACCESS: return ucg_load(find_variable(node));
+    case INT: case FLOAT: 			value = codegen_number(node, node, type); break;
+    case CHARS:           			value = ucg_string_value(token->string);  break;
+    case FN_DEC:          			value = codegen_fn(node);                 break;
+    case PROTO:           			value = token->ucg;                       break;
+    case STRUCT:          			value = codegen_struct(node);             break;
+    case ARRAY_LIT:       			value = codegen_array(node, type);        break;
+    case IF:              			value = codegen_if(node, type);           break;
+    case ID: case DOT: case ACCESS: value = ucg_load(find_variable(node));    break;
     case RETURN: { // clang-format on
         Node *fn = find_scope(FN_DEC);
-        Ucg *ret = fn->token->ucg->fn.ret;
-        Ucg *value = node->to_ret ? codegen_as(node->to_ret, ret) : NULL;
-        check_type(node, ret, value);
-        return ucg_ret(value);
+        Ucg *result = NULL;
+        if (node->to_ret)
+            result = codegen(node->to_ret, fn->token->ucg->fn.ret);
+        value = ucg_ret(result);
+        break;
     }
     case ARRAY: {
         expand(Ucg *, sizes);
         zero_init(sizes);
-        for (int i = 0; i < node->children_count; i++) {
-            Node *size = node->children[i];
-            append(sizes, codegen_as(size, ucg_int_type(32)));
-            check_type(size, ucg_int_type(32), sizes[sizes_count - 1]);
-        }
-        return ucg_stack_array(type_of(node->data_type), sizes, sizes_count);
+        for (int i = 0; i < node->children_count; i++)
+            append(sizes, codegen(node->children[i], ucg_int_type(32)));
+        value = ucg_stack_array(type_of(node->data_type), sizes, sizes_count);
+        break;
     }
     case DECLARE: {
-        if (token->ucg)
-            return token->ucg;
-        Ucg *type = type_of(node->data_type);
-        return token->ucg = ucg_var(token->name, type);
+        if (token->ucg == NULL)
+            token->ucg = ucg_var(token->name, type_of(node->data_type));
+        value = token->ucg;
+        break;
     } // clang-format off
     case ADD: case SUB: case MUL: case DIV: case MOD:
     case GT: case LT: case GE: case LE: case EQ: case NQ:
     case AND: case OR: case AND_LIT: case OR_LIT: {
         // clang-format on
-        bool is_left_literal = node->left->token->type == INT;
-        Ucg *left = is_left_literal ? NULL : codegen(node->left);
-        Ucg *right = codegen_as(node->right, left ? left->value_type : NULL);
-        if (is_left_literal)
-            left = codegen_as(node->left, right ? right->value_type : NULL);
-        left = ucg_widen(left, right ? right->value_type : NULL);
-        check_type(node->right, left ? left->value_type : NULL, right);
-        return ucg_op(token->type, left, right);
+        // TODO: chekc this one
+		Ucg *left = NULL;
+        Ucg *right = NULL;
+        if (is_literal(node->left)) {
+            right = codegen(node->right, NULL);
+            if (right) left = codegen(node->left, right->value_type);
+        } else {
+            left = codegen(node->left, NULL);
+            Ucg *expected = NULL;
+            if (left && is_literal(node->right))
+                expected = left->value_type;
+            right = codegen(node->right, expected);
+        }
+        if (left == NULL || right == NULL)
+            break;
+        left = ucg_widen(left, right->value_type);
+        right = ucg_widen(right, left->value_type);
+        check_type(node->right, left->value_type, right);
+        value = ucg_op(token->type, left, right);
+        break;
     }
     case FN_CALL: {
         Node *fn = find_node(FN_DEC, token->name);
         if (fn == NULL) fn = find_node(PROTO, token->name);
         if (fn == NULL) {
             add_error(token, format("'%s' is not declared", token->name), NULL);
-            return NULL;
+            break;
         }
         Ucg *proto = fn->token->ucg;
         int count = node->params->children_count;
@@ -1116,89 +1187,89 @@ Ucg *codegen(Node *node) {
         if (count != expected) {
             char *msg = format("'%s' takes %d arguments", token->name, expected);
             add_error(token, msg, NULL);
-            return NULL;
+            break;
         }
         expand(Ucg *, params);
         zero_init(params);
         for (int i = 0; i < count; i++) {
-            Node *param = node->params->children[i];
-            Ucg *type = proto->fn.params[i]->data_type;
-            append(params, codegen_as(param, type));
-            check_type(param, type, params[params_count - 1]);
+            Ucg *param_type = proto->fn.params[i]->data_type;
+            append(params, codegen(node->params->children[i], param_type));
         }
         for (int i = count; i < list->children_count; i++)
             append(params, ucg_ref(find_variable(list->children[i])));
-        return ucg_call(proto, params, params_count);
+        value = ucg_call(proto, params, params_count);
+        break;
     } // clang-format off
     case BRK: case CNT: { // clang-format on
         Node *loop = find_scope(LOOP);
         if (loop == NULL) {
             add_error(token, format("%t outside a loop", token->type), NULL);
-            return NULL;
+            break;
         }
-        return ucg_jump(token->type, loop->token->ucg);
+        value = ucg_jump(token->type, loop->token->ucg);
+        break;
     }
         // clang-format off
-    case ADD_ASSIGN: case SUB_ASSIGN: case MUL_ASSIGN: 
+    case ADD_ASSIGN: case SUB_ASSIGN: case MUL_ASSIGN:
 	case DIV_ASSIGN: case MOD_ASSIGN: { // clang-format on
         Type ops[LAST + 1] = {
             [ADD_ASSIGN] = ADD, [SUB_ASSIGN] = SUB, [MUL_ASSIGN] = MUL,
             [DIV_ASSIGN] = DIV, [MOD_ASSIGN] = MOD,
         };
         Ucg *var = find_variable(node->var);
-        Ucg *type = var ? var->data_type : NULL;
-        Ucg *value = codegen_as(node->value, type);
-        Ucg *result = ucg_op(ops[token->type], ucg_load(var), value);
-        return ucg_assign(var, result);
+        if (var == NULL) break;
+        Ucg *right = codegen(node->value, var->data_type);
+        Ucg *result = ucg_op(ops[token->type], ucg_load(var), right);
+        value = ucg_assign(var, result);
+        break;
     }
     case AS: {
-        Ucg *value = codegen(node->operand);
-        Ucg *type = type_of(node->to_type);
-        return ucg_cast(value, type);
+        Ucg *operand = codegen(node->operand, NULL);
+        value = ucg_cast(operand, type_of(node->to_type));
+        break;
     }
     case NEG: {
-        Ucg *operand = codegen(node->operand);
-        Ucg *type = operand ? operand->value_type : NULL;
-        Ucg *zero = type ? ucg_numeric_value(type, "0") : NULL;
-        return ucg_op(SUB, zero, operand);
+        if (is_literal(node)) {
+            value = codegen_number(node, node->operand, type);
+            break;
+        }
+        Ucg *operand = codegen(node->operand, NULL);
+        if (operand == NULL)
+            break;
+        Ucg *zero = ucg_numeric_value(operand->value_type, "0");
+        value = ucg_op(SUB, zero, operand);
+        break;
     }
     case ASSIGN: {
-        bool is_declare = node->var->token->type == DECLARE;
-        Ucg *var = is_declare ? codegen(node->var) : find_variable(node->var);
-        Ucg *type = var ? var->data_type : NULL;
-        Ucg *value = codegen_as(node->value, type);
-        check_type(node->value, type, value);
-        return ucg_assign(var, value);
-    }
-    case IF: {
-        Ucg *stmt = ucg_branch(IF, NULL);
-        for (Node *branch = node; branch; branch = branch->next) {
-            bool is_first = branch == node;
-            Ucg *part = is_first ? stmt : ucg_branch(branch->token->type, stmt);
-            Ucg *cond = branch->cond ? codegen(branch->cond) : NULL;
-            if (cond)
-                check_type(branch->cond, ucg_uint_type(1), cond);
-            ucg_then(part, cond);
-            codegen_block(branch);
-        }
-        ucg_end(stmt);
-        return stmt;
+        Ucg *var = NULL;
+        if (node->var->token->type == DECLARE)
+            var = codegen(node->var, NULL);
+        else
+            var = find_variable(node->var);
+        if (var == NULL)
+            break;
+        value = ucg_assign(var, codegen(node->value, var->data_type));
+        break;
     }
     case LOOP: {
         Ucg *loop = ucg_branch(LOOP, NULL);
         token->ucg = loop;
-        Ucg *cond = codegen(node->cond);
-        check_type(node->cond, ucg_uint_type(1), cond);
-        ucg_then(loop, cond);
-        codegen_block(node);
+        ucg_then(loop, codegen(node->cond, ucg_uint_type(1)));
+        codegen_block(node, NULL);
         ucg_end(loop);
-        return loop;
+        value = loop;
+        break;
     }
     default: {
         add_error(token, format("%t is not supported yet", token->type), NULL);
-        return NULL;
+        break;
     }
     }
+    if (type == NULL || value == NULL)
+        return value;
+    value = ucg_widen(value, type);
+    check_type(node, type, value);
+    return value;
 }
 
 int main(int ac, char **av) {
@@ -1227,7 +1298,7 @@ int main(int ac, char **av) {
     ucg_check_errors();
 
     ucg_asm_start("ura", OUTPUT_EXE);
-    codegen_block(ura.tree);
+    codegen_block(ura.tree, NULL);
     ucg_check_errors();
     ucg_asm_compile();
     ucg_asm_print();
