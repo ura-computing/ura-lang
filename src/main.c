@@ -394,6 +394,14 @@ int parse_number(int s) {
         while (isdigit(buff[e]))
             e++;
     }
+    bool has_sign = buff[e + 1] == '-' || buff[e + 1] == '+';
+    bool is_exponent = (buff[e] == 'e' || buff[e] == 'E') && isdigit(buff[e + 1 + has_sign]);
+    if (is_exponent) {
+        is_float = true;
+        e += 1 + has_sign;
+        while (isdigit(buff[e]))
+            e++;
+    }
     if (buff[e] == 'f') {
         is_float = true;
         e++;
@@ -601,7 +609,9 @@ void use_file(ucgFile *file, int space) {
     file->parsed = true;
     for (int i = 0; i < file->tokens_count; i++) {
         Token *token = file->tokens[i];
-        Token *name = i + 1 < file->tokens_count ? file->tokens[i + 1] : NULL;
+        Token *name = NULL;
+        if (i + 1 < file->tokens_count)
+            name = file->tokens[i + 1];
         bool is_use = token->type == USE && name && name->type == CHARS;
         if (!is_use) {
             token->space += space;
@@ -835,7 +845,9 @@ Ucg *type_of(Node *node) {
     }
     if (token->type == ARRAY)
         return ucg_array_type(type_of(node->data_type), 0);
-    Node *found = token->type == ID ? find_node(STRUCT, token->name) : NULL;
+    Node *found = NULL;
+    if (token->type == ID)
+        found = find_node(STRUCT, token->name);
     if (found)
         return codegen_struct(found);
     add_error(token, format("type %t is not supported yet", token->type), NULL);
@@ -873,7 +885,9 @@ Ucg *find_variable(Node *node) {
     if (token->type == ACCESS) {
         Ucg *base = find_variable(node->base);
         Ucg *index = codegen(node->index, ucg_int_type(32));
-        return base ? ucg_get_item(base, index) : NULL;
+        if (base == NULL)
+            return NULL;
+        return ucg_get_item(base, index);
     }
     Node *fn = NULL;
     for (int i = ura.scopes_count - 1; i >= 0; i--) {
@@ -927,9 +941,9 @@ Ucg *codegen_number(Node *node, Node *lit, Ucg *type) {
 }
 
 void check_type(Node *node, Ucg *expected, Ucg *value) {
-    Ucg *got = value ? value->value_type : NULL;
-    if (!expected || !got)
+    if (!expected || !value || !value->value_type)
         return;
+    Ucg *got = value->value_type;
     Ucg *expected_elem = expected;
     Ucg *got_elem = got;
     while (expected_elem->type == ARRAY && got_elem->type == ARRAY) {
@@ -977,7 +991,9 @@ Ucg *codegen_block(Node *node, Ucg *type) {
             break;
     }
     ura.scopes_count--;
-    ura.scope = ura.scopes_count ? ura.scopes[ura.scopes_count - 1] : NULL;
+    ura.scope = NULL;
+    if (ura.scopes_count)
+        ura.scope = ura.scopes[ura.scopes_count - 1];
     return value;
 }
 
@@ -1180,6 +1196,9 @@ Ucg *codegen(Node *node, Ucg *type) {
         break;
     }
     case DECLARE: {
+        bool is_struct_name = find_node(STRUCT, token->name) != NULL;
+        if (token->ucg == NULL && is_struct_name)
+            add_error(token, format("'%s' is a struct name", token->name), NULL);
         if (token->ucg == NULL)
             token->ucg = ucg_var(token->name, type_of(node->data_type));
         value = token->ucg;

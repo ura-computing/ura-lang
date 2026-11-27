@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/27 13:44:16                              */
+/*   updated: 2026/11/27 13:48:22                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -199,7 +199,8 @@ Ucg *ucg_assign(Ucg *var, Ucg *value) {
 Ucg *ucg_load(Ucg *var) {
     Ucg *new = ucg_new(DREF);
     new->to_dref = var;
-    new->value_type = var ? var->data_type : NULL;
+    if (var)
+        new->value_type = var->data_type;
     append(gb_ucg.insts, new);
     return new;
 }
@@ -331,7 +332,9 @@ Ucg *ucg_cast(Ucg *value, Ucg *to_type) {
 }
 
 Ucg *ucg_widen(Ucg *value, Ucg *type) {
-    Ucg *from = value ? value->value_type : NULL;
+    if (value == NULL)
+        return value;
+    Ucg *from = value->value_type;
     bool is_int = from && type && from->type == INT && type->type == INT;
     if (!is_int || from == type)
         return value;
@@ -349,8 +352,8 @@ Ucg *ucg_op(Type type, Ucg *left, Ucg *right) {
     bool is_cmp = includes(type, GT, LT, GE, LE, EQ, NQ, NULL);
     bool is_logic = includes(type, AND, OR, AND_LIT, OR_LIT, NULL);
     is_cmp = is_cmp || is_logic;
-    Ucg *left_type = left ? left->value_type : NULL;
-    new->value_type = is_cmp ? ucg_uint_type(1) : left_type;
+    if (left) new->value_type = left->value_type;
+    if (is_cmp) new->value_type = ucg_uint_type(1);
     append(gb_ucg.insts, new);
     return new;
 }
