@@ -468,11 +468,6 @@ void ucg_print_ll(void) {
     LLVMDumpModule(gb_ucg.module);
 }
 
-void ucg_print_insts(void) {
-    for (int i = 0; i < gb_ucg.insts_count; i++)
-        print("%U\n", gb_ucg.insts[i]);
-}
-
 void ucg_finish(void) {
     LLVMDisposeBuilder(gb_ucg.builder);
     LLVMDisposeModule(gb_ucg.module);
@@ -873,7 +868,7 @@ void ucg_compile(void) {
     }
 }
 
-void ucg_print() {
+void ucg_print_insts(void) {
     int index = 0;
     int space = 0;
 
@@ -885,7 +880,7 @@ void ucg_print() {
         if (ucg->type == END)
             space -= TAB;
         print("%*s ", space, "");
-        if (includes(ucg->type, FN_DEC, 0))
+        if (includes(ucg->type, FN_ENTRY, IF, LOOP, NULL))
             space += TAB;
 
         switch (ucg->type) {

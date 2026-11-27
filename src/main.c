@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 01:00:44    */
 /*                                                             */
-/*   updated: 2026/11/27 20:04:29                              */
+/*   updated: 2026/11/27 21:01:33                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -35,11 +35,8 @@ struct {
 
     expand(Node *, scopes);
     Node *scope;
-    Node *types;
-    expand(char *, modules);
 
     int exe_pos;
-    bool throws;
 
     expand(char *, paths);
     bool print_tokens;
@@ -324,71 +321,6 @@ bool fits_int(char *num, bool negative, bool is_uint, int bits) {
     return negative && !is_uint;
 }
 
-Token *parse_int(int s, int e) {
-    Token *new = new_token(INT, s, e);
-    char *buff = ura.file->buff;
-    int len = e - s;
-
-    bool is_uint = false;
-    if (len > 0 && buff[e - 1] == 'u') {
-        is_uint = true;
-        len--;
-    }
-
-    new->is_uint = is_uint;
-    new->num = strndup2(buff + s, len);
-
-    int widths[] = { 32, 64, 128, 256 };
-    for (int i = 0; i < 4; i++) {
-        if (fits_int(new->num, false, is_uint, widths[i])) {
-            new->bits = widths[i];
-            return new;
-        }
-    }
-
-    ucg_error(
-        ura.file,
-        s,
-        e,
-        format("integer literal %s is too big", new->num),
-        "the biggest integer is 256 bits"
-    );
-    return new;
-}
-
-Token *parse_float(int s, int e) {
-    Token *new = new_token(FLOAT, s, e);
-    char *buff = ura.file->buff;
-    int len = e - s;
-
-    new->bits = 64;
-    for (int i = s; i < e; i++) {
-        if (buff[i] != 'f')
-            continue;
-        int bits = 0;
-        for (int j = i + 1; j < e; j++)
-            bits = bits * 10 + (buff[j] - '0');
-        if (i + 1 == e)
-            bits = 32;
-        bool ok = bits == 16 || bits == 32 || bits == 64 || bits == 80 || bits == 128;
-        if (ok)
-            new->bits = bits;
-        else
-            ucg_error(
-                ura.file,
-                s,
-                e,
-                format("invalid float width f%d", bits),
-                "use f16, f32, f64, f80 or f128"
-            );
-        len = i - s;
-        break;
-    }
-
-    new->num = strndup2(buff + s, len);
-    return new;
-}
-
 int parse_number(int s) {
     char *buff = ura.file->buff;
     int e = s;
@@ -409,18 +341,52 @@ int parse_number(int s) {
         while (isdigit(buff[e]))
             e++;
     }
-    if (buff[e] == 'f') {
+    int end = e;
+    bool is_uint = buff[e] == 'u' && !is_float;
+    if (is_uint)
+        e++;
+    bool has_width = buff[e] == 'f';
+    int bits = 0;
+    if (has_width) {
         is_float = true;
         e++;
         while (isdigit(buff[e]))
-            e++;
-    } else if (buff[e] == 'u' && !is_float) {
-        e++;
+            bits = bits * 10 + (buff[e++] - '0');
     }
-    if (is_float)
-        parse_float(s, e);
-    else
-        parse_int(s, e);
+
+    Token *new = new_token(is_float ? FLOAT : INT, s, e);
+    new->num = strndup2(buff + s, end - s);
+    new->is_uint = is_uint;
+    if (is_float) {
+        if (has_width && bits == 0)
+            bits = 32;
+        if (!has_width) bits = 64;
+        new->bits = bits;
+        bool ok = bits == 16 || bits == 32 || bits == 64 || bits == 80 || bits == 128;
+        if (!ok)
+            ucg_error(
+                ura.file,
+                s,
+                e,
+                format("invalid float width f%d", bits),
+                "use f16, f32, f64, f80 or f128"
+            );
+        return e;
+    }
+    int widths[] = { 32, 64, 128, 256 };
+    for (int i = 0; i < 4; i++) {
+        if (fits_int(new->num, false, is_uint, widths[i])) {
+            new->bits = widths[i];
+            return e;
+        }
+    }
+    ucg_error(
+        ura.file,
+        s,
+        e,
+        format("integer literal %s is too big", new->num),
+        "the biggest integer is 256 bits"
+    );
     return e;
 }
 
@@ -449,32 +415,6 @@ int parse_id(int s) {
     new->s = s;
     new->e = e;
     return e;
-}
-
-Token *parse_char(int s, int e) {
-    Token *new = new_token(INT, s, e);
-    new->bits = 8;
-    unsigned char *bytes =
-        (unsigned char *)parse_escaped(escaped, ura.file, s + 1, e - 1);
-    int count = 1;
-    int value = bytes[0];
-    if (bytes[0] >= 0xF0) {
-        count = 4;
-        value = bytes[0] - 0xF0;
-    } else if (bytes[0] >= 0xE0) {
-        count = 3;
-        value = bytes[0] - 0xE0;
-    } else if (bytes[0] >= 0xC0) {
-        count = 2;
-        value = bytes[0] - 0xC0;
-    }
-    for (int i = 1; i < count; i++)
-        value = value * 64 + (bytes[i] - 0x80);
-
-    new->num = format("%d", value);
-    if (count > 1)
-        new->bits = 21;
-    return new;
 }
 
 int parse_quoted(int s) {
@@ -506,11 +446,29 @@ int parse_quoted(int s) {
             e = next;
     } while (joins);
 
-    if (quote == '\'')
-        parse_char(s, e);
-    else
-        new_token(CHARS, s, e)->string =
-            parse_escaped(escaped, ura.file, s + 1, e - 1);
+    char *text = parse_escaped(escaped, ura.file, s + 1, e - 1);
+    if (quote == '"')
+        new_token(CHARS, s, e)->string = text;
+    if (quote == '\'') {
+        unsigned char *bytes = (unsigned char *)text;
+        int count = 1;
+        int value = bytes[0];
+        if (bytes[0] >= 0xF0) {
+            count = 4;
+            value = bytes[0] - 0xF0;
+        } else if (bytes[0] >= 0xE0) {
+            count = 3;
+            value = bytes[0] - 0xE0;
+        } else if (bytes[0] >= 0xC0) {
+            count = 2;
+            value = bytes[0] - 0xC0;
+        }
+        for (int i = 1; i < count; i++)
+            value = value * 64 + (bytes[i] - 0x80);
+        Token *new = new_token(INT, s, e);
+        new->num = format("%d", value);
+        new->bits = count > 1 ? 21 : 8;
+    }
     for (int i = s; i < e; i++)
         ura.line += buff[i] == '\n';
     return e;
@@ -595,20 +553,17 @@ void tokenize_range(int start, int end) {
     }
 }
 
-void tokenize_file(ucgFile *file) {
-    ura.file = file;
-    ura.line = 1;
-    ura.space = 0;
-    tokenize_range(0, file->len);
-}
-
 ucgFile *open_file(char *path) {
     ucgFile *found = ucg_find_file(realpath2(path));
     if (found)
         return found;
     ucgFile *file = ucg_open_file(path);
-    if (file)
-        tokenize_file(file);
+    if (file == NULL)
+        return NULL;
+    ura.file = file;
+    ura.line = 1;
+    ura.space = 0;
+    tokenize_range(0, file->len);
     return file;
 }
 
@@ -736,14 +691,6 @@ Node *parse_fn(Token *token) {
     return node;
 }
 
-Node *parse_return(Token *token) {
-    Node *node = new_node(token);
-    bool has_value = peek(0)->line == token->line && peek(0)->type != LAST;
-    if (has_value)
-        node->to_ret = parse_expr(0);
-    return node;
-}
-
 Node *parse_prime(void) {
     Token *token = next();
     switch (token->type) {
@@ -794,8 +741,14 @@ Node *parse_prime(void) {
         node->operand = parse_prime();
         return node;
     } // clang-format off
-    case PROTO: case FN_DEC: return parse_fn(token);
-    case RETURN:             return parse_return(token);
+    case PROTO: case FN_DEC: return parse_fn(token); // clang-format on
+    case RETURN: {
+        Node *node = new_node(token);
+        bool has_value = peek(0)->line == token->line && peek(0)->type != LAST;
+        if (has_value)
+            node->to_ret = parse_expr(0);
+        return node;
+    } // clang-format off
     case IF: case ELIF: case ELSE: case LOOP: { // clang-format on
         Node *node = new_node(token);
         if (token->type != ELSE)
@@ -1125,8 +1078,11 @@ Ucg *codegen_block(Node *node, Ucg *type) {
     }
     for (int i = 0; i < node->children_count; i++) {
         Node *child = node->children[i];
-        if (child->token->type == FN_DEC)
-            codegen_fn(child);
+        if (child->token->type != FN_DEC)
+            continue;
+        ucg_entry(child->ucg);
+        codegen_block(child, NULL);
+        ucg_end(child->ucg);
     }
     Ucg *value = NULL;
     for (int i = 0; i < node->children_count; i++) {
@@ -1262,14 +1218,6 @@ Ucg *codegen_array(Node *node, Ucg *type) {
         append(items, item);
     }
     return ucg_array_from(elem, items, items_count);
-}
-
-Ucg *codegen_fn(Node *node) {
-    Ucg *fn = node->ucg;
-    ucg_entry(fn);
-    codegen_block(node, NULL);
-    ucg_end(fn);
-    return fn;
 }
 
 Ucg *codegen(Node *node, Ucg *type) {
@@ -1442,6 +1390,14 @@ void read_args(int ac, char **av) {
             append(ura.paths, arg);
             continue;
         }
+        bool is_help = strcmp2(arg, "-help") || strcmp2(arg, "-h");
+        bool is_version = strcmp2(arg, "-version") || strcmp2(arg, "-v");
+        if (is_help)
+            print_help();
+        if (is_version)
+            help("ura %s (LLVM %s)\n", URA_VERSION, LLVM_VERSION_STRING);
+        if (is_help || is_version)
+            exit(0);
         if (strcmp2(arg, "-tokens"))
             ura.print_tokens = true;
         else if (strcmp2(arg, "-tree"))
@@ -1526,52 +1482,21 @@ int main(int ac, char **av) {
     return 0;
 }
 
-void parse_args(int ac, char **av) {
-    if (ac < 2) {
-        eprint("expected an argument:\n");
-        print_help();
-        exit(1);
-    }
-    if (strcmp2(av[1], "-help") || strcmp2(av[1], "-h")) {
-        print_help();
-        exit(0);
-    }
-    if (strcmp2(av[1], "-version") || strcmp2(av[1], "-v")) {
-        help("ura %s (LLVM %s)\n", URA_VERSION, LLVM_VERSION_STRING);
-        exit(0);
-    }
-    // if (strcmp2(av[1], "compile")) {
-    // //     parse_compile_args(ac, av);
-    // //     return;
-    // // }
-    // if (strcmp2(av[1], "init")) {
-    //     if (ac < 3) {
-    //         eprint("expected a project name:\n");
-    //         help("ura init <name>\n");
-    //         exit(1);
-    //     }
-    //     init_project(av[2]);
-    //     exit(0);
-    // }
-}
-
 char *compile_flags[][2] = {
-    { "-o <exe>", "name the executable (default build/exe.out)" },
-    { "-ll [path]", "also write the LLVM IR (default build/out.ll)" },
-    { "-S [path]", "write the assembly, no executable (default build/out.s)" },
-    { "-c [path]", "write the object file, no executable (default build/out.o)" },
+    { "-tokens", "print the tokens" },
+    { "-tree", "print the tree after parse and after analyze" },
+    { "-ucg", "print the ucg instructions" },
+    { "-ll", "print the LLVM IR" },
     { NULL, NULL },
 };
 
 void print_help(void) {
-    help("compile one file (it reaches the others with use):\n");
-    help("  ura compile <file>.ura [flags]\n");
+    help("compile files into an executable named after the first one:\n");
+    help("  ura <file>.ura [more.ura] [flags]\n");
     help("\n");
     help("flags:\n");
     for (int i = 0; compile_flags[i][0]; i++) {
-        char *flag = compile_flags[i][0];
-        int pad = 12 - (int)strlen(flag);
-        help("  %s%i%s\n", flag, pad, compile_flags[i][1]);
+        help("  %-12s%s\n", compile_flags[i][0], compile_flags[i][1]);
     }
     help("\n");
     help("projects (ura.conf):\n");

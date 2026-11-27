@@ -115,15 +115,12 @@ struct Ucg {
     int bits;
     bool is_set;
     bool is_uint;
-    bool is_throwing;
-    int used;
 
     // llvm stuff
     struct {
         TypeRef lltype;
         Value elem;
         Bloc bloc;
-        Bloc then;
         Bloc caller_bloc;
     };
 	
@@ -163,8 +160,6 @@ struct Ucg {
         Ucg *to_end; // used in ENDIF
         Ucg *to_call;
         Ucg *stmt;
-        Ucg *to_point;
-        Ucg *to_size;
     };
     struct {
 		Ucg *cond;
@@ -175,10 +170,8 @@ struct Ucg {
     union {
         Ucg *right;
         Ucg *to_type;
-        Ucg *attr;
         Ucg *index;
     };
-    expand(Ucg *, cleans);
 };
 
 struct ucgFile {

@@ -46,9 +46,7 @@ struct Token {
 
     bool is_type;
     bool is_varg;
-    bool is_pub;
     bool is_uint;
-    bool is_used; // for optimization
 
 #if DEBUG
 	int tk_index;
@@ -75,14 +73,7 @@ struct Node {
         Node *ret_type;
         Node *to_ret;
         Node *cond;
-        Node *to_call;
-        Node *loop;
         Node *operand;
-        Node *scope;
-        Node *symbol;
-        Node *url;
-        Node *version;
-        Node *cmd;
     };
     union {
         Node *right;
@@ -93,11 +84,9 @@ struct Node {
         Node *from_parent;
         Node *to_type;
         Node *index;
-        Node *to_copy;
     };
 
     expand(Node *, children);
-    expand(Ucg *, drops);
 };
 
 struct Keyword {
