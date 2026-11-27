@@ -228,7 +228,7 @@ Ucg *ucg_op(Type type, Ucg *left, Ucg *right) {
     bool is_logic = includes(type, AND, OR, AND_LIT, OR_LIT, NULL);
     is_cmp = is_cmp || is_logic;
     Ucg *left_type = left ? left->value_type : NULL;
-    new->value_type = is_cmp ? ucg_int_type(1) : left_type;
+    new->value_type = is_cmp ? ucg_uint_type(1) : left_type;
     append(gb_ucg.insts, new);
     return new;
 }
@@ -487,9 +487,20 @@ Ucg *llvm_compile(Ucg *ucg) {
             [ADD] = LLVMAdd,  [SUB] = LLVMSub,  [MUL] = LLVMMul,
             [DIV] = LLVMSDiv, [MOD] = LLVMSRem,
         };
+        OpCode float_opcodes[LAST + 1] = {
+            [ADD] = LLVMFAdd, [SUB] = LLVMFSub, [MUL] = LLVMFMul,
+            [DIV] = LLVMFDiv, [MOD] = LLVMFRem,
+        };
+        Ucg *value_type = ucg->left->value_type;
+        if (value_type->is_uint) {
+            opcodes[DIV] = LLVMUDiv;
+            opcodes[MOD] = LLVMURem;
+        }
+        bool is_float = value_type->type == FLOAT;
+        OpCode op = is_float ? float_opcodes[type] : opcodes[type];
         Value left = ucg->left->elem;
         Value right = ucg->right->elem;
-        ucg->elem = LLVMBuildBinOp(lmb, opcodes[type], left, right, "");
+        ucg->elem = LLVMBuildBinOp(lmb, op, left, right, "");
         break;
     } // clang-format off
     case BRK: LLVMBuildBr(lmb, ucg->stmt->end->bloc); break;
@@ -510,19 +521,42 @@ Ucg *llvm_compile(Ucg *ucg) {
             [GT] = LLVMIntSGT, [LT] = LLVMIntSLT, [GE] = LLVMIntSGE,
             [LE] = LLVMIntSLE, [EQ] = LLVMIntEQ,  [NQ] = LLVMIntNE,
         };
+        LLVMIntPredicate uint_predicates[LAST + 1] = {
+            [GT] = LLVMIntUGT, [LT] = LLVMIntULT, [GE] = LLVMIntUGE,
+            [LE] = LLVMIntULE, [EQ] = LLVMIntEQ,  [NQ] = LLVMIntNE,
+        };
+        LLVMRealPredicate float_predicates[LAST + 1] = {
+            [GT] = LLVMRealOGT, [LT] = LLVMRealOLT, [GE] = LLVMRealOGE,
+            [LE] = LLVMRealOLE, [EQ] = LLVMRealOEQ, [NQ] = LLVMRealUNE,
+        };
+        Ucg *value_type = ucg->left->value_type;
         Value left = ucg->left->elem;
         Value right = ucg->right->elem;
-        ucg->elem = LLVMBuildICmp(lmb, predicates[type], left, right, "");
+        if (value_type->type == FLOAT)
+            ucg->elem = LLVMBuildFCmp(lmb, float_predicates[type], left, right, "");
+        else if (value_type->is_uint)
+            ucg->elem = LLVMBuildICmp(lmb, uint_predicates[type], left, right, "");
+        else
+            ucg->elem = LLVMBuildICmp(lmb, predicates[type], left, right, "");
         break;
     }
     case AS: {
         llvm_compile(ucg->to_type);
+        Ucg *from = ucg->left->value_type;
+        Ucg *to = ucg->to_type;
         Value value = ucg->left->elem;
-        TypeRef to = ucg->to_type->lltype;
-        if (ucg->left->value_type->is_uint)
-            ucg->elem = LLVMBuildZExt(lmb, value, to, "");
+        TypeRef lltype = to->lltype;
+        bool from_float = from->type == FLOAT;
+        bool to_float = to->type == FLOAT;
+        bool is_signed = !(from_float ? to : from)->is_uint;
+        OpCode to_fp = is_signed ? LLVMSIToFP : LLVMUIToFP;
+        OpCode from_fp = is_signed ? LLVMFPToSI : LLVMFPToUI;
+        if (from_float && to_float)
+            ucg->elem = LLVMBuildFPCast(lmb, value, lltype, "");
+        else if (!from_float && !to_float)
+            ucg->elem = LLVMBuildIntCast2(lmb, value, lltype, is_signed, "");
         else
-            ucg->elem = LLVMBuildSExt(lmb, value, to, "");
+            ucg->elem = LLVMBuildCast(lmb, to_float ? to_fp : from_fp, value, lltype, "");
         break;
     }
     case IF: {

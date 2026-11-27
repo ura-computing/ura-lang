@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <math.h>
+#include <float.h>
 #include <signal.h>
 #include <dirent.h>
 #include <string.h>

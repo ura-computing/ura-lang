@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 01:00:44    */
 /*                                                             */
-/*   updated: 2026/11/27 09:19:25                              */
+/*   updated: 2026/11/27 09:23:19                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -47,7 +47,9 @@ Keyword keywords[] = {
     { "void",     { .type = VOID,  .is_type = true } },
 
     // Signed integers
-    { "bool",     { .type = INT,   .is_type = true, .bits = 1 } },
+    { "bool",     { .type = INT,   .is_type = true, .is_uint = true, .bits = 1 } },
+    { "True",     { .type = INT,   .is_uint = true, .bits = 1, .num = "1" } },
+    { "False",    { .type = INT,   .is_uint = true, .bits = 1, .num = "0" } },
     { "i1",       { .type = INT,   .is_type = true, .bits = 1 } },
     { "char",     { .type = INT,   .is_type = true, .bits = 8 } },
     { "i8",       { .type = INT,   .is_type = true, .bits = 8 } },
@@ -703,23 +705,21 @@ Node *parse_return(Token *token) {
 
 Node *parse_prime(void) {
     Token *token = next();
-    switch (token->type) {
-        // clang-format off
+    switch (token->type) { // clang-format off
     case INT:    return new_node(token);
     case FN_DEC: case PROTO: return parse_fn(token);
     case RETURN: return parse_return(token);
     case BRK: case CNT: return new_node(token);
-    // clang-format on
-    case SUB: {
+    case SUB: { // clang-format on
         Node *node = new_node(token);
-        Node *operand = parse_prime();
-        if (operand->token->type != INT) {
-            token->type = NEG;
-            node->operand = operand;
-            return node;
-        }
-        operand->token->num = format("-%s", operand->token->num);
-        return operand;
+        token->type = NEG;
+        node->operand = parse_prime();
+        return node;
+    }
+    case LPARENT: {
+        Node *node = parse_expr(0);
+        expect(RPARENT, "expected ')'", NULL);
+        return node;
     }
     case ID: {
         Node *node = new_node(token);
@@ -770,8 +770,12 @@ Node *parse_expr(int level) {
 // CODEGEN
 Ucg *type_of(Node *node) {
     Token *token = node->token;
+    if (token->type == INT && token->is_uint)
+        return ucg_uint_type(token->bits);
     if (token->type == INT)
         return ucg_int_type(token->bits);
+    if (token->type == FLOAT)
+        return ucg_float_type(token->bits);
     add_error(token, format("type %t is not supported yet", token->type), NULL);
     return ucg_int_type(32);
 }
@@ -793,16 +797,27 @@ Ucg *find_var(Token *name) {
 
 Ucg *codegen_as(Node *node, Ucg *type) {
     Token *token = node->token;
-    if (!type || type->type != INT)
+    if (!type || !includes(type->type, INT, FLOAT, NULL))
         return codegen(node);
-    if (token->type == INT) {
-        bool negative = token->num[0] == '-';
-        char *digits = token->num + negative;
-        if (!fits_int(digits, negative, type->is_uint, type->bits)) {
-            char *msg = format("%s doesn't fit in %d bits", token->num, type->bits);
+    Node *operand = token->type == NEG ? node->operand : NULL;
+    bool is_neg = operand && includes(operand->token->type, INT, FLOAT, NULL);
+    Token *lit = is_neg ? operand->token : token;
+    char *num = is_neg ? format("-%s", lit->num) : lit->num;
+    if (lit->type == FLOAT && type->type == FLOAT) {
+        double value = strtod(lit->num, NULL);
+        double max = type->bits == 16 ? 65504.0 : type->bits == 32 ? FLT_MAX : DBL_MAX;
+        if (isinf(value) || value > max) {
+            char *msg = format("%s doesn't fit in f%d", num, type->bits);
             add_error(token, msg, NULL);
         }
-        return ucg_numeric_value(type, token->num);
+        return ucg_numeric_value(type, num);
+    }
+    if (lit->type == INT && type->type == INT) {
+        if (!fits_int(lit->num, is_neg, type->is_uint, type->bits)) {
+            char *msg = format("%s doesn't fit in %d bits", num, type->bits);
+            add_error(token, msg, NULL);
+        }
+        return ucg_numeric_value(type, num);
     }
     return ucg_widen(codegen(node), type);
 }
@@ -857,14 +872,13 @@ Ucg *codegen_fn(Node *node) {
 
 Ucg *codegen(Node *node) {
     Token *token = node->token;
-    switch (token->type) {
-        // clang-format off
-    case INT:    return ucg_numeric_value(ucg_int_type(token->bits), token->num);
+    switch (token->type) { // clang-format off
+    case INT:    return ucg_numeric_value(type_of(node), token->num);
+    case FLOAT:  return ucg_numeric_value(type_of(node), token->num);
     case FN_DEC: return codegen_fn(node);
     case PROTO:  return token->ucg;
     case ID:     return ucg_load(find_var(token));
-    // clang-format on
-    case RETURN: {
+    case RETURN: { // clang-format on
         Node *fn = find_scope(FN_DEC);
         Ucg *ret = fn->token->ucg->fn.ret;
         Ucg *value = node->to_ret ? codegen_as(node->to_ret, ret) : NULL;
@@ -927,6 +941,11 @@ Ucg *codegen(Node *node) {
         }
         return ucg_jump(token->type, loop->token->ucg);
     }
+    case AS: {
+        Ucg *value = codegen(node->left);
+        Ucg *type = type_of(node->right);
+        return ucg_cast(value, type);
+    }
     case NEG: {
         Ucg *operand = codegen(node->operand);
         Ucg *type = operand ? operand->value_type : NULL;
@@ -948,7 +967,7 @@ Ucg *codegen(Node *node) {
             Ucg *part = is_first ? stmt : ucg_branch(branch->token->type, stmt);
             Ucg *cond = branch->cond ? codegen(branch->cond) : NULL;
             if (cond)
-                check_type(branch->cond, ucg_int_type(1), cond);
+                check_type(branch->cond, ucg_uint_type(1), cond);
             ucg_then(part, cond);
             codegen_block(branch);
         }
@@ -959,7 +978,7 @@ Ucg *codegen(Node *node) {
         Ucg *loop = ucg_branch(LOOP, NULL);
         token->ucg = loop;
         Ucg *cond = codegen(node->cond);
-        check_type(node->cond, ucg_int_type(1), cond);
+        check_type(node->cond, ucg_uint_type(1), cond);
         ucg_then(loop, cond);
         codegen_block(node);
         ucg_end(loop);
@@ -971,7 +990,6 @@ Ucg *codegen(Node *node) {
     }
     }
 }
-
 
 int main(int ac, char **av) {
     atexit(arena_free);
