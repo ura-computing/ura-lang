@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 01:00:44    */
 /*                                                             */
-/*   updated: 2026/11/27 21:01:33                              */
+/*   updated: 2026/11/27 21:57:10                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -360,7 +360,8 @@ int parse_number(int s) {
     if (is_float) {
         if (has_width && bits == 0)
             bits = 32;
-        if (!has_width) bits = 64;
+        if (!has_width)
+            bits = 64;
         new->bits = bits;
         bool ok = bits == 16 || bits == 32 || bits == 64 || bits == 80 || bits == 128;
         if (!ok)
@@ -1106,7 +1107,7 @@ Ucg *codegen_block(Node *node, Ucg *type) {
 Ucg *codegen_if(Node *node, Ucg *type) {
     Ucg *result = NULL;
     if (type)
-        result = ucg_var("if", type);
+        result = ucg_var("result", type);
     Ucg *stmt = ucg_branch(IF, NULL);
     Node *last = node;
     for (Node *branch = node; branch; branch = branch->next) {
@@ -1319,7 +1320,7 @@ Ucg *codegen(Node *node, Ucg *type) {
     case PROTO: {
         value = node->ucg;
         break;
-	}
+    }
     case FN_CALL: {
         Ucg *proto = node->declared->ucg;
         expand(Ucg *, params);
@@ -1439,12 +1440,19 @@ int main(int ac, char **av) {
     arena_reserve(10000);
     read_args(ac, av);
     tokenize();
-    for (int i = 0; ura.print_tokens && i < ura.tokens_count; i++)
-        print("%k\n", ura.tokens[i]);
+    for (int i = 0; ura.print_tokens && i < ura.tokens_count; i++) {
+        Token *token = ura.tokens[i];
+        bool is_new_line = i == 0 || token->line != ura.tokens[i - 1]->line;
+        if (is_new_line)
+            print("%4d │ ", token->line);
+        else
+            print("     │ ");
+        print("%k\n", token);
+    }
     ura.tree = new_node(new_token(URA, 0, 0));
     parse_block(ura.tree);
-    if (ura.print_tree)
-        print("%n", ura.tree);
+    // if (ura.print_tree)
+    //     print("[AST]:\n%n", ura.tree);
     analyze(ura.tree);
     if (ura.print_tree)
         print("%n", ura.tree);

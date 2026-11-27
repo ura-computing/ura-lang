@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/27 20:41:53                              */
+/*   updated: 2026/11/27 21:57:14                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -196,11 +196,13 @@ Ucg *ucg_assign(Ucg *var, Ucg *value) {
     return new;
 }
 
-Ucg *ucg_load(Ucg *var) {
+Ucg *ucg_load(Ucg *to_load) {
     Ucg *new = ucg_new(DREF);
-    new->to_dref = var;
-    if (var)
-        new->value_type = var->data_type;
+    new->to_dref = to_load;
+    if (to_load) {
+        new->name = to_load->name;
+        new->value_type = to_load->data_type;
+    }
     append(gb_ucg.insts, new);
     return new;
 }
@@ -212,7 +214,8 @@ Ucg *ucg_get_attr(Ucg *base, char *name) {
         if (!strcmp2(attr->name, name))
             continue;
         Ucg *new = ucg_new(ATTR);
-        new->name = format("%s.%s", base->name, name);
+        if (base->name)
+            new->name = format("%s.%s", base->name, name);
         new->data_type = attr->data_type;
         new->base = base;
         new->obj.index = i;
@@ -224,7 +227,8 @@ Ucg *ucg_get_attr(Ucg *base, char *name) {
 
 Ucg *ucg_get_item(Ucg *base, Ucg *index) {
     Ucg *new = ucg_new(ACCESS);
-    new->name = format("%s[]", base->name);
+    if (base->name)
+        new->name = format("%s[]", base->name);
     new->data_type = base->data_type->arr.elem;
     new->base = base;
     new->index = index;
@@ -234,7 +238,6 @@ Ucg *ucg_get_item(Ucg *base, Ucg *index) {
 
 Ucg *ucg_ref(Ucg *to_ref) {
     Ucg *new = ucg_new(OWN);
-    new->name = format("&%s", to_ref->name);
     new->to_ref = to_ref;
     new->value_type = ucg_ref_type(to_ref->data_type);
     append(gb_ucg.insts, new);
@@ -261,7 +264,7 @@ Ucg *ucg_stack_alloc(Ucg *elem, Ucg *count) {
 
 Ucg *ucg_array_from(Ucg *elem, Ucg **items, int count) {
     Ucg *i32 = ucg_int_type(32);
-    Ucg *array = ucg_var("", ucg_array_type(elem, 0));
+    Ucg *array = ucg_var(NULL, ucg_array_type(elem, 0));
     Ucg *size = ucg_numeric_value(i32, format("%d", count));
     ucg_assign(array, ucg_stack_alloc(elem, size));
     for (int i = 0; i < count; i++) {
@@ -281,12 +284,12 @@ Ucg *ucg_stack_array(Ucg *elem, Ucg **sizes, int count) {
         append(totals, ucg_op(MUL, totals[i - 1], sizes[i]));
 
     Ucg *type = ucg_array_type(elem, 0);
-    Ucg *below = ucg_var("", type);
+    Ucg *below = ucg_var(NULL, type);
     ucg_assign(below, ucg_stack_alloc(elem, totals[count - 1]));
     for (int level = count - 2; level >= 0; level--) {
-        Ucg *table = ucg_var("", ucg_array_type(type, 0));
+        Ucg *table = ucg_var(NULL, ucg_array_type(type, 0));
         ucg_assign(table, ucg_stack_alloc(type, totals[level]));
-        Ucg *index = ucg_var("", i32);
+        Ucg *index = ucg_var(NULL, i32);
         ucg_assign(index, ucg_numeric_value(i32, "0"));
 
         Ucg *loop = ucg_branch(LOOP, NULL);
@@ -524,16 +527,19 @@ Ucg *llvm_compile(Ucg *ucg) {
     Module mod = gb_ucg.module;
     Context ctx = gb_ucg.ctx;
     Builder lmb = gb_ucg.builder;
+    char *name = "";
+    if (ucg->name)
+        name = ucg->name;
 
     switch (type) {
     case VAR: {
         llvm_compile(ucg->data_type);
-        ucg->elem = LLVMBuildAlloca(lmb, ucg->data_type->lltype, ucg->name);
+        ucg->elem = LLVMBuildAlloca(lmb, ucg->data_type->lltype, name);
         break;
     }
     case DREF: {
         Ucg *var = ucg->to_dref;
-        ucg->elem = LLVMBuildLoad2(lmb, var->data_type->lltype, var->elem, var->name);
+        ucg->elem = LLVMBuildLoad2(lmb, var->data_type->lltype, var->elem, name);
         break;
     }
     case VAL_CREATE: {
@@ -585,11 +591,11 @@ Ucg *llvm_compile(Ucg *ucg) {
     }
     case POINT_TO: {
         Ucg *ref = ucg->base;
-        ucg->elem = LLVMBuildLoad2(lmb, ref->data_type->lltype, ref->elem, ref->name);
+        ucg->elem = LLVMBuildLoad2(lmb, ref->data_type->lltype, ref->elem, name);
         break;
     }
     case STRUCT: {
-        ucg->lltype = LLVMStructCreateNamed(ctx, ucg->name);
+        ucg->lltype = LLVMStructCreateNamed(ctx, name);
         expand(TypeRef, types);
         zero_init(types);
         for (int i = 0; i < ucg->obj.attrs_count; i++)
@@ -601,7 +607,7 @@ Ucg *llvm_compile(Ucg *ucg) {
         Ucg *base = ucg->base;
         TypeRef lltype = base->data_type->lltype;
         int index = ucg->obj.index;
-        ucg->elem = LLVMBuildStructGEP2(lmb, lltype, base->elem, index, ucg->name);
+        ucg->elem = LLVMBuildStructGEP2(lmb, lltype, base->elem, index, name);
         break;
     }
     case OWN: {
@@ -693,7 +699,6 @@ Ucg *llvm_compile(Ucg *ucg) {
     }
     case FN_DEC: {
         llvm_compile(ucg->fn.ret);
-        char *name = ucg->name;
         TypeRef ret_type = ucg->fn.ret->lltype;
         bool is_varg = ucg->fn.is_varg;
 
@@ -869,46 +874,124 @@ void ucg_compile(void) {
 }
 
 void ucg_print_insts(void) {
-    int index = 0;
-    int space = 0;
-
+    int depth = 0;
+    unsigned long count = 0;
     for (int i = 0; i < gb_ucg.insts_count; i++) {
         Ucg *ucg = gb_ucg.insts[i];
-        ucg->inst_index = index;
+        Type type = ucg->type;
+        if (type == FN_ENTRY)
+            count = 0;
+        bool is_statement = includes(
+            type,
+            VAL_CREATE,
+            FN_DEC,
+            FN_ENTRY,
+            ASSIGN,
+            RETURN,
+            IF,
+            LOOP,
+            ELIF,
+            ELSE,
+            THEN,
+            BRK,
+            CNT,
+            END,
+            NULL
+        );
+        if (!is_statement && ucg->name == NULL)
+            ucg->inst_index = count++;
+        bool is_else_then = type == THEN && ucg->stmt->cond == NULL;
+        if (type == VAL_CREATE || is_else_then)
+            continue;
+        if (type == END)
+            depth--;
+        bool is_branch = includes(type, THEN, ELIF, ELSE, NULL);
+        print("%*s", (is_branch ? depth - 1 : depth) * 4, "");
 
-        print("[%.3d] ", index++);
-        if (ucg->type == END)
-            space -= TAB;
-        print("%*s ", space, "");
-        if (includes(ucg->type, FN_ENTRY, IF, LOOP, NULL))
-            space += TAB;
-
-        switch (ucg->type) {
-        case VAL_CREATE: {
-            print("%U %U\n", ucg, ucg->data_type);
+        char *op = strdup2(to_string(type));
+        for (int j = 0; op[j]; j++)
+            op[j] = tolower(op[j]);
+        switch (type) { // clang-format off
+        case FN_DEC: case FN_ENTRY: { // clang-format on
+            Ucg *fn = ucg;
+            if (type == FN_ENTRY)
+                fn = ucg->to_enter;
+            print(CYAN("%s ") "%U(", type == FN_DEC ? "proto" : "fn", fn);
+            for (int j = 0; j < fn->fn.params_count; j++) {
+                Ucg *param = fn->fn.params[j];
+                print("%s%U %U", j ? ", " : "", param, param->data_type);
+            }
+            print(") %U%s\n", fn->fn.ret, type == FN_ENTRY ? ":" : "");
             break;
         }
-        case FN_DEC: {
-            print("%U RET %U\n", ucg, ucg->fn.ret);
+        case VAR:
+            print(CYAN("declare ") "%U %U\n", ucg, ucg->data_type);
+            break;
+        case DREF:
+            print("%U = " CYAN("load ") "%U\n", ucg, ucg->to_dref);
+            break;
+        case ASSIGN:
+            print(CYAN("assign ") "%U, %U\n", ucg->left, ucg->right);
+            break;
+        case OWN:
+            print("%U = " CYAN("ref ") "%U\n", ucg, ucg->to_ref);
+            break;
+        case AS:
+            print("%U = " CYAN("cast ") "%U to %U\n", ucg, ucg->left, ucg->to_type);
+            break;
+        case ATTR:
+            print("%U = " CYAN("field ") "%U, %d\n", ucg, ucg->base, ucg->obj.index);
+            break;
+        case ACCESS:
+            print("%U = " CYAN("item ") "%U, %U\n", ucg, ucg->base, ucg->index);
+            break;
+        case POINT_TO:
+            print("%U = " CYAN("deref ") "%U\n", ucg, ucg->base);
+            break;
+        case STACK_ALLOC:
+            print(
+                "%U = " CYAN("stack_alloc ") "%U, %U\n",
+                ucg,
+                ucg->data_type,
+                ucg->index
+            );
+            break;
+        case FN_CALL: {
+            if (ucg->to_call->fn.ret->type != VOID)
+                print("%U = ", ucg);
+            print(CYAN("call ") "%U(", ucg->to_call);
+            for (int j = 0; j < ucg->fn.params_count; j++)
+                print("%s%U", j ? ", " : "", ucg->fn.params[j]);
+            print(")\n");
             break;
         }
         case RETURN: {
-            print("%U ", ucg);
+            print(CYAN("return"));
             if (ucg->to_ret)
-                print("[%.3d]", ucg->to_ret->inst_index);
+                print(" %U", ucg->to_ret);
             print("\n");
+            break;
+        } // clang-format off
+        case IF:   print(CYAN("if:") "\n");     break;
+        case LOOP: print(CYAN("while:") "\n");  break;
+        case ELIF: print(CYAN("elif:") "\n");   break;
+        case ELSE: print(CYAN("else:") "\n");   break;
+        case BRK:  print(CYAN("break") "\n");   break;
+        case CNT:  print(CYAN("continue") "\n"); break;
+        case END:  print(CYAN("end") "\n");     break;
+        // clang-format on
+        case THEN: {
+            char *word = ucg->stmt->type == LOOP ? "do" : "then";
+            print(CYAN("%s ") "%U:\n", word, ucg->stmt->cond);
             break;
         }
         default: {
-            print("%U ", ucg);
-            if (ucg->left)
-                print("%U ", ucg->left);
-            if (ucg->right)
-                print("%U ", ucg->right);
-            print("\n");
+            print("%U = " CYAN("%s ") "%U, %U\n", ucg, op, ucg->left, ucg->right);
             break;
         }
         }
+        if (includes(type, FN_ENTRY, IF, LOOP, NULL))
+            depth++;
     }
 }
 

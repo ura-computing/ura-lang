@@ -14,49 +14,108 @@
 
 void format_ucg(ioFile out, Ucg *ucg) {
     if (ucg == NULL) {
-        fputs("(null ucg)", out);
+        fputs("(null)", out);
         return;
     }
-    fputs(to_string(ucg->type), out);
-    if (ucg->bits)
-        fprintf(out, "%d", ucg->bits);
-    if (ucg->name)
-        fprintf(out, " [%s]", ucg->name);
-    if (ucg->type == VAL_CREATE)
-        fprintf(out, "(%s)", ucg->value);
+    switch (ucg->type) {
+    case VOID: fputs("void", out); break;
+    case INT: fprintf(out, "%c%d", ucg->is_uint ? 'u' : 'i', ucg->bits); break;
+    case FLOAT: fprintf(out, "f%d", ucg->bits); break;
+    case STRUCT: fputs(ucg->name, out); break;
+    case REF: {
+        fputc('&', out);
+        format_ucg(out, ucg->to_ref);
+        break;
+    }
+    case ARRAY: {
+        format_ucg(out, ucg->arr.elem);
+        if (ucg->arr.items_count)
+            fprintf(out, "[%zu]", ucg->arr.items_count);
+        else
+            fputs("[]", out);
+        break;
+    }
+    case VAL_CREATE: {
+        if (ucg->data_type->type != ARRAY) {
+            fprintf(out, GREEN("%s") " ", ucg->value);
+            format_ucg(out, ucg->data_type);
+            break;
+        }
+        fputs(GREEN("\""), out);
+        for (int i = 0; i + 1 < ucg->arr.items_count; i++) {
+            char c = atoi(ucg->arr.items[i]->value);
+            if (c == '\n')
+                fputs(GREEN("\\n"), out);
+            else
+                fprintf(out, GREEN("%c"), c);
+        }
+        fputs(GREEN("\""), out);
+        break;
+    }
+    // clang-format off
+    case DREF: case VAR: case PARAM: case ATTR: case ACCESS: case POINT_TO: case FN_DEC: {
+        // clang-format on
+        char *mark = "";
+        if (ucg->type == DREF)
+            mark = "$";
+        if (ucg->name)
+            fprintf(out, GREEN("%s%s"), mark, ucg->name);
+        else
+            fprintf(out, GREEN("t%lu"), ucg->inst_index);
+        break;
+    }
+    default: fprintf(out, GREEN("t%lu"), ucg->inst_index); break;
+    }
 }
 
-void format_token(ioFile out, Token *token) {
+void format_token(ioFile out, Token *token, int pad) {
     if (token == NULL) {
         fputs("(null token)", out);
         return;
     }
-    fprintf(
-        out,
-        "%-12s line %3d space %d",
-        to_string(token->type),
-        token->line,
-        token->space
-    );
+    Type type = token->type;
+    fprintf(out, CYAN("%-*s"), pad, to_string(type));
+    bool is_number = includes(type, INT, FLOAT, NULL);
     if (token->name)
-        fprintf(out, " [%s]", token->name);
-    bool is_number = includes(token->type, INT, FLOAT, 0) && !token->is_type;
-    if (is_number)
-        fprintf(out, " %s (%d bits)", token->num, token->bits);
-    if (token->type == CHARS)
-        fprintf(out, " \"%s\"", token->string);
+        fprintf(out, " " GREEN("%s"), token->name);
+    else if (is_number && token->is_type)
+        fprintf(out, " %c%d", type == FLOAT ? 'f' : token->is_uint ? 'u' : 'i', token->bits);
+    else if (is_number)
+        fprintf(out, " " GREEN("%s"), token->num);
+    else if (type == CHARS)
+        fprintf(out, " " GREEN("\"%s\""), token->string);
 }
 
-void format_node(ioFile out, Node *node, int depth) {
-    if (node == NULL)
-        return;
-    fprintf(out, "%*s", depth * 4, "");
-    format_token(out, node->token);
+void format_node(ioFile out, Node *node, char *indent, char *branch, int parent_line) {
+    Token *token = node->token;
+    bool has_line = parent_line != -1 && token->line != parent_line;
+    if (has_line)
+        fprintf(out, "%4d │ ", token->line);
+    else
+        fputs("     │ ", out);
+    fprintf(out, "%s%s", indent, branch);
+    format_token(out, token, 0);
     fputc('\n', out);
-    format_node(out, node->left, depth + 1);
-    format_node(out, node->right, depth + 1);
+
+    expand(Node *, kids);
+    zero_init(kids);
+    if (node->left)
+        append(kids, node->left);
     for (int i = 0; i < node->children_count; i++)
-        format_node(out, node->children[i], depth + 1);
+        append(kids, node->children[i]);
+    bool is_fn = includes(token->type, FN_DEC, PROTO, NULL);
+    if (node->right && !is_fn)
+        append(kids, node->right);
+
+    char *kids_indent = indent;
+    if (strcmp2(branch, "├── "))
+        kids_indent = format("%s│   ", indent);
+    if (strcmp2(branch, "└── "))
+        kids_indent = format("%s    ", indent);
+    for (int i = 0; i < kids_count; i++) {
+        char *kid_branch = i == kids_count - 1 ? "└── " : "├── ";
+        format_node(out, kids[i], kids_indent, kid_branch, token->line);
+    }
 }
 
 void vfprint2(ioFile out, const char *fmt, va_list ap) {
@@ -116,8 +175,8 @@ void vfprint2(ioFile out, const char *fmt, va_list ap) {
         switch (conv) { // clang-format off
         case 't': fputs(to_string(va_arg(ap, Type)), out); break;
         case 'U': format_ucg(out, va_arg(ap, Ucg *)); break;
-        case 'k': format_token(out, va_arg(ap, Token *)); break;
-        case 'n': format_node(out, va_arg(ap, Node *), 0); break;
+        case 'k': format_token(out, va_arg(ap, Token *), 9); break;
+        case 'n': format_node(out, va_arg(ap, Node *), "", "", -1); break;
         case 's': {
             char *text = va_arg(ap, char *);
             fprintf(out, spec, text ? text : "(null)");
