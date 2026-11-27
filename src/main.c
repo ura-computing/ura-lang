@@ -80,7 +80,7 @@ Keyword keywords[] = {
     { "f80",      { .type = FLOAT, .is_type = true, .bits = 80 } },
     { "f128",     { .type = FLOAT, .is_type = true, .bits = 128 } },
 
-    // Boolean literals
+    // Boolean values
     { "True",     { .type = INT,   .bits = 1, .num = "1" } },
     { "False",    { .type = INT,   .bits = 1, .num = "0" } },
 
@@ -385,7 +385,7 @@ int parse_number(int s) {
         ura.file,
         s,
         e,
-        format("integer literal %s is too big", new->num),
+        format("integer %s is too big", new->num),
         "the biggest integer is 256 bits"
     );
     return e;
@@ -449,7 +449,7 @@ int parse_quoted(int s) {
 
     char *text = parse_escaped(escaped, ura.file, s + 1, e - 1);
     if (quote == '"')
-        new_token(CHARS, s, e)->string = text;
+        new_token(STRING_VALUE, s, e)->string = text;
     if (quote == '\'') {
         unsigned char *bytes = (unsigned char *)text;
         int count = 1;
@@ -575,7 +575,7 @@ void use_file(ucgFile *file, int space) {
         Token *name = NULL;
         if (i + 1 < file->tokens_count)
             name = file->tokens[i + 1];
-        bool is_use = token->type == USE && name && name->type == CHARS;
+        bool is_use = token->type == USE && name && name->type == STRING_VALUE;
         if (!is_use) {
             token->space += space;
             append(ura.tokens, token);
@@ -712,7 +712,7 @@ Node *parse_prime(void) {
         }
         return node;
     } // clang-format off
-    case INT: case FLOAT: case CHARS: { // clang-format on
+    case INT: case FLOAT: case STRING_VALUE: { // clang-format on
         if (token->is_type)
             return parse_type(token);
         return new_node(token);
@@ -733,7 +733,7 @@ Node *parse_prime(void) {
     }
     case LBRACK: {
         Node *node = parse_list(token, RBRACK);
-        node->token->type = ARRAY_LIT;
+        node->token->type = ARRAY_VALUE;
         return node;
     }
     case SUB: {
@@ -922,17 +922,17 @@ void analyze(Node *node) {
             break;
         }
         node->declared = fn;
-        Node *list = fn->params;
+        Node *params = fn->params;
         int expected = 0;
-        for (int i = 0; i < list->children_count; i++)
-            expected += list->children[i]->from_parent == NULL;
+        for (int i = 0; i < params->children_count; i++)
+            expected += params->children[i]->from_parent == NULL;
         if (node->params->children_count != expected) {
             char *msg = format("'%s' takes %d arguments", token->name, expected);
             add_error(token, msg, NULL);
         }
         analyze(node->params);
-        for (int i = 0; i < list->children_count; i++) {
-            Node *param = list->children[i];
+        for (int i = 0; i < params->children_count; i++) {
+            Node *param = params->children[i];
             if (param->from_parent == NULL)
                 continue;
             Node *arg = new_node(param->token);
@@ -1011,20 +1011,20 @@ Ucg *find_variable(Node *node) {
     return decl->ucg;
 }
 
-bool is_literal(Node *node) {
-    Node *lit = node->token->type == NEG ? node->operand : node;
-    return includes(lit->token->type, INT, FLOAT, NULL) && !lit->token->is_type;
+bool is_number_value(Node *node) {
+    Node *number = node->token->type == NEG ? node->operand : node;
+    return includes(number->token->type, INT, FLOAT, NULL) && !number->token->is_type;
 }
 
-Ucg *codegen_number(Node *node, Node *lit, Ucg *type) {
-    Token *token = lit->token;
-    bool is_neg = node != lit;
+Ucg *codegen_number(Node *node, Node *number, Ucg *type) {
+    Token *token = number->token;
+    bool is_neg = node != number;
     char *num = token->num;
     if (is_neg)
         num = format("-%s", token->num);
     bool is_same_kind = type && type->type == token->type;
     if (!is_same_kind)
-        return ucg_numeric_value(type_of(lit), num);
+        return ucg_numeric_value(type_of(number), num);
     bool fits = fits_int(token->num, is_neg, type->is_uint, type->bits);
     if (token->type == FLOAT) {
         double value = strtod(token->num, NULL);
@@ -1231,10 +1231,10 @@ Ucg *codegen(Node *node, Ucg *type) {
         break;
     } // clang-format off
     case INT: case FLOAT: value = codegen_number(node, node, type); break;
-    case CHARS:           value = ucg_string_value(token->string);  break;
+    case STRING_VALUE:    value = ucg_string_value(token->string);  break;
     case STRUCT:          value = codegen_struct(node);             break;
     case ARRAY:           value = codegen_stack_array(node);        break;
-    case ARRAY_LIT:       value = codegen_array(node, type);        break;
+    case ARRAY_VALUE:     value = codegen_array(node, type);        break;
     case ACCESS: { // clang-format on
         Node *base = node->base;
         while (base->token->type == ACCESS)
@@ -1277,14 +1277,14 @@ Ucg *codegen(Node *node, Ucg *type) {
         // TODO: chekc this one
         Ucg *left = NULL;
         Ucg *right = NULL;
-        if (is_literal(node->left)) {
+        if (is_number_value(node->left)) {
             right = codegen(node->right, NULL);
             if (right)
                 left = codegen(node->left, right->value_type);
         } else {
             left = codegen(node->left, NULL);
             Ucg *expected = NULL;
-            if (left && is_literal(node->right))
+            if (left && is_number_value(node->right))
                 expected = left->value_type;
             right = codegen(node->right, expected);
         }
@@ -1297,7 +1297,7 @@ Ucg *codegen(Node *node, Ucg *type) {
         break;
     }
     case NEG: {
-        if (is_literal(node)) {
+        if (is_number_value(node)) {
             value = codegen_number(node, node->operand, type);
             break;
         }
@@ -1314,15 +1314,15 @@ Ucg *codegen(Node *node, Ucg *type) {
     }
     case FN_CALL: {
         Ucg *proto = node->declared->ucg;
-        expand(Ucg *, params);
-        zero_init(params);
+        expand(Ucg *, args);
+        zero_init(args);
         for (int i = 0; i < node->params->children_count; i++) {
             Ucg *param_type = proto->fn.params[i]->data_type;
-            append(params, codegen(node->params->children[i], param_type));
+            append(args, codegen(node->params->children[i], param_type));
         }
         for (int i = 0; i < node->children_count; i++)
-            append(params, ucg_ref(find_variable(node->children[i])));
-        value = ucg_call(proto, params, params_count);
+            append(args, ucg_ref(find_variable(node->children[i])));
+        value = ucg_call(proto, args, args_count);
         break;
     }
     case RETURN: {

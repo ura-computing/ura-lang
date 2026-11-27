@@ -83,7 +83,7 @@ void format_token(ioFile out, Token *token, int pad) {
         fprintf(out, " %c%d", kind, token->bits);
     else if (is_number)
         fprintf(out, " " GREEN("%s") " %c%d", token->num, kind, token->bits);
-    else if (type == CHARS)
+    else if (type == STRING_VALUE)
         fprintf(out, " " GREEN("\"%s\""), token->string);
 }
 
@@ -261,19 +261,19 @@ const char *to_string(Type type) {
         NAME(TYPES),
 
         NAME(ANY),           NAME(VOID),          NAME(INT),
-        NAME(FLOAT),         NAME(CHARS),         NAME(REF),
+        NAME(FLOAT),         NAME(STRING_VALUE),  NAME(REF),
         NAME(POINT_TO),      NAME(ZERO),
 
-        NAME(STRUCT),        NAME(STRUCT_CALL),   NAME(DOT),           
-		NAME(ATTR),
-        NAME(ENUM),          NAME(DREF),          NAME(OWN),
+        NAME(STRUCT),        NAME(STRUCT_CALL),   NAME(STRUCT_VALUE),
+        NAME(DOT),           NAME(ATTR),          NAME(ENUM),
+        NAME(DREF),          NAME(OWN),
 
         NAME(LPARENT),       NAME(RPARENT),       NAME(LBRACK),
         NAME(RBRACK),        NAME(LCBRACK),       NAME(RCBRACK),
         NAME(DOTS),          NAME(DOUBLE_DOTS),   NAME(COMA),
         NAME(OPERATOR),      NAME(PUB),
 
-        NAME(ARRAY),         NAME(ARRAY_LIT),     NAME(ACCESS),
+        NAME(ARRAY),         NAME(ARRAY_VALUE),   NAME(ACCESS),
 
         NAME(ASSIGN),        NAME(ADD_ASSIGN),    NAME(SUB_ASSIGN),
         NAME(MUL_ASSIGN),    NAME(DIV_ASSIGN),    NAME(MOD_ASSIGN),

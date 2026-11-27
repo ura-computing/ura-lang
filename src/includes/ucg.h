@@ -41,11 +41,11 @@ enum Type {
     TEMPLATE, TYPES, TEMPLATE_TYPE,
     ANY, VOID,
     INT, FLOAT,
-    CHARS,
+    STRING_VALUE,
     REF, POINT_TO, ZERO,
 
     // --- structs and enums ---
-    STRUCT, STRUCT_CALL, DOT, ATTR, ENUM, OWN,
+    STRUCT, STRUCT_CALL, STRUCT_VALUE, DOT, ATTR, ENUM, OWN,
 
     // --- punctuation ---
     LPARENT, RPARENT, DOTS, DOUBLE_DOTS, COMA,
@@ -54,7 +54,7 @@ enum Type {
     // --- brackets and arrays ---
     LBRACK, RBRACK,
     LCBRACK, RCBRACK,
-    ARRAY, ARRAY_LIT, ACCESS,
+    ARRAY, ARRAY_VALUE, ACCESS,
 
     // --- assignment ---
     ASSIGN,
@@ -126,7 +126,7 @@ struct Ucg {
 	
 	/*
 	holds: 
-		+ string literal
+		+ string value
 		+ i32, i64, i128... 
 	*/ 
 	char *value;

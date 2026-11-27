@@ -351,11 +351,11 @@ Ucg *ucg_param(char *name, Ucg *data_type) {
     return new;
 }
 
-Ucg *ucg_call(Ucg *fn, Ucg **params, int params_count) {
+Ucg *ucg_call(Ucg *fn, Ucg **args, int args_count) {
     Ucg *new = ucg_new(FN_CALL);
     new->to_call = fn;
-    for (int i = 0; i < params_count; i++)
-        append(new->fn.params, params[i]);
+    for (int i = 0; i < args_count; i++)
+        append(new->fn.params, args[i]);
     new->value_type = fn->fn.ret;
     append(gb_ucg.insts, new);
     return new;
