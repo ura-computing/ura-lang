@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 03:22:12    */
 /*                                                             */
-/*   updated: 2026/11/27 01:40:30                              */
+/*   updated: 2026/11/27 20:26:35                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -172,7 +172,8 @@ const char *to_string(Type type) {
         NAME(FLOAT),         NAME(CHARS),         NAME(REF),
         NAME(POINT_TO),      NAME(ZERO),
 
-        NAME(STRUCT),        NAME(DOT),           NAME(ATTR),
+        NAME(STRUCT),        NAME(STRUCT_CALL),   NAME(DOT),           
+		NAME(ATTR),
         NAME(ENUM),          NAME(DREF),          NAME(OWN),
 
         NAME(LPARENT),       NAME(RPARENT),       NAME(LBRACK),

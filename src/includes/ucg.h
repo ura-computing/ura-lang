@@ -45,7 +45,7 @@ enum Type {
     REF, POINT_TO, ZERO,
 
     // --- structs and enums ---
-    STRUCT, DOT, ATTR, ENUM, OWN,
+    STRUCT, STRUCT_CALL, DOT, ATTR, ENUM, OWN,
 
     // --- punctuation ---
     LPARENT, RPARENT, DOTS, DOUBLE_DOTS, COMA,

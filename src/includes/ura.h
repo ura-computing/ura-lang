@@ -64,6 +64,8 @@ struct Token {
 struct Node {
 	Token *token;
     Ucg *ucg;
+    Node *declared;
+    expand(Node *, locals);
 
 	union {
         Node *left;

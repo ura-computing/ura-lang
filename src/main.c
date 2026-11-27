@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 01:00:44    */
 /*                                                             */
-/*   updated: 2026/11/27 13:50:25                              */
+/*   updated: 2026/11/27 20:04:29                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -831,6 +831,165 @@ Node *parse_expr(int level) {
     return left;
 }
 
+// ANALYZE
+Node *analyze_capture(Node *fn, Node *decl) {
+    for (int i = 0; i < fn->locals_count; i++) {
+        Node *local = fn->locals[i];
+        if (local->from_parent == decl)
+            return local;
+    }
+    Node *param = new_node(decl->token);
+    param->data_type = decl->data_type;
+    param->from_parent = decl;
+    append(fn->params->children, param);
+    append(fn->locals, param);
+    return param;
+}
+
+Node *find_local(Token *name) {
+    expand(Node *, crossed);
+    zero_init(crossed);
+    for (int i = ura.scopes_count - 1; i >= 0; i--) {
+        Node *scope = ura.scopes[i];
+        for (int j = scope->locals_count - 1; j >= 0; j--) {
+            Node *decl = scope->locals[j];
+            if (!strcmp2(decl->token->name, name->name))
+                continue;
+            bool is_global = decl->token->space == 0;
+            for (int k = crossed_count - 1; !is_global && k >= 0; k--)
+                decl = analyze_capture(crossed[k], decl);
+            return decl;
+        }
+        if (scope->token->type == FN_DEC)
+            append(crossed, scope);
+    }
+    return NULL;
+}
+
+void analyze_closure(Node *locals, Node *fn, Node *node) {
+    if (node == NULL)
+        return;
+    Token *token = node->token;
+    if (token->type == DECLARE)
+        append(locals->children, node);
+    bool is_local = false;
+    for (int i = 0; token->type == ID && i < locals->children_count; i++)
+        is_local = is_local || strcmp2(locals->children[i]->token->name, token->name);
+    Node *decl = NULL;
+    if (token->type == ID && !is_local)
+        decl = find_node(DECLARE, token->name);
+    if (decl && decl->token->space > 0)
+        analyze_capture(fn, decl);
+    switch (token->type) { // clang-format off
+    case DOT:     analyze_closure(locals, fn, node->base);    return;
+    case AS:      analyze_closure(locals, fn, node->operand); return;
+    case DECLARE: return;
+    case ARRAY: case FN_DEC: break;
+    default: // clang-format on
+        analyze_closure(locals, fn, node->left);
+        analyze_closure(locals, fn, node->right);
+    }
+    for (int i = 0; i < node->children_count; i++)
+        analyze_closure(locals, fn, node->children[i]);
+}
+
+void analyze_block(Node *node) {
+    append(ura.scopes, node);
+    ura.scope = node;
+    analyze(node->left);
+    for (int i = 0; i < node->children_count; i++) {
+        Node *child = node->children[i];
+        if (child->token->type == FN_DEC && find_scope(FN_DEC))
+            analyze_closure(new_node(child->token), child, child);
+    }
+    for (int i = 0; i < node->children_count; i++) {
+        Node *child = node->children[i];
+        if (child->token->type == FN_DEC)
+            analyze(child);
+    }
+    for (int i = 0; i < node->children_count; i++) {
+        Node *child = node->children[i];
+        if (child->token->type != FN_DEC)
+            analyze(child);
+    }
+    ura.scopes_count--;
+    ura.scope = NULL;
+    if (ura.scopes_count)
+        ura.scope = ura.scopes[ura.scopes_count - 1];
+    if (includes(node->token->type, IF, ELIF, NULL))
+        analyze(node->next);
+}
+
+void analyze(Node *node) {
+    if (node == NULL)
+        return;
+    Token *token = node->token;
+    switch (token->type) {
+    case ID: {
+        node->declared = find_node(STRUCT, token->name);
+        if (node->declared) {
+            token->type = STRUCT_CALL;
+            break;
+        }
+        node->declared = find_local(token);
+        if (node->declared == NULL)
+            add_error(token, format("'%s' is not declared", token->name), NULL);
+        break;
+    }
+    case DECLARE: {
+        if (find_node(STRUCT, token->name))
+            add_error(token, format("'%s' is a struct name", token->name), NULL);
+        analyze(node->data_type);
+        append(ura.scope->locals, node);
+        break;
+    } // clang-format off
+    case URA: case STRUCT: case PROTO: case FN_DEC:
+    case IF: case ELIF: case ELSE: case LOOP: { // clang-format on
+        analyze_block(node);
+        break;
+    }
+    case DOT: {
+        analyze(node->base);
+        break;
+    }
+    case FN_CALL: {
+        Node *fn = find_node(FN_DEC, token->name);
+        if (fn == NULL)
+            fn = find_node(PROTO, token->name);
+        if (fn == NULL) {
+            add_error(token, format("'%s' is not declared", token->name), NULL);
+            break;
+        }
+        node->declared = fn;
+        Node *list = fn->params;
+        int expected = 0;
+        for (int i = 0; i < list->children_count; i++)
+            expected += list->children[i]->from_parent == NULL;
+        if (node->params->children_count != expected) {
+            char *msg = format("'%s' takes %d arguments", token->name, expected);
+            add_error(token, msg, NULL);
+        }
+        analyze(node->params);
+        for (int i = 0; i < list->children_count; i++) {
+            Node *param = list->children[i];
+            if (param->from_parent == NULL)
+                continue;
+            Node *arg = new_node(param->token);
+            arg->declared = find_local(param->token);
+            append(node->children, arg);
+        }
+        break;
+    }
+    default: {
+        analyze(node->left);
+        analyze(node->right);
+        for (int i = 0; i < node->children_count; i++)
+            analyze(node->children[i]);
+        break;
+    }
+    }
+}
+
 // CODEGEN
 Ucg *type_of(Node *node) {
     Token *token = node->token;
@@ -846,11 +1005,8 @@ Ucg *type_of(Node *node) {
     }
     if (token->type == ARRAY)
         return ucg_array_type(type_of(node->data_type), 0);
-    Node *found = NULL;
-    if (token->type == ID)
-        found = find_node(STRUCT, token->name);
-    if (found)
-        return codegen_struct(found);
+    if (token->type == STRUCT_CALL)
+        return codegen_struct(node->declared);
     add_error(token, format("type %t is not supported yet", token->type), NULL);
     return NULL;
 }
@@ -890,29 +1046,12 @@ Ucg *find_variable(Node *node) {
             return NULL;
         return ucg_get_item(base, index);
     }
-    Node *fn = NULL;
-    for (int i = ura.scopes_count - 1; i >= 0; i--) {
-        Node *scope = ura.scopes[i];
-        for (int j = 0; j < scope->children_count; j++) {
-            Node *child = scope->children[j];
-            Node *decl = child->token->type == ASSIGN ? child->var : child;
-            bool is_declare = decl->token->type == DECLARE;
-            if (!is_declare || !strcmp2(decl->token->name, token->name))
-                continue;
-            bool is_global = decl->token->space == 0;
-            if (fn && !is_global)
-                return ucg_point_to(codegen_capture(fn, decl)->ucg);
-            if (decl->ucg == NULL)
-                continue;
-            if (decl->from_parent == NULL)
-                return decl->ucg;
-            return ucg_point_to(decl->ucg);
-        }
-        if (scope->token->type == FN_DEC && fn == NULL)
-            fn = scope;
-    }
-    add_error(token, format("'%s' is not declared", token->name), NULL);
-    return NULL;
+    Node *decl = node->declared;
+    if (decl == NULL)
+        return NULL;
+    if (decl->from_parent)
+        return ucg_point_to(decl->ucg);
+    return decl->ucg;
 }
 
 bool is_literal(Node *node) {
@@ -974,11 +1113,8 @@ Ucg *codegen_block(Node *node, Ucg *type) {
     }
     for (int i = 0; i < node->children_count; i++) {
         Node *child = node->children[i];
-        if (child->token->type != FN_DEC)
-            continue;
-        if (find_scope(FN_DEC))
-            codegen_closure(new_node(child->token), child, child);
-        codegen_fn(child);
+        if (child->token->type == FN_DEC)
+            codegen_fn(child);
     }
     Ucg *value = NULL;
     for (int i = 0; i < node->children_count; i++) {
@@ -1035,6 +1171,8 @@ Ucg *codegen_proto(Node *node) {
     for (int i = 0; i < node->params->children_count; i++) {
         Node *param = node->params->children[i];
         Ucg *type = type_of(param->data_type);
+        if (param->from_parent)
+            type = ucg_ref_type(type);
         append(params, param->ucg = ucg_param(param->token->name, type));
     }
     Node *parent = find_scope(FN_DEC);
@@ -1114,51 +1252,6 @@ Ucg *codegen_array(Node *node, Ucg *type) {
     return ucg_array_from(elem, items, items_count);
 }
 
-Node *codegen_capture(Node *fn, Node *decl) {
-    Node *list = fn->params;
-    for (int i = 0; i < list->children_count; i++) {
-        Node *param = list->children[i];
-        if (param->from_parent == decl)
-            return param;
-    }
-    Node *param = new_node(decl->token);
-    param->data_type = decl->data_type;
-    param->from_parent = decl;
-    Ucg *type = ucg_ref_type(type_of(decl->data_type));
-    param->ucg = ucg_param(decl->token->name, type);
-    append(fn->ucg->fn.params, param->ucg);
-    append(list->children, param);
-    append(fn->children, param);
-    return param;
-}
-
-void codegen_closure(Node *locals, Node *fn, Node *node) {
-    if (node == NULL)
-        return;
-    Token *token = node->token;
-    if (token->type == DECLARE)
-        append(locals->children, node);
-    bool is_local = false;
-    for (int i = 0; token->type == ID && i < locals->children_count; i++)
-        is_local = is_local || strcmp2(locals->children[i]->token->name, token->name);
-    Node *decl = NULL;
-    if (token->type == ID && !is_local)
-        decl = find_node(DECLARE, token->name);
-    if (decl && decl->token->space > 0)
-        codegen_capture(fn, decl);
-    switch (token->type) { // clang-format off
-    case DOT:     codegen_closure(locals, fn, node->base);    return;
-    case AS:      codegen_closure(locals, fn, node->operand); return;
-    case DECLARE: return;
-    case ARRAY: case FN_DEC: break;
-    default: // clang-format on
-        codegen_closure(locals, fn, node->left);
-        codegen_closure(locals, fn, node->right);
-    }
-    for (int i = 0; i < node->children_count; i++)
-        codegen_closure(locals, fn, node->children[i]);
-}
-
 Ucg *codegen_fn(Node *node) {
     Ucg *fn = node->ucg;
     ucg_entry(fn);
@@ -1173,9 +1266,6 @@ Ucg *codegen(Node *node, Ucg *type) {
     switch (token->type) { // clang-format off
     case ID: case DOT: value = ucg_load(find_variable(node)); break;
     case DECLARE: { // clang-format on
-        bool is_struct_name = find_node(STRUCT, token->name) != NULL;
-        if (node->ucg == NULL && is_struct_name)
-            add_error(token, format("'%s' is a struct name", token->name), NULL);
         if (node->ucg == NULL)
             node->ucg = ucg_var(token->name, type_of(node->data_type));
         value = node->ucg;
@@ -1190,9 +1280,7 @@ Ucg *codegen(Node *node, Ucg *type) {
         Node *base = node->base;
         while (base->token->type == ACCESS)
             base = base->base;
-        bool is_struct =
-            base->token->type == ID && find_node(STRUCT, base->token->name);
-        if (is_struct)
+        if (base->token->type == STRUCT_CALL)
             value = codegen_stack_array(node);
         else
             value = ucg_load(find_variable(node));
@@ -1261,36 +1349,20 @@ Ucg *codegen(Node *node, Ucg *type) {
         value = ucg_op(SUB, zero, operand);
         break;
     }
-    case PROTO:
+    case PROTO: {
         value = node->ucg;
         break;
+	}
     case FN_CALL: {
-        Node *fn = find_node(FN_DEC, token->name);
-        if (fn == NULL)
-            fn = find_node(PROTO, token->name);
-        if (fn == NULL) {
-            add_error(token, format("'%s' is not declared", token->name), NULL);
-            break;
-        }
-        Ucg *proto = fn->ucg;
-        int count = node->params->children_count;
-        Node *list = fn->params;
-        int expected = 0;
-        for (int i = 0; i < list->children_count; i++)
-            expected += list->children[i]->from_parent == NULL;
-        if (count != expected) {
-            char *msg = format("'%s' takes %d arguments", token->name, expected);
-            add_error(token, msg, NULL);
-            break;
-        }
+        Ucg *proto = node->declared->ucg;
         expand(Ucg *, params);
         zero_init(params);
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < node->params->children_count; i++) {
             Ucg *param_type = proto->fn.params[i]->data_type;
             append(params, codegen(node->params->children[i], param_type));
         }
-        for (int i = count; i < list->children_count; i++)
-            append(params, ucg_ref(find_variable(list->children[i])));
+        for (int i = 0; i < node->children_count; i++)
+            append(params, ucg_ref(find_variable(node->children[i])));
         value = ucg_call(proto, params, params_count);
         break;
     }
@@ -1367,6 +1439,9 @@ int main(int ac, char **av) {
     ura.tree = new_node(new_token(URA, 0, 0));
     while (peek(0)->type != LAST)
         append(ura.tree->children, parse_expr(0));
+    ucg_check_errors();
+
+    analyze(ura.tree);
     ucg_check_errors();
 
     ucg_asm_start("ura", OUTPUT_EXE);
