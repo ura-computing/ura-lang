@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 01:00:44    */
 /*                                                             */
-/*   updated: 2026/11/27 09:58:16                              */
+/*   updated: 2026/11/27 11:00:24                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -671,7 +671,7 @@ Node *parse_type(void) {
     if (!is_array)
         return type;
     Node *array = new_node(next()); // skip [
-    next(); // skip ]
+    next();                         // skip ]
     array->token->type = ARRAY;
     array->data_type = type;
     return array;
@@ -679,7 +679,7 @@ Node *parse_type(void) {
 
 Node *parse_list(Token *open) {
     Node *list = new_node(open);
-	list->token->type = PARAMS;
+    list->token->type = PARAMS;
     while (!includes(peek(0)->type, RPARENT, LAST, NULL)) {
         append(list->children, parse_expr(0));
         if (peek(0)->type != COMA)
@@ -697,7 +697,7 @@ Node *parse_fn(Token *token) {
         token->name = name->name;
     Token *open = expect(LPARENT, "expected '(' after the function name", NULL);
     node->params = open ? parse_list(open) : new_node(token);
-	node->params->token->type = PARAMS;
+    node->params->token->type = PARAMS;
     for (int i = 0; i < node->params->children_count; i++)
         append(node->children, node->params->children[i]);
     if (peek(0)->is_type)
@@ -735,6 +735,15 @@ Node *parse_prime(void) {
         expect(RPARENT, "expected ')'", NULL);
         return node;
     }
+    case STRUCT: {
+        Node *node = new_node(token);
+        Token *name = expect(ID, "expected a struct name", "struct Point:");
+        if (name)
+            token->name = name->name;
+        expect(DOTS, "expected ':' after the struct name", NULL);
+        parse_block(node);
+        return node;
+    }
     case ID: {
         Node *node = new_node(token);
         bool is_call = peek(0)->type == LPARENT && peek(0)->line == token->line;
@@ -743,7 +752,9 @@ Node *parse_prime(void) {
             node->params = parse_list(next());
             return node;
         }
-        bool is_declare = peek(0)->is_type && peek(0)->line == token->line;
+        Token *after = peek(0);
+        bool is_type = after->is_type || after->type == ID;
+        bool is_declare = is_type && after->line == token->line;
         if (is_declare) {
             token->type = DECLARE;
             node->data_type = parse_type();
@@ -792,22 +803,51 @@ Ucg *type_of(Node *node) {
         return ucg_float_type(token->bits);
     if (token->type == ARRAY)
         return ucg_array_type(type_of(node->data_type), 0);
+    Node *found = token->type == ID ? find_node(STRUCT, token->name) : NULL;
+    if (found)
+        return codegen_struct(found);
     add_error(token, format("type %t is not supported yet", token->type), NULL);
     return ucg_int_type(32);
 }
 
-Ucg *find_var(Token *name) {
+Node *find_node(Type type, char *name) {
+    for (int i = ura.scopes_count - 1; i >= 0; i--) {
+        Node *scope = ura.scopes[i];
+        for (int j = 0; j < scope->children_count; j++) {
+            Node *child = scope->children[j];
+            bool is_type = child->token->type == type;
+            if (is_type && strcmp2(child->token->name, name))
+                return child;
+        }
+    }
+    return NULL;
+}
+
+Ucg *find_var(Node *node) {
+    Token *token = node->token;
+    if (token->type == DOT) {
+        Ucg *base = find_var(node->left);
+        if (base == NULL)
+            return NULL;
+        Token *attr = node->right->token;
+        Ucg *var = ucg_get_attr(base, attr->name);
+        if (var == NULL) {
+            char *msg = format("no attribute '%s'", attr->name);
+            add_error(attr, msg, NULL);
+        }
+        return var;
+    }
     for (int i = ura.scopes_count - 1; i >= 0; i--) {
         Node *scope = ura.scopes[i];
         for (int j = 0; j < scope->children_count; j++) {
             Node *child = scope->children[j];
             Node *decl = child->token->type == ASSIGN ? child->left : child;
             bool is_var = decl->token->type == DECLARE && decl->token->ucg;
-            if (is_var && strcmp2(decl->token->name, name->name))
+            if (is_var && strcmp2(decl->token->name, token->name))
                 return decl->token->ucg;
         }
     }
-    add_error(name, format("'%s' is not declared", name->name), NULL);
+    add_error(token, format("'%s' is not declared", token->name), NULL);
     return NULL;
 }
 
@@ -865,6 +905,11 @@ void codegen_block(Node *node) {
     ura.scope = node;
     for (int i = 0; i < node->children_count; i++) {
         Node *child = node->children[i];
+        if (includes(child->token->type, FN_DEC, PROTO, NULL))
+            codegen_proto(child);
+    }
+    for (int i = 0; i < node->children_count; i++) {
+        Node *child = node->children[i];
         codegen(child);
         if (includes(child->token->type, RETURN, BRK, CNT, NULL))
             break;
@@ -885,6 +930,21 @@ Ucg *codegen_proto(Node *node) {
     return node->token->ucg = ucg_proto(node->token->name, ret, params, params_count);
 }
 
+Ucg *codegen_struct(Node *node) {
+    Token *token = node->token;
+    if (token->ucg)
+        return token->ucg;
+    Ucg *type = token->ucg = ucg_struct_type(token->name);
+    for (int i = 0; i < node->children_count; i++) {
+        Node *attr = node->children[i];
+        if (attr->token->type != DECLARE)
+            continue;
+        Ucg *attr_type = type_of(attr->data_type);
+        append(type->obj.attrs, ucg_param(attr->token->name, attr_type));
+    }
+    return type;
+}
+
 Ucg *codegen_fn(Node *node) {
     Ucg *fn = node->token->ucg;
     ucg_entry(fn);
@@ -901,7 +961,8 @@ Ucg *codegen(Node *node) {
     case CHARS:  return ucg_string_value(token->string);
     case FN_DEC: return codegen_fn(node);
     case PROTO:  return token->ucg;
-    case ID:     return ucg_load(find_var(token));
+    case STRUCT: return codegen_struct(node);
+    case ID: case DOT: return ucg_load(find_var(node));
     case RETURN: { // clang-format on
         Node *fn = find_scope(FN_DEC);
         Ucg *ret = fn->token->ucg->fn.ret;
@@ -966,14 +1027,14 @@ Ucg *codegen(Node *node) {
         }
         return ucg_jump(token->type, loop->token->ucg);
     }
-    // clang-format off
+        // clang-format off
     case ADD_ASSIGN: case SUB_ASSIGN: case MUL_ASSIGN: 
 	case DIV_ASSIGN: case MOD_ASSIGN: { // clang-format on
         Type ops[LAST + 1] = {
             [ADD_ASSIGN] = ADD, [SUB_ASSIGN] = SUB, [MUL_ASSIGN] = MUL,
             [DIV_ASSIGN] = DIV, [MOD_ASSIGN] = MOD,
         };
-        Ucg *var = find_var(node->left->token);
+        Ucg *var = find_var(node->left);
         Ucg *type = var ? var->data_type : NULL;
         Ucg *value = codegen_as(node->right, type);
         Ucg *result = ucg_op(ops[token->type], ucg_load(var), value);
@@ -992,7 +1053,7 @@ Ucg *codegen(Node *node) {
     }
     case ASSIGN: {
         bool is_declare = node->left->token->type == DECLARE;
-        Ucg *var = is_declare ? codegen(node->left) : find_var(node->left->token);
+        Ucg *var = is_declare ? codegen(node->left) : find_var(node->left);
         Ucg *type = var ? var->data_type : NULL;
         Ucg *value = codegen_as(node->right, type);
         check_type(node->right, type, value);
@@ -1049,19 +1110,13 @@ int main(int ac, char **av) {
     for (int i = 0; i < ura.tokens_count; i++)
         print("%k\n", ura.tokens[i]);
 
-    ura.tree = new_node(NULL);
+    ura.tree = new_node(new_token(URA, 0, 0));
     while (peek(0)->type != LAST)
         append(ura.tree->children, parse_expr(0));
     ucg_check_errors();
 
     ucg_asm_start("ura", OUTPUT_EXE);
-    for (int i = 0; i < ura.tree->children_count; i++) {
-        Node *child = ura.tree->children[i];
-        if (includes(child->token->type, FN_DEC, PROTO, NULL))
-            codegen_proto(child);
-    }
-    for (int i = 0; i < ura.tree->children_count; i++)
-        codegen(ura.tree->children[i]);
+    codegen_block(ura.tree);
     ucg_check_errors();
     ucg_asm_compile();
     ucg_asm_print();

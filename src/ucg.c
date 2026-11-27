@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/27 08:23:36                              */
+/*   updated: 2026/11/27 11:00:32                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -116,6 +116,12 @@ Ucg *ucg_array_type(Ucg *elem, int count) {
     return new;
 }
 
+Ucg *ucg_struct_type(char *name) {
+    Ucg *new = ucg_new(STRUCT);
+    new->name = name;
+    return new;
+}
+
 Ucg *ucg_numeric_value(Ucg *data_type, char *value) {
     Ucg *new = ucg_new(VAL_CREATE);
     new->data_type = data_type;
@@ -196,6 +202,23 @@ Ucg *ucg_load(Ucg *var) {
     new->value_type = var ? var->data_type : NULL;
     append(gb_ucg.insts, new);
     return new;
+}
+
+Ucg *ucg_get_attr(Ucg *base, char *name) {
+    Ucg *type = base->data_type;
+    for (int i = 0; i < type->obj.attrs_count; i++) {
+        Ucg *attr = type->obj.attrs[i];
+        if (!strcmp2(attr->name, name))
+            continue;
+        Ucg *new = ucg_new(ATTR);
+        new->name = name;
+        new->data_type = attr->data_type;
+        new->base = base;
+        new->obj.index = i;
+        append(gb_ucg.insts, new);
+        return new;
+    }
+    return NULL;
 }
 
 Ucg *ucg_branch(Type type, Ucg *prev) {
@@ -412,20 +435,21 @@ Ucg *llvm_compile(Ucg *ucg) {
     Builder lmb = gb_ucg.builder;
 
     switch (type) {
-    // clang-format off
+        // clang-format off
     case VOID: ucg->lltype = LLVMVoidTypeInContext(ctx);          break;
     case INT:  ucg->lltype = LLVMIntTypeInContext(ctx, ucg->bits); break;
     // clang-format on
     case FLOAT: {
         switch (ucg->bits) {
-        // clang-format off
+            // clang-format off
         case 16:  ucg->lltype = LLVMHalfTypeInContext(ctx);    break;
         case 32:  ucg->lltype = LLVMFloatTypeInContext(ctx);   break;
         case 64:  ucg->lltype = LLVMDoubleTypeInContext(ctx);  break;
         case 80:  ucg->lltype = LLVMX86FP80TypeInContext(ctx); break;
         case 128: ucg->lltype = LLVMFP128TypeInContext(ctx);   break;
         // clang-format on
-        default: assert(0 && "float bits are checked by the front end");
+        default:
+            assert(0 && "float bits are checked by the front end");
         }
         break;
     }
@@ -434,6 +458,22 @@ Ucg *llvm_compile(Ucg *ucg) {
         TypeRef elem = ucg->arr.elem->lltype;
         int count = ucg->arr.items_count;
         ucg->lltype = count ? LLVMArrayType(elem, count) : LLVMPointerType(elem, 0);
+        break;
+    }
+    case STRUCT: {
+        ucg->lltype = LLVMStructCreateNamed(ctx, ucg->name);
+        expand(TypeRef, types);
+        zero_init(types);
+        for (int i = 0; i < ucg->obj.attrs_count; i++)
+            append(types, llvm_compile(ucg->obj.attrs[i]->data_type)->lltype);
+        LLVMStructSetBody(ucg->lltype, types, types_count, false);
+        break;
+    }
+    case ATTR: {
+        Ucg *base = ucg->base;
+        TypeRef lltype = base->data_type->lltype;
+        int index = ucg->obj.index;
+        ucg->elem = LLVMBuildStructGEP2(lmb, lltype, base->elem, index, ucg->name);
         break;
     }
     case VAL_CREATE: {
@@ -595,7 +635,8 @@ Ucg *llvm_compile(Ucg *ucg) {
         else if (!from_float && !to_float)
             ucg->elem = LLVMBuildIntCast2(lmb, value, lltype, is_signed, "");
         else
-            ucg->elem = LLVMBuildCast(lmb, to_float ? to_fp : from_fp, value, lltype, "");
+            ucg->elem =
+                LLVMBuildCast(lmb, to_float ? to_fp : from_fp, value, lltype, "");
         break;
     }
     case IF: {
@@ -611,7 +652,7 @@ Ucg *llvm_compile(Ucg *ucg) {
         LLVMPositionBuilderAtEnd(lmb, ucg->bloc);
         break;
     }
-    // clang-format off
+        // clang-format off
     case ELIF: case ELSE: {
         // clang-format on
         if (!is_bloc_terminated())

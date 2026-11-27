@@ -163,7 +163,6 @@ struct Ucg {
         Ucg *to_end; // used in ENDIF
         Ucg *to_call;
         Ucg *stmt;
-        Ucg *base;
         Ucg *to_point;
         Ucg *to_size;
     };
@@ -177,6 +176,7 @@ struct Ucg {
         Ucg *to_type;
         Ucg *attr;
         Ucg *index;
+        Ucg *base;
     };
     expand(Ucg *, cleans);
 };
