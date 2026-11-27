@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/27 13:48:22                              */
+/*   updated: 2026/11/27 13:50:32                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -352,8 +352,10 @@ Ucg *ucg_op(Type type, Ucg *left, Ucg *right) {
     bool is_cmp = includes(type, GT, LT, GE, LE, EQ, NQ, NULL);
     bool is_logic = includes(type, AND, OR, AND_LIT, OR_LIT, NULL);
     is_cmp = is_cmp || is_logic;
-    if (left) new->value_type = left->value_type;
-    if (is_cmp) new->value_type = ucg_uint_type(1);
+    if (left)
+        new->value_type = left->value_type;
+    if (is_cmp)
+        new->value_type = ucg_uint_type(1);
     append(gb_ucg.insts, new);
     return new;
 }
