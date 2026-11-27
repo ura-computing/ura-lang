@@ -69,38 +69,19 @@ Ucg *ucg_new(Type type) {
     return new;
 }
 
-Ucg *ucg_int_type(int bits) {
-    assert(bits > 0 && bits < UCG_MAX_INT_BITS + 1);
-    Ucg *new = gb_ucg.ints[bits];
-    if (new)
-        return new;
-
-    new = ucg_new(INT);
+Ucg *ucg_number_type(Type type, int bits, bool is_uint) {
+    assert(bits > 0 && bits <= UCG_MAX_INT_BITS);
+    Ucg **cache = gb_ucg.ints;
+    if (is_uint)
+        cache = gb_ucg.uints;
+    if (type == FLOAT)
+        cache = gb_ucg.floats;
+    if (cache[bits])
+        return cache[bits];
+    Ucg *new = ucg_new(type);
     new->bits = bits;
-    return (gb_ucg.ints[bits] = new);
-}
-
-Ucg *ucg_uint_type(int bits) {
-    assert(bits > 0 && bits < UCG_MAX_INT_BITS + 1);
-    Ucg *new = gb_ucg.uints[bits];
-    if (new)
-        return new;
-
-    new = ucg_new(INT);
-    new->bits = bits;
-    new->is_uint = true;
-    return (gb_ucg.uints[bits] = new);
-}
-
-Ucg *ucg_float_type(int bits) {
-    assert(bits > 0 && bits < 128 + 1);
-    Ucg *new = gb_ucg.floats[bits];
-    if (new)
-        return new;
-
-    new = ucg_new(FLOAT);
-    new->bits = bits;
-    return (gb_ucg.floats[bits] = new);
+    new->is_uint = is_uint;
+    return cache[bits] = new;
 }
 
 Ucg *ucg_ref_type(Ucg *to_ref) {
@@ -140,7 +121,7 @@ Ucg *ucg_array_value(Ucg *elem, int count) {
 }
 
 Ucg *ucg_string_value(char *text) {
-    Ucg *type = ucg_int_type(8);
+    Ucg *type = ucg_number_type(INT, 8, false);
     int count = strlen(text) + 1;
     Ucg *new = ucg_array_value(type, count);
     for (int i = 0; i < count; i++)
@@ -263,7 +244,7 @@ Ucg *ucg_stack_alloc(Ucg *elem, Ucg *count) {
 }
 
 Ucg *ucg_array_from(Ucg *elem, Ucg **items, int count) {
-    Ucg *i32 = ucg_int_type(32);
+    Ucg *i32 = ucg_number_type(INT, 32, false);
     Ucg *array = ucg_var(NULL, ucg_array_type(elem, 0));
     Ucg *size = ucg_numeric_value(i32, format("%d", count));
     ucg_assign(array, ucg_stack_alloc(elem, size));
@@ -276,7 +257,7 @@ Ucg *ucg_array_from(Ucg *elem, Ucg **items, int count) {
 
 // TODO: to be verified
 Ucg *ucg_stack_array(Ucg *elem, Ucg **sizes, int count) {
-    Ucg *i32 = ucg_int_type(32);
+    Ucg *i32 = ucg_number_type(INT, 32, false);
     expand(Ucg *, totals);
     zero_init(totals);
     append(totals, sizes[0]);
@@ -358,7 +339,7 @@ Ucg *ucg_op(Type type, Ucg *left, Ucg *right) {
     if (left)
         new->value_type = left->value_type;
     if (is_cmp)
-        new->value_type = ucg_uint_type(1);
+        new->value_type = ucg_number_type(INT, 1, true);
     append(gb_ucg.insts, new);
     return new;
 }

@@ -807,21 +807,13 @@ Node *analyze_capture(Node *fn, Node *decl) {
 }
 
 Node *find_local(Token *name) {
-    expand(Node *, crossed);
-    zero_init(crossed);
     for (int i = ura.scopes_count - 1; i >= 0; i--) {
         Node *scope = ura.scopes[i];
         for (int j = scope->locals_count - 1; j >= 0; j--) {
             Node *decl = scope->locals[j];
-            if (!strcmp2(decl->token->name, name->name))
-                continue;
-            bool is_global = decl->token->space == 0;
-            for (int k = crossed_count - 1; !is_global && k >= 0; k--)
-                decl = analyze_capture(crossed[k], decl);
-            return decl;
+            if (strcmp2(decl->token->name, name->name))
+                return decl;
         }
-        if (scope->token->type == FN_DEC)
-            append(crossed, scope);
     }
     return NULL;
 }
@@ -962,12 +954,8 @@ void analyze(Node *node) {
 // CODEGEN
 Ucg *type_of(Node *node) {
     Token *token = node->token;
-    if (token->type == INT && token->is_uint)
-        return ucg_uint_type(token->bits);
-    if (token->type == INT)
-        return ucg_int_type(token->bits);
-    if (token->type == FLOAT)
-        return ucg_float_type(token->bits);
+    if (includes(token->type, INT, FLOAT, NULL))
+        return ucg_number_type(token->type, token->bits, token->is_uint);
     if (token->type == ARRAY && node->children_count) {
         add_error(token, "a type has no size", "a i32[] = i32[3]");
         return NULL;
@@ -1010,7 +998,7 @@ Ucg *find_variable(Node *node) {
     }
     if (token->type == ACCESS) {
         Ucg *base = find_variable(node->base);
-        Ucg *index = codegen(node->index, ucg_int_type(32));
+        Ucg *index = codegen(node->index, ucg_number_type(INT, 32, false));
         if (base == NULL)
             return NULL;
         return ucg_get_item(base, index);
@@ -1118,7 +1106,7 @@ Ucg *codegen_if(Node *node, Ucg *type) {
         Ucg *part = is_first ? stmt : ucg_branch(branch->token->type, stmt);
         Ucg *cond = NULL;
         if (branch->cond)
-            cond = codegen(branch->cond, ucg_uint_type(1));
+            cond = codegen(branch->cond, ucg_number_type(INT, 1, true));
         ucg_then(part, cond);
         Ucg *value = codegen_block(branch, type);
         bool has_value = value && value->value_type;
@@ -1197,7 +1185,7 @@ Ucg *codegen_stack_array(Node *node) {
     expand(Ucg *, values);
     zero_init(values);
     for (int i = 0; i < sizes->children_count; i++)
-        append(values, codegen(sizes->children[i], ucg_int_type(32)));
+        append(values, codegen(sizes->children[i], ucg_number_type(INT, 32, false)));
     return ucg_stack_array(type_of(elem), values, values_count);
 }
 
@@ -1360,7 +1348,7 @@ Ucg *codegen(Node *node, Ucg *type) {
     case LOOP: {
         Ucg *loop = ucg_branch(LOOP, NULL);
         node->ucg = loop;
-        ucg_then(loop, codegen(node->cond, ucg_uint_type(1)));
+        ucg_then(loop, codegen(node->cond, ucg_number_type(INT, 1, true)));
         codegen_block(node, NULL);
         ucg_end(loop);
         value = loop;
