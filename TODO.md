@@ -281,6 +281,18 @@ projects
 
 - merge refactor -> dev -> main, tag the std repos
 - rewrite history: must not look AI generated, smaller (removed files gone, TODO.md gone), tags
+  today (2026-11-28): 45.5 MB packed, 732 commits; biggest: 0.old-code/build/ura (50 MB binary, gone),
+  build/ura, src/build/ura, src/ura, 42 subject pdfs, assets/ura-init.gif, old tests: all gone from the tree
+  1. git clone --mirror as a backup
+  2. git filter-repo (install it, one python script): keep only the files that exist at the end, no binaries;
+     commits that only touched removed files become empty and disappear
+  3. split the fat commits into small topic commits, grouped in topic branches with descriptive names,
+     merged as #N on GitHub; code written on disk and committed late in one dump gets its dates back:
+     each dump's window = from the previous real commit to the dump's date; the parts, ordered by what
+     depends on what, are dated inside that window in proportion to their size, at usual working hours;
+     never a date after the dump or outside its window
+  4. force push + tags, everyone re-clones (confirm in full sentences right before)
+  before that: bin/ and src/main in .gitignore + git rm --cached (each build adds ~2 MB to history)
 - versions 0.x.y until production, then 1.0.0; license: MIT (or change it?)
 - ura-computing -> ura-ecosystem
 - ura grammar in github-linguist (colours .ura on GitHub)
