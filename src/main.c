@@ -656,7 +656,8 @@ Node *parse_fn(Token *token) {
         node->params = new_node(new_token(PARAMS, token->s, token->e));
     for (int i = 0; i < node->params->children_count; i++)
         append(node->children, node->params->children[i]);
-    if (peek(0)->is_type)
+    bool has_type = peek(0)->is_type || peek(0)->type == ID;
+    if (has_type)
         node->ret_type = parse_type(next());
     if (token->type == PROTO)
         return node;
@@ -1180,6 +1181,8 @@ Ucg *codegen_var(Node *node) {
         return ucg_get_attr_by_index(codegen_var(node->base), node->attr->token->index);
     if (token->type == ACCESS)
         return ucg_get_item(codegen_var(node->base), codegen(node->index));
+    if (!includes(token->type, VAR, DECLARE, NULL))
+        return codegen(node);
     Node *decl = node->declared;
     if (decl->from_parent)
         return ucg_point_to(decl->ucg);

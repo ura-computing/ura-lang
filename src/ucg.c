@@ -153,6 +153,8 @@ Ucg *ucg_assign(Ucg *var, Ucg *value) {
 }
 
 Ucg *ucg_load(Ucg *to_load) {
+    if (to_load && to_load->value_type)
+        return to_load;
     Ucg *new = ucg_new(DREF);
     new->to_dref = to_load;
     if (to_load) {
@@ -164,11 +166,17 @@ Ucg *ucg_load(Ucg *to_load) {
 }
 
 Ucg *ucg_get_attr_by_index(Ucg *base, int index) {
-    Ucg *attr = base->data_type->obj.attrs[index];
+    Ucg *type = base->data_type;
+    if (base->value_type)
+        type = base->value_type;
+    Ucg *attr = type->obj.attrs[index];
     Ucg *new = ucg_new(ATTR);
     if (base->name)
         new->name = format("%s.%s", base->name, attr->name);
-    new->data_type = attr->data_type;
+    if (base->value_type)
+        new->value_type = attr->data_type;
+    else
+        new->data_type = attr->data_type;
     new->base = base;
     new->obj.index = index;
     append(gb_ucg.insts, new);
@@ -185,10 +193,13 @@ Ucg *ucg_get_attr(Ucg *base, char *name) {
 }
 
 Ucg *ucg_get_item(Ucg *base, Ucg *index) {
+    Ucg *type = base->data_type;
+    if (base->value_type)
+        type = base->value_type;
     Ucg *new = ucg_new(ACCESS);
     if (base->name)
         new->name = format("%s[]", base->name);
-    new->data_type = base->data_type->arr.elem;
+    new->data_type = type->arr.elem;
     new->base = base;
     new->index = index;
     append(gb_ucg.insts, new);
@@ -579,6 +590,10 @@ Ucg *llvm_compile(Ucg *ucg) {
         Ucg *base = ucg->base;
         TypeRef lltype = base->data_type->lltype;
         int index = ucg->obj.index;
+        if (base->value_type) {
+            ucg->elem = LLVMBuildExtractValue(lmb, base->elem, index, name);
+            break;
+        }
         ucg->elem = LLVMBuildStructGEP2(lmb, lltype, base->elem, index, name);
         break;
     }
@@ -595,6 +610,8 @@ Ucg *llvm_compile(Ucg *ucg) {
     }
     case ACCESS: {
         Ucg *array = ucg->base->data_type;
+        if (ucg->base->value_type)
+            array = ucg->base->value_type;
         TypeRef elem = array->arr.elem->lltype;
         Value index = ucg->index->elem;
         Value pointer = ucg->base->elem;
@@ -604,7 +621,8 @@ Ucg *llvm_compile(Ucg *ucg) {
             ucg->elem = LLVMBuildGEP2(lmb, array->lltype, pointer, indexes, 2, "");
             break;
         }
-        pointer = LLVMBuildLoad2(lmb, array->lltype, pointer, "");
+        if (ucg->base->value_type == NULL)
+            pointer = LLVMBuildLoad2(lmb, array->lltype, pointer, "");
         ucg->elem = LLVMBuildGEP2(lmb, elem, pointer, &index, 1, "");
         break;
     }
