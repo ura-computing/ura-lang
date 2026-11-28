@@ -1,18 +1,13 @@
-LLVM      ?= llvm-config-14
-CC        ?= clang
-LLVMFLAGS := $(shell $(LLVM) --cflags --ldflags --libs core)
-SRC       := src/main.c
-OUT       := build/ura
+.PHONY: install check dev
 
-.PHONY: build release dev
+# make install LLVM=12, make dev LLVM=12: build with that LLVM
+PIN := $(if $(LLVM),LLVM_VERSION=$(LLVM))
 
-build:
-	@mkdir -p build
-	$(CC) $(SRC) $(LLVMFLAGS) -o $(OUT)
+install:
+	@$(PIN) sh config/install.sh
 
-release:
-	@mkdir -p build
-	$(CC) -O2 $(SRC) $(LLVMFLAGS) -o $(OUT)
+check:
+	@sh config/install.sh check
 
 dev:
-	uv run config/tasks.py
+	@$(PIN) bash --rcfile config/config.sh -i

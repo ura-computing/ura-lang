@@ -1,0 +1,9 @@
+proto puts(s char[]) i32
+
+fn main() i32:
+    i i32 = 0
+    while i < 3:
+        puts("hello "
+            "world")
+        i += 1
+    return i
