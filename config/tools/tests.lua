@@ -7,10 +7,9 @@ local build = require("build")
 local quote, capture, succeeds = base.quote, base.capture, base.succeeds
 local read_file, write_file = base.read_file, base.write_file
 local lines, command_lines, append = base.lines, base.command_lines, base.append
-local trim, starts_with, has_line = base.trim, base.starts_with, base.has_line
+local trim, starts_with = base.trim, base.starts_with
 local green, red, die = base.green, base.red, base.die
 local BIN, TESTS_DIR, have_timeout = base.BIN, base.TESTS_DIR, base.have_timeout
-local test_config, link_projects = base.test_config, base.link_projects
 
 -- ---------------------------------------------------------------------------
 -- compiling one test
@@ -47,37 +46,51 @@ local function clean_ir(text)
     return (table.concat(out, "\n"):gsub("\n+$", ""))
 end
 
--- Compiles `code` as test.ura in a temporary folder and, with run, runs the
--- program when the code has "// stdout:" or "// expect:" lines (its stdin is
--- the "// stdin:" lines). Returns { ok, status, stderr, ir, out, exit_code }.
-local function compile_case(code, run)
+-- the text the compiler printed under a "──── name ────" header, up to the next header
+local function printed_part(printed, name)
+    local start = printed:find("──── " .. name .. " ", 1, true)
+    if not start then return "" end
+    local line_end = printed:find("\n", start, true) or #printed
+    local body = printed:sub(line_end + 1)
+    local next_header = body:find("──── ", 1, true)
+    if next_header then body = body:sub(1, next_header - 1) end
+    return (body:gsub("\n+$", ""))
+end
+
+-- Compiles `code` as test.ura in a temporary folder with -ucg -ll, then runs
+-- the program (its stdin is the "// stdin:" lines). Returns
+-- { ok, ucg, ll, stdout, stderr, status }: when the compile fails, stderr and
+-- status are the compiler's, else the program's.
+local function compile_case(code)
     local dir = trim((capture("mktemp -d")))
     write_file(dir .. "/test.ura", code)
-    write_file(dir .. "/ura.conf", test_config() .. "\n")
 
-    -- a compiler that loops forever fails its test instead of the whole run
+    -- a compiler or program that loops forever fails its test instead of the whole run
     local limit = have_timeout and "timeout 10 " or ""
+    local cd = "cd " .. quote(dir) .. " && " .. limit
 
-    -- the compiler runs from the test's folder, so messages say "test.ura:2:11";
-    -- it writes its IR to build/out.ll there
-    local stderr, status = capture("cd " .. quote(dir) .. " && " .. limit .. quote(BIN) ..
-        " compile test.ura -o program -ll 2>&1 >/dev/null")
+    -- the compiler runs from the test's folder, so messages say "test.ura:2:11",
+    -- and the program is ./test
+    local _, status = capture(cd .. quote(BIN) .. " test.ura -ucg -ll >printed.txt 2>stderr.txt")
+    local printed = (read_file(dir .. "/printed.txt") or ""):gsub("\27%[[0-9;]*m", "")
     local result = {
-        status = status,
         ok = status == 0,
-        stderr = clean_stderr(stderr),
-        ir = clean_ir(read_file(dir .. "/build/out.ll") or ""),
+        ucg = printed_part(printed, "ucg"),
+        ll = clean_ir(printed_part(printed, "llvm")),
+        stdout = "",
+        stderr = clean_stderr(read_file(dir .. "/stderr.txt") or ""),
+        status = status,
     }
 
-    if run and result.ok and (has_line(code, "// stdout:") or has_line(code, "// expect:")) then
+    if result.ok then
         local input = {}
         for _, line in ipairs(lines(code)) do
             local text = line:match("^// stdin: ?(.*)$")
             if text then input[#input + 1] = text .. "\n" end
         end
         write_file(dir .. "/stdin.txt", table.concat(input))
-        result.out, result.exit_code = capture("cd " .. quote(dir) .. " && " .. limit ..
-            "./program < stdin.txt 2>/dev/null")
+        result.stdout, result.status = capture(cd .. "./test < stdin.txt 2>err.txt")
+        result.stderr = read_file(dir .. "/err.txt") or ""
     end
 
     os.execute("rm -rf " .. quote(dir))
@@ -193,41 +206,65 @@ local function write_tests(md_path, sections)
     write_file(md_path, table.concat(out, "\n") .. "\n")
 end
 
--- the recorded IR of a test file lives in llvm-ir.md next to it
-local function recordings_path(md_path)
-    return md_path:match("^(.*)/[^/]*$") .. "/llvm-ir.md"
+-- each folder records its tests in three files next to them:
+--   ucg.md     the -ucg output
+--   llvm.md    the LLVM IR
+--   output.md  the program's stdout, stderr and exit status (the compiler's when it fails)
+local RECORDINGS = { "ucg", "llvm", "output" }
+local NOT_RECORDINGS = "! -name llvm-ir.md ! -name ucg.md ! -name llvm.md ! -name output.md"
+
+local function recordings_path(md_path, name)
+    return md_path:match("^(.*)/[^/]*$") .. "/" .. name .. ".md"
 end
 
--- Sets what a compile produced as entry's recording: a ```llvm block with the
--- IR when it compiled, else a ```stderr block with stderr and the exit status.
-local function set_recording(recordings, section, result)
-    local recorded = { "## " .. section.number .. " — " .. section.description, "" }
-    if result.ok then
-        recorded[#recorded + 1] = "```llvm"
-        append(recorded, lines(result.ir))
-    else
-        recorded[#recorded + 1] = "```stderr"
-        append(recorded, lines(result.stderr))
-        recorded[#recorded + 1] = tostring(result.status)
-    end
-    recorded[#recorded + 1] = "```"
+local function fenced(kind, text)
+    local out = { "```" .. kind }
+    if text ~= "" then append(out, lines(text)) end
+    out[#out + 1] = "```"
+    return out
+end
 
-    local existing = find_section(recordings, section.number)
-    if existing then
-        existing.lines = recorded
-    else
-        recordings[#recordings + 1] = { number = section.number, description = section.description, lines = recorded }
+-- the recorded lines of one result for one recordings file
+local function recorded_lines(result, name)
+    if name == "ucg" then return fenced("ucg", result.ucg) end
+    if name == "llvm" then return fenced("llvm", result.ll) end
+    local out = fenced("stdout", result.stdout)
+    append(out, fenced("stderr", result.stderr))
+    append(out, fenced("status", tostring(result.status)))
+    return out
+end
+
+-- every recordings file of a test file: { ucg = sections, llvm = sections, output = sections }
+local function load_recordings(md_path)
+    local all = {}
+    for _, name in ipairs(RECORDINGS) do all[name] = parse_sections(recordings_path(md_path, name)) end
+    return all
+end
+
+-- sets a result as the entry's recording in every recordings file
+local function set_recording(all, section, result)
+    for _, name in ipairs(RECORDINGS) do
+        local recorded = { "## " .. section.number .. " — " .. section.description, "" }
+        append(recorded, recorded_lines(result, name))
+        local existing = find_section(all[name], section.number)
+        if existing then
+            existing.lines = recorded
+        else
+            all[name][#all[name] + 1] = { number = section.number, description = section.description, lines = recorded }
+        end
     end
 end
 
-local function save_recordings(md_path, recordings)
-    local folder = md_path:match("^(.*)/[^/]*$")
-    local out = { "# " .. folder:match("[^/]+$") .. " llvm ir", "" }
-    for _, recording in ipairs(recordings) do
-        append(out, recording.lines)
-        out[#out + 1] = ""
+local function save_recordings(md_path, all)
+    local folder = md_path:match("^(.*)/[^/]*$"):match("[^/]+$")
+    for _, name in ipairs(RECORDINGS) do
+        local out = { "# " .. folder .. " " .. name, "" }
+        for _, recording in ipairs(all[name]) do
+            append(out, recording.lines)
+            out[#out + 1] = ""
+        end
+        write_file(recordings_path(md_path, name), table.concat(out, "\n") .. "\n")
     end
-    write_file(recordings_path(md_path), table.concat(out, "\n") .. "\n")
 end
 
 -- ---------------------------------------------------------------------------
@@ -235,7 +272,7 @@ end
 -- ---------------------------------------------------------------------------
 
 local function md_files_in(folder)
-    return command_lines("find " .. quote(folder) .. " -name '*.md' ! -name llvm-ir.md | sort")
+    return command_lines("find " .. quote(folder) .. " -name '*.md' " .. NOT_RECORDINGS .. " | sort")
 end
 
 -- The test files <target> names, and <number> padded to 3 digits:
@@ -250,14 +287,14 @@ local function select_tests(target, number)
     local files
     if not target then
         files = command_lines("find " .. quote(TESTS_DIR) .. " -path " .. quote(TESTS_DIR .. "/pending") ..
-            " -prune -o -name '*.md' ! -name llvm-ir.md -print | sort")
+            " -prune -o -name '*.md' " .. NOT_RECORDINGS .. " -print | sort")
     elseif read_file(TESTS_DIR .. "/" .. target .. ".md") then
         files = { TESTS_DIR .. "/" .. target .. ".md" }
     elseif succeeds("test -d " .. quote(TESTS_DIR .. "/" .. target)) then
         files = md_files_in(TESTS_DIR .. "/" .. target)
     else
         files = command_lines("find " .. quote(TESTS_DIR) .. " -name " .. quote(target .. ".md") ..
-            " ! -name llvm-ir.md | sort")
+            " " .. NOT_RECORDINGS .. " | sort")
     end
 
     if number then
@@ -311,39 +348,36 @@ local function check_run(code, result, name, link)
         exit_code = exit_code or line:match("^// expect:.-(%d+)")
     end
 
-    if has_stdout and not compare(table.concat(expected, "\n"), result.out, "stdout", name, link) then
+    if has_stdout and not compare(table.concat(expected, "\n"), result.stdout, "stdout", name, link) then
         return false
     end
-    if exit_code and exit_code ~= tostring(result.exit_code) then
-        red(link .. " " .. name .. " (exit " .. tostring(result.exit_code) .. ", expected " .. exit_code .. ")")
+    if exit_code and exit_code ~= tostring(result.status) then
+        red(link .. " " .. name .. " (exit " .. tostring(result.status) .. ", expected " .. exit_code .. ")")
         return false
     end
     return true
 end
 
--- runs one entry and prints its result line; true when it passed
-local function test_entry(md_path, section, recordings)
+-- runs one entry and prints its result line; true when it passed:
+-- the ucg, the LLVM IR and the output must match the recordings
+local function test_entry(md_path, section, all)
     local code = entry_code(section)
     local name, link = section.description, entry_link(md_path, section)
-    local result = compile_case(code, true)
-
-    local recording = find_section(recordings, section.number)
-    local recorded_stderr = recording and fence_block(recording.lines, "stderr")
-    local passed
-
-    if recorded_stderr then
-        -- recorded as an error test: the compile must fail with exactly that stderr and status
-        passed = compare(table.concat(recorded_stderr, "\n"), result.stderr .. "\n" .. result.status,
-            "stderr", name, link)
-    elseif not result.ok then
-        red(link .. " " .. name .. " (compile error, status " .. result.status .. ")")
-        print_failure(result.stderr)
+    if not find_section(all.output, section.number) then
+        red(link .. " " .. name .. " (not recorded: run record)")
         return false
-    else
-        local recorded_ir = recording and fence_block(recording.lines, "llvm") or {}
-        passed = compare(table.concat(recorded_ir, "\n"), result.ir, "llvm ir", name, link)
-            and check_run(code, result, name, link)
     end
+
+    local result = compile_case(code)
+    local passed = true
+    for _, kind in ipairs(RECORDINGS) do
+        local recording = find_section(all[kind], section.number)
+        local recorded = ""
+        if recording then recorded = table.concat(recording.lines, "\n", 3) end
+        local fresh = table.concat(recorded_lines(result, kind), "\n")
+        passed = passed and compare(recorded, fresh, kind, name, link)
+    end
+    passed = passed and check_run(code, result, name, link)
 
     if passed then green(link .. " " .. name) end
     return passed
@@ -351,7 +385,6 @@ end
 
 local function tests(args)
     build.build_if_changed() -- always test the current sources, never a stale bin/ura
-    link_projects()
     require_compiler()
     print()
 
@@ -361,9 +394,9 @@ local function tests(args)
         local sections = wanted_sections(md_path, number)
         if #sections > 0 then
             print(label_of(md_path))
-            local recordings = parse_sections(recordings_path(md_path))
+            local all = load_recordings(md_path)
             for _, section in ipairs(sections) do
-                if test_entry(md_path, section, recordings) then passed = passed + 1 else failed = failed + 1 end
+                if test_entry(md_path, section, all) then passed = passed + 1 else failed = failed + 1 end
             end
         end
     end
@@ -379,50 +412,38 @@ end
 
 local function record(args)
     build.build({})
-    link_projects()
     require_compiler()
     print()
 
     local files, number = select_tests(args[1], args[2])
-    local recorded, not_compiling = 0, 0
+    local recorded = 0
     for _, md_path in ipairs(files) do
         local sections = parse_sections(md_path)
-        local recordings = parse_sections(recordings_path(md_path))
+        local all = load_recordings(md_path)
         print(label_of(md_path))
 
+        -- whatever the compile and the run give is recorded: check the output before committing
         for _, section in ipairs(sections) do
             if not number or section.number == number then
-                local code = entry_code(section)
-                local result = compile_case(code, false)
+                local result = compile_case(entry_code(section))
+                set_recording(all, section, result)
                 local link = entry_link(md_path, section)
-
-                -- an error test records its stderr when the compile fails,
-                -- any other test records its IR when it compiles
-                local recording = find_section(recordings, section.number)
-                local is_error = (recording and fence_block(recording.lines, "stderr") ~= nil)
-                    or has_line(code, "// error:")
-
-                if result.ok ~= is_error then
-                    set_recording(recordings, section, result)
+                if result.ok then
                     green(link .. " " .. section.description)
-                    recorded = recorded + 1
-                elseif is_error then
-                    red(link .. " " .. section.description .. " (compiles, expected an error: not recorded)")
-                    not_compiling = not_compiling + 1
                 else
-                    red(link .. " " .. section.description .. " (doesn't compile, not recorded)")
+                    red(link .. " " .. section.description .. " (doesn't compile, its error is recorded)")
                     print_failure(result.stderr)
-                    not_compiling = not_compiling + 1
                 end
+                recorded = recorded + 1
             end
         end
 
-        save_recordings(md_path, recordings)
+        save_recordings(md_path, all)
         write_tests(md_path, sections) -- rewrites the index
     end
 
     print()
-    print(recorded .. " recorded, " .. not_compiling .. " not compiling (left as they were)")
+    print(recorded .. " recorded")
 end
 
 -- ---------------------------------------------------------------------------
@@ -448,7 +469,6 @@ local function copy(args)
         die("copy: give a path inside tests/, like m01")
     end
 
-    link_projects()
     require_compiler()
 
     -- a folder: the file that has this description, else its last file
@@ -462,7 +482,7 @@ local function copy(args)
     os.execute("mkdir -p " .. quote(md_path:match("^(.*)/[^/]*$")))
 
     -- a failed compile is recorded too, as an error test
-    local result = compile_case(code, false)
+    local result = compile_case(code)
 
     local sections = parse_sections(md_path)
     local section = find_by_description(sections, description)
@@ -478,9 +498,9 @@ local function copy(args)
     append(section.lines, trimmed_lines(code))
     section.lines[#section.lines + 1] = "```"
 
-    local recordings = parse_sections(recordings_path(md_path))
-    set_recording(recordings, section, result)
-    save_recordings(md_path, recordings)
+    local all = load_recordings(md_path)
+    set_recording(all, section, result)
+    save_recordings(md_path, all)
     write_tests(md_path, sections)
 
     green("copy: " .. verb .. " " .. section.number .. " — " .. description ..
@@ -500,13 +520,12 @@ local function run(args)
 
     local dir = trim((capture("mktemp -d")))
     write_file(dir .. "/test.ura", entry_code(section))
-    write_file(dir .. "/ura.conf", test_config() .. "\n")
 
-    if not succeeds("cd " .. quote(dir) .. " && " .. quote(BIN) .. " compile test.ura -o program </dev/null") then
+    if not succeeds("cd " .. quote(dir) .. " && " .. quote(BIN) .. " test.ura </dev/null") then
         os.execute("rm -rf " .. quote(dir))
         die("run: test " .. number .. " doesn't compile")
     end
-    local _, code = base.run("cd " .. quote(dir) .. " && ./program")
+    local _, code = base.run("cd " .. quote(dir) .. " && ./test")
     os.execute("rm -rf " .. quote(dir))
     print("exit code: " .. tostring(code))
 end

@@ -1,4 +1,4 @@
--- tools/build.lua - building the compiler: LLVM discovery, build, ucg, set-llvm, extension.
+-- tools/build.lua - building the compiler: LLVM discovery, build, set-llvm, extension.
 
 local base = require("base")
 
@@ -144,22 +144,13 @@ local function generate_prototypes()
 
     append(out, prototypes("ucg.c"))
     out[#out + 1] = "#if !UCG"
-    for _, file in ipairs({ "main.c", "assert.c", "project.c" }) do
+    for _, file in ipairs({ "main.c", "assert.c" }) do
         append(out, prototypes(file))
     end
     out[#out + 1] = "#endif"
 
     write_file(SRC_DIR .. "/includes/protos.h", table.concat(out, "\n") .. "\n")
 end
-
--- local function generate_compile_commands(flags, cflags)
---     local args = { '"clang"' }
---     for _, flag in ipairs(flags) do args[#args + 1] = '"' .. flag .. '"' end
---     for _, flag in ipairs(cflags) do args[#args + 1] = '"' .. flag .. '"' end
---     write_file(SRC_DIR .. "/compile_commands.json",
---         '[{"directory": "' .. SRC_DIR .. '", "file": "main.c", "arguments": [' ..
---         table.concat(args, ", ") .. ', "-c", "main.c"]}]\n')
--- end
 
 -- compiles <source> with LLVM into bin/<name>; extra_flags go to the C compiler
 local function build_binary(source, name, extra_flags)
@@ -176,7 +167,6 @@ local function build_binary(source, name, extra_flags)
     local libs, shim = link_flags(llvm)
 
     generate_prototypes()
-    -- generate_compile_commands(flags, cflags)
 
     os.execute("mkdir -p " .. quote(BIN_DIR))
     local ok = base.run("cd " .. quote(SRC_DIR) .. " && clang " .. quote_all(flags) .. " " ..
@@ -198,22 +188,10 @@ end
 local function build_if_changed()
     if succeeds("test -x " .. quote(BIN)) then
         local newer = capture("find " .. quote(SRC_DIR) .. " -maxdepth 2 \\( -name '*.c' -o -name '*.h' " ..
-            "\\) ! -name proto.h -newer " .. quote(BIN) .. " -print -quit")
+            "\\) ! -name protos.h -newer " .. quote(BIN) .. " -print -quit")
         if newer == "" then return end
     end
     build({})
-end
-
--- builds ucg_test.c (ucg.c plus its tests) into bin/ucg and runs its test <number>
-local function ucg(args)
-    local flags = { "-DUCG=1" }
-    while args[1] == "-D" do
-        append(flags, { "-D", args[2] })
-        table.remove(args, 1)
-        table.remove(args, 1)
-    end
-    build_binary("ucg_test.c", "ucg", flags)
-    os.execute("cd " .. quote(SRC_DIR) .. " && " .. quote(BIN_DIR .. "/ucg") .. " " .. quote_all(args))
 end
 
 -- ---------------------------------------------------------------------------
@@ -249,7 +227,6 @@ end
 return {
     build = build,
     build_if_changed = build_if_changed,
-    ucg = ucg,
     set_llvm = set_llvm,
     extension = extension,
 }

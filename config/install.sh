@@ -1,7 +1,6 @@
 #!/bin/sh
 # make install: checks for LLVM (with clang) and Lua, offers to install the
-# missing ones with the system's package manager, builds bin/ura, then
-# installs the std libraries that ura-libs/ links to.
+# missing ones with the system's package manager, then builds bin/ura.
 # make check (install.sh check): only reports what is found or missing.
 set -e
 cd "$(dirname "$0")/.."
@@ -103,5 +102,4 @@ if [ "$MODE" = check ]; then
 fi
 
 lua config/main.lua build
-(cd tests && ../bin/ura deps install)
 echo "ura is installed: run make dev to open the development shell"

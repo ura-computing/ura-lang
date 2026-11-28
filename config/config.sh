@@ -5,16 +5,22 @@
 # Every command below just runs main.lua, which does the real work.
 #
 #   build [-D DEBUG=true]       rebuild bin/ura
-#   ucg [-D DEBUG=true] [n]     build and run the ucg tests
 #   tests [target] [number]     compile and check the tests
-#   record [target] [number]    (re)write the recorded LLVM IR
+#   record [target] [number]    (re)write ucg.md, llvm.md and output.md of the tests
 #   copy <ura_file> <file> <description>
 #   run <target> <number>       compile one test and run it
 #   extension                   install the VS Code extension
 #   set-llvm [version]          list the LLVMs, or use one in this shell (LLVM_VERSION)
 #   update                      re-source this file
 #
-# Works when sourced from either bash or zsh.
+# Works when sourced from either bash or zsh. make dev starts bash with this
+# file as its rcfile.
+
+# started by make dev: load the user's bashrc first, and forget make's variables
+if [ -n "$MAKELEVEL" ]; then
+    [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+    unset MAKELEVEL MAKEFLAGS MFLAGS
+fi
 
 # where this file lives: bash and zsh report it differently when sourced
 if [ -n "$ZSH_VERSION" ]; then
@@ -45,7 +51,6 @@ fi
 
 # the commands
 build()     { lua "$URA_ROOT/main.lua" build "$@"; }
-ucg()       { lua "$URA_ROOT/main.lua" ucg "$@"; }
 tests()     { lua "$URA_ROOT/main.lua" tests "$@"; }
 record()    { lua "$URA_ROOT/main.lua" record "$@"; }
 copy()      { lua "$URA_ROOT/main.lua" copy "$@"; }
@@ -64,4 +69,4 @@ set-llvm() {
 
 update() { source "$URA_ROOT/config.sh"; }
 
-printf '\033[0;32m(ura-lang)\033[0m ready — commands: build, ucg, tests, record, copy, run, extension, set-llvm, update\n'
+printf '\033[0;32m(ura-lang)\033[0m ready — commands: build, tests, record, copy, run, extension, set-llvm, update\n'

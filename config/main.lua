@@ -1,14 +1,13 @@
 #!/usr/bin/env lua
--- config.lua - build and test workflow for ura-lang (needs Lua 5.3 or newer).
+-- main.lua - build and test workflow for ura-lang (needs Lua 5.3 or newer).
 --
---   lua config.lua <command> [arguments]
+--   lua config/main.lua <command> [arguments]
 --
 -- commands:
---   build [-D DEBUG=true]      rebuild <repo>/bin/ura, plus proto.h and compile_commands.json
---   ucg [-D DEBUG=true] [n]    build ucg_test.c into <repo>/bin/ucg and run its test n (all when none)
---   tests [target] [number]    rebuild, compile tests, compare the LLVM IR with the recorded
---                              one, run them and compare "// stdout:" and "// expect:"
---   record [target] [number]   rebuild, then (re)write the recorded IR of the tests
+--   build [-D DEBUG=true]      rebuild <repo>/bin/ura, plus src/includes/protos.h
+--   tests [target] [number]    rebuild, compile and run the tests, compare their ucg, LLVM IR and
+--                              output with ucg.md, llvm.md and output.md (and "// stdout:", "// expect:")
+--   record [target] [number]   rebuild, then (re)write ucg.md, llvm.md and output.md for the tests
 --   copy <ura_file> <file> <description>
 --                              add <ura_file> to tests/<file>/ as a new entry
 --                              (an entry with the same description is replaced)
@@ -25,7 +24,6 @@ local tests = require("tests")
 
 local commands = {
     build = build.build,
-    ucg = build.ucg,
     ["set-llvm"] = build.set_llvm,
     extension = build.extension,
     tests = tests.tests,
@@ -36,7 +34,7 @@ local commands = {
 
 local command = commands[arg[1] or ""]
 if not command then
-    print("commands: build, ucg, tests, record, copy, run, extension, set-llvm")
+    print("commands: build, tests, record, copy, run, extension, set-llvm")
     os.exit(1)
 end
 command({ (table.unpack or unpack)(arg, 2) })

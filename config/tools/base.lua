@@ -1,5 +1,5 @@
 -- tools/base.lua - what build.lua and tests.lua share:
--- shell and string helpers, colors, paths, and the test config.
+-- shell and string helpers, colors and paths.
 
 -- ---------------------------------------------------------------------------
 -- shell and string helpers
@@ -15,25 +15,18 @@ local function quote_all(list)
     return table.concat(out, " ")
 end
 
--- runs a shell command, returns whether it succeeded and its exit code, on
--- every Lua: 5.1 gives the raw wait status, 5.2+ gives true/nil, "exit", code
+-- runs a shell command, returns whether it succeeded and its exit code
 local function run(command)
-    local first, _, code = os.execute(command)
-    if type(first) == "number" then
-        local status = first >= 256 and math.floor(first / 256) or first
-        return status == 0, status
-    end
-    return first == true, code or 1
+    local ok, _, code = os.execute(command)
+    return ok == true, code or 1
 end
 
--- runs a shell command, returns what it printed and its exit code; the code
--- is printed after the output because 5.1's pipe:close() doesn't return it
+-- runs a shell command, returns what it printed and its exit code
 local function capture(command)
-    local pipe = io.popen(command .. "; printf '\\n%d' $?")
+    local pipe = io.popen(command)
     local output = pipe:read("*a")
-    pipe:close()
-    local text, code = output:match("^(.*)\n(%d+)$")
-    return text or output, tonumber(code) or 1
+    local _, _, code = pipe:close()
+    return output, code or 1
 end
 
 local function succeeds(command)
@@ -89,11 +82,6 @@ local function starts_with(text, prefix)
     return text:sub(1, #prefix) == prefix
 end
 
--- true when some line of text starts with prefix
-local function has_line(text, prefix)
-    return ("\n" .. text):find("\n" .. prefix, 1, true) ~= nil
-end
-
 -- ---------------------------------------------------------------------------
 -- colors
 -- ---------------------------------------------------------------------------
@@ -117,60 +105,16 @@ local SRC_DIR = REPO .. "/src"
 local BIN_DIR = REPO .. "/bin"
 local BIN = BIN_DIR .. "/ura"
 local TESTS_DIR = REPO .. "/tests"
-local PROJECTS_DIR = REPO .. "/ura-libs"
 
 local have_timeout = succeeds("command -v timeout")
-
--- ---------------------------------------------------------------------------
--- test config
--- ---------------------------------------------------------------------------
-
--- The ura.conf every test compiles with: tests/ura.conf with each library
--- pointed at its git clone in projects/, so tests run against the code being edited.
-local test_config_text
-local function test_config()
-    if test_config_text then return test_config_text end
-    local conf = read_file(TESTS_DIR .. "/ura.conf") or die("no " .. TESTS_DIR .. "/ura.conf")
-    local out = {}
-    for _, line in ipairs(lines(conf)) do
-        local url = line:match('^%s*@url "([^"]*)"')
-        if starts_with(line, '@dep "') then
-            out[#out + 1] = line
-        elseif url then
-            out[#out + 1] = '    @path "' .. PROJECTS_DIR .. "/" .. url:match("[^/]+$") .. '"'
-        end
-    end
-    test_config_text = table.concat(out, "\n")
-    return test_config_text
-end
-
--- Each library in projects/ gets its own dependencies as links
--- deps/<name>@<version> to the other clones in projects/.
-local function link_projects()
-    for _, conf in ipairs(command_lines("ls " .. quote(PROJECTS_DIR) .. "/*/ura.conf 2>/dev/null")) do
-        local dir = conf:match("^(.*)/[^/]*$")
-        local name, repo
-        for _, line in ipairs(lines(read_file(conf))) do
-            name = line:match('^@dep "([^"]*)"') or name
-            repo = line:match('^%s*@url ".*/([^/"]*)"') or repo
-            local version = line:match('^%s*@version "([^"]*)"')
-            if version then
-                os.execute("mkdir -p " .. quote(dir .. "/deps") .. " && ln -sfn " ..
-                    quote(PROJECTS_DIR .. "/" .. repo) .. " " .. quote(dir .. "/deps/" .. name .. "@" .. version))
-            end
-        end
-    end
-end
 
 return {
     quote = quote, quote_all = quote_all, run = run, capture = capture, succeeds = succeeds,
     read_file = read_file, write_file = write_file,
     lines = lines, command_lines = command_lines, words = words, append = append,
-    trim = trim, starts_with = starts_with, has_line = has_line,
+    trim = trim, starts_with = starts_with,
     green = green, red = red, die = die,
 
     REPO = REPO, SRC_DIR = SRC_DIR, BIN_DIR = BIN_DIR, BIN = BIN, TESTS_DIR = TESTS_DIR,
     have_timeout = have_timeout,
-
-    test_config = test_config, link_projects = link_projects,
 }

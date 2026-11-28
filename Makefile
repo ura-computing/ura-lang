@@ -10,4 +10,4 @@ check:
 	@sh config/install.sh check
 
 dev:
-	@$(PIN) bash --rcfile config/dev.bashrc -i
+	@$(PIN) bash --rcfile config/config.sh -i
