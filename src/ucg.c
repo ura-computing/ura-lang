@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/27 22:45:07                              */
+/*   updated: 2026/11/27 23:33:37                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -24,38 +24,13 @@ struct {
     Builder builder;
     TargetMachine machine;
 
-    char *dir;
-    char *ll_path;
-    char *asm_path;
-    char *obj_path;
-    char *exe_path;
-    expand(char *, libs);
     expand(ucgFile *, files);
 
     Ucg *ints[UCG_MAX_INT_BITS + 1];
     Ucg *uints[UCG_MAX_INT_BITS + 1];
     Ucg *floats[UCG_MAX_INT_BITS + 1];
 
-    char *error_msg;
-
     expand(Ucg *, insts);
-    expand(Ucg *, runtime);
-
-    expand(Ucg *, blocks);
-    int clean_start;
-    Ucg *clean_var;
-
-    bool is_cleaning;
-    bool throws;
-    expand(Ucg *, tries);
-
-    Ucg *thrown;
-    Ucg *error;
-    Ucg *error_type;
-
-    expand(Ucg *, error_types);
-    expand(Ucg *, error_ids);
-
     expand(UcgError, errors);
 } gb_ucg;
 
@@ -386,8 +361,6 @@ Ucg *ucg_end(Ucg *stmt) {
 // LLVM ABI
 void ucg_start(char *name, UcgOutputMode mode) {
     gb_ucg.ctx = LLVMContextCreate();
-    zero_init(gb_ucg.runtime);
-    zero_init(gb_ucg.libs);
     gb_ucg.module = LLVMModuleCreateWithNameInContext(name, gb_ucg.ctx);
     gb_ucg.builder = LLVMCreateBuilderInContext(gb_ucg.ctx);
 
@@ -412,21 +385,8 @@ void ucg_start(char *name, UcgOutputMode mode) {
         exit(1);
     }
     RelocMode reloc = LLVMRelocDefault;
-
-    switch (mode) {
-    case OUTPUT_EXE: {
-        reloc = LLVMRelocDefault;
-        break;
-    }
-    case OUTPUT_SHARED: {
+    if (mode == OUTPUT_SHARED)
         reloc = LLVMRelocPIC;
-        break;
-    }
-    case OUTPUT_STATIC: {
-        reloc = LLVMRelocDefault;
-        break;
-    }
-    }
     gb_ucg.machine = LLVMCreateTargetMachine(
         target,
         target_name,
@@ -498,14 +458,6 @@ void ucg_finish(void) {
     LLVMDisposeTargetMachine(gb_ucg.machine);
     LLVMContextDispose(gb_ucg.ctx);
     gb_ucg.module = NULL;
-    gb_ucg.throws = false;
-    gb_ucg.thrown = NULL;
-    gb_ucg.error = NULL;
-    gb_ucg.error_type = NULL;
-    gb_ucg.error_types_count = 0;
-    gb_ucg.error_ids_count = 0;
-    gb_ucg.tries_count = 0;
-    gb_ucg.blocks_count = 0;
 }
 
 void ucg_bin(char *source) {
@@ -796,13 +748,15 @@ Ucg *llvm_compile(Ucg *ucg) {
         bool is_signed = !(from_float ? to : from)->is_uint;
         OpCode to_fp = is_signed ? LLVMSIToFP : LLVMUIToFP;
         OpCode from_fp = is_signed ? LLVMFPToSI : LLVMFPToUI;
+        OpCode op = from_fp;
+        if (to_float)
+            op = to_fp;
         if (from_float && to_float)
             ucg->elem = LLVMBuildFPCast(lmb, value, lltype, "");
         else if (!from_float && !to_float)
             ucg->elem = LLVMBuildIntCast2(lmb, value, lltype, is_signed, "");
         else
-            ucg->elem =
-                LLVMBuildCast(lmb, to_float ? to_fp : from_fp, value, lltype, "");
+            ucg->elem = LLVMBuildCast(lmb, op, value, lltype, "");
         break;
     }
     case IF: {
@@ -944,38 +898,17 @@ void ucg_print_insts(void) {
             print(") %U%s\n", fn->fn.ret, type == FN_ENTRY ? ":" : "");
             break;
         }
-        case VAR:
-            print(CYAN("declare ") "%U %U\n", ucg, ucg->data_type);
-            break;
-        case DREF:
-            print("%U = " CYAN("load ") "%U\n", ucg, ucg->to_dref);
-            break;
-        case ASSIGN:
-            print(CYAN("assign ") "%U, %U\n", ucg->left, ucg->right);
-            break;
-        case OWN:
-            print("%U = " CYAN("ref ") "%U\n", ucg, ucg->to_ref);
-            break;
-        case AS:
-            print("%U = " CYAN("cast ") "%U to %U\n", ucg, ucg->left, ucg->to_type);
-            break;
-        case ATTR:
-            print("%U = " CYAN("field ") "%U, %d\n", ucg, ucg->base, ucg->obj.index);
-            break;
-        case ACCESS:
-            print("%U = " CYAN("item ") "%U, %U\n", ucg, ucg->base, ucg->index);
-            break;
-        case POINT_TO:
-            print("%U = " CYAN("deref ") "%U\n", ucg, ucg->base);
-            break;
-        case STACK_ALLOC:
-            print(
-                "%U = " CYAN("stack_alloc ") "%U, %U\n",
-                ucg,
-                ucg->data_type,
-                ucg->index
-            );
-            break;
+        // clang-format off
+        case VAR:         print(CYAN("declare ") "%U %U\n", ucg, ucg->data_type);             break;
+        case DREF:        print("%U = " CYAN("load ") "%U\n", ucg, ucg->to_dref);             break;
+        case ASSIGN:      print(CYAN("assign ") "%U, %U\n", ucg->left, ucg->right);           break;
+        case OWN:         print("%U = " CYAN("ref ") "%U\n", ucg, ucg->to_ref);               break;
+        case AS:          print("%U = " CYAN("cast ") "%U to %U\n", ucg, ucg->left, ucg->to_type); break;
+        case ATTR:        print("%U = " CYAN("field ") "%U, %d\n", ucg, ucg->base, ucg->obj.index); break;
+        case ACCESS:      print("%U = " CYAN("item ") "%U, %U\n", ucg, ucg->base, ucg->index); break;
+        case POINT_TO:    print("%U = " CYAN("deref ") "%U\n", ucg, ucg->base);               break;
+        case STACK_ALLOC: print("%U = " CYAN("stack_alloc ") "%U, %U\n", ucg, ucg->data_type, ucg->index); break;
+        // clang-format on
         case FN_CALL: {
             if (ucg->to_call->fn.ret->type != VOID)
                 print("%U = ", ucg);

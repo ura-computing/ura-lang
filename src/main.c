@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/26 01:00:44    */
 /*                                                             */
-/*   updated: 2026/11/27 21:57:10                              */
+/*   updated: 2026/11/28 01:49:16                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -51,8 +51,6 @@ Keyword keywords[] = {
 
     // Signed integers
     { "bool",     { .type = INT,   .is_type = true, .is_uint = true, .bits = 1 } },
-    { "True",     { .type = INT,   .is_uint = true, .bits = 1, .num = "1" } },
-    { "False",    { .type = INT,   .is_uint = true, .bits = 1, .num = "0" } },
     { "i1",       { .type = INT,   .is_type = true, .bits = 1 } },
     { "char",     { .type = INT,   .is_type = true, .bits = 8 } },
     { "i8",       { .type = INT,   .is_type = true, .bits = 8 } },
@@ -81,8 +79,8 @@ Keyword keywords[] = {
     { "f128",     { .type = FLOAT, .is_type = true, .bits = 128 } },
 
     // Boolean values
-    { "True",     { .type = INT,   .bits = 1, .num = "1" } },
-    { "False",    { .type = INT,   .bits = 1, .num = "0" } },
+	{ "True",     { .type = INT,   .is_uint = true, .bits = 1, .num = "1" } },
+    { "False",    { .type = INT,   .is_uint = true, .bits = 1, .num = "0" } },
 
     // Declarations and definitions
     { "struct",   { .type = STRUCT } }, { "enum",     { .type = ENUM } },
@@ -174,39 +172,6 @@ Keyword specials[] = {
     { "$",   { .type = FORMAT } },
 
     { NULL },
-    // clang-format on
-};
-
-char *binary_ops[LAST + 1] = {
-    // clang-format off
-    // Arithmetic
-    [ADD] = "+",          [SUB] = "-",          [MUL] = "*",          [DIV] = "/",
-    [MOD] = "%",          [NEG] = "-",
-
-    // Assignment
-    [ASSIGN] = "=",
-    [ADD_ASSIGN] = "+=",  [SUB_ASSIGN] = "-=",  [MUL_ASSIGN] = "*=",
-    [DIV_ASSIGN] = "/=",  [MOD_ASSIGN] = "%=",
-
-    // Bitwise
-    [BAND] = "&",         [BOR] = "|",          [BXOR] = "^",         [BNOT] = "~",
-    [LSHIFT] = "<<",      [RSHIFT] = ">>",
-
-    // Bitwise assignment
-    [BAND_ASSIGN] = "&=", [BOR_ASSIGN] = "|=",  [BXOR_ASSIGN] = "^=",
-    [LSHIFT_ASSIGN] = "<<=", [RSHIFT_ASSIGN] = ">>=",
-
-    // Comparison
-    [EQ] = "==",          [NQ] = "!=",
-    [LT] = "<",           [GT] = ">",           [LE] = "<=",           [GE] = ">=",
-
-    // Logical
-    [AND] = "&&",         [OR] = "||",
-    [AND_LIT] = "and",    [OR_LIT] = "or",
-
-    // Other
-    [AS] = "as",          [IN] = "in",           [DROP] = "drop",
-    [LBRACK] = "[]",      [FORMAT] = "$",
     // clang-format on
 };
 
@@ -856,6 +821,7 @@ void analyze_closure(Node *locals, Node *fn, Node *node) {
 }
 
 void analyze_block(Node *node, Node *type) {
+    Node *outer = ura.scope;
     append(ura.scopes, node);
     ura.scope = node;
     Node *cond_type = NULL;
@@ -893,9 +859,7 @@ void analyze_block(Node *node, Node *type) {
         analyze(child, expected);
     }
     ura.scopes_count--;
-    ura.scope = NULL;
-    if (ura.scopes_count)
-        ura.scope = ura.scopes[ura.scopes_count - 1];
+    ura.scope = outer;
     if (includes(node->token->type, IF, ELIF, NULL)) {
         if (type && node->next == NULL)
             add_error(
@@ -1115,13 +1079,12 @@ void analyze(Node *node, Node *type) {
     case ACCESS: {
         analyze(node->base, NULL);
         analyze(node->index, new_type(INT, 32, false));
-        Node *root = node->base;
-        while (root->token->type == ACCESS)
-            root = root->base;
+        Type kind = node->base->token->type;
         Node *elem = node->base->type;
-        if (node->base->token->type == STRUCT_CALL)
+        if (kind == STRUCT_CALL)
             elem = node->base;
-        if (root->token->type == STRUCT_CALL) {
+        if (includes(kind, STRUCT_CALL, STACK_ALLOC, NULL)) {
+            token->type = STACK_ALLOC;
             node->type = new_type(ARRAY, 0, false);
             node->type->data_type = elem;
         } else if (elem && elem->token->type == ARRAY)
@@ -1232,6 +1195,7 @@ Node *find_scope(Type type) {
 }
 
 Ucg *codegen_block(Node *node) {
+    Node *outer = ura.scope;
     append(ura.scopes, node);
     ura.scope = node;
     for (int i = 0; i < node->children_count; i++) {
@@ -1257,9 +1221,7 @@ Ucg *codegen_block(Node *node) {
             break;
     }
     ura.scopes_count--;
-    ura.scope = NULL;
-    if (ura.scopes_count)
-        ura.scope = ura.scopes[ura.scopes_count - 1];
+    ura.scope = outer;
     return value;
 }
 
@@ -1292,7 +1254,7 @@ Ucg *codegen_proto(Node *node) {
     zero_init(params);
     for (int i = 0; i < node->params->children_count; i++) {
         Node *param = node->params->children[i];
-        Ucg *type = type_of(param->data_type);
+        Ucg *type = type_of(param->type);
         if (param->from_parent)
             type = ucg_ref_type(type);
         append(params, param->ucg = ucg_param(param->token->name, type));
@@ -1316,7 +1278,7 @@ Ucg *codegen_struct(Node *node) {
         Node *attr = node->children[i];
         if (attr->token->type != DECLARE)
             continue;
-        Ucg *attr_type = type_of(attr->data_type);
+        Ucg *attr_type = type_of(attr->type);
         append(type->obj.attrs, ucg_param(attr->token->name, attr_type));
     }
     return type;
@@ -1324,7 +1286,7 @@ Ucg *codegen_struct(Node *node) {
 
 Node *sizes_of(Node *sizes, Node *node) {
     Token *token = node->token;
-    if (token->type == ACCESS) {
+    if (token->type == STACK_ALLOC) {
         Node *elem = sizes_of(sizes, node->base);
         append(sizes->children, node->index);
         return elem;
@@ -1372,7 +1334,7 @@ Ucg *codegen(Node *node) {
         value = codegen_block(node);
         break;
     } // clang-format off
-    case VAR: case DOT: value = ucg_load(codegen_var(node)); break;
+    case VAR: case DOT: case ACCESS: value = ucg_load(codegen_var(node)); break;
     case DECLARE: { // clang-format on
         if (node->ucg == NULL)
             node->ucg = ucg_var(token->name, type_of(node->type));
@@ -1384,16 +1346,8 @@ Ucg *codegen(Node *node) {
     case STRUCT:          value = codegen_struct(node);             break;
     case ARRAY:           value = codegen_stack_array(node);        break;
     case ARRAY_VALUE:     value = codegen_array(node);              break;
-    case ACCESS: { // clang-format on
-        Node *base = node->base;
-        while (base->token->type == ACCESS)
-            base = base->base;
-        if (base->token->type == STRUCT_CALL)
-            value = codegen_stack_array(node);
-        else
-            value = ucg_load(codegen_var(node));
-        break;
-    }
+    case STACK_ALLOC:     value = codegen_stack_array(node);        break;
+    // clang-format on
     case ASSIGN: {
         Ucg *var = NULL;
         if (node->var->token->type == DECLARE)
@@ -1500,7 +1454,7 @@ void read_args(int ac, char **av) {
             exit(0);
         if (strcmp2(arg, "-tokens"))
             ura.print_tokens = true;
-        else if (strcmp2(arg, "-tree"))
+        else if (strcmp2(arg, "-ast"))
             ura.print_tree = true;
         else if (strcmp2(arg, "-ucg"))
             ura.print_insts = true;
@@ -1512,7 +1466,7 @@ void read_args(int ac, char **av) {
                 0,
                 0,
                 format("unknown flag %s", arg),
-                "ura main.ura -tokens -tree -ucg -ll"
+                "ura main.ura -tokens -ast -ucg -ll"
             );
     }
     if (ura.paths_count == 0)
@@ -1559,8 +1513,6 @@ int main(int ac, char **av) {
     }
     ura.tree = new_node(new_token(URA, 0, 0));
     parse_block(ura.tree);
-    // if (ura.print_tree)
-    //     print("[AST]:\n%n", ura.tree);
     analyze(ura.tree, NULL);
     if (ura.print_tree) {
         print_header("tree");
@@ -1579,34 +1531,12 @@ int main(int ac, char **av) {
     ucg_bin(ura.paths[0]);
     ucg_check_errors();
     ucg_finish();
-
-    // Ucg *fn_main = ucg_fn("main", ucg_int_type(32), NULL, 0);
-    // {
-    //     Ucg *v = ucg_numeric_value(ucg_int_type(32), "123");
-    // 	ucg_ret(v);
-    //     // ucg_numeric_value(ucg_int_type(64), "123");
-    //     // ucg_numeric_value(ucg_int_type(32), "123");
-    //     // ucg_numeric_value(ucg_int_type(32), "123");
-    // }
-    // ucg_end(fn_main);
-
-    // ucg_print();
-
-    // ucg_asm_start("ucg", OUTPUT_EXE);
-    // ucg_asm_compile();
-    // printf(GREEN("===========================\n"));
-    // ucg_asm_print();
-    // printf(GREEN("===========================\n"));
-    // ucg_asm_end();
-
-    // ucg_write_ll();
-    // ucg_bin();
     return 0;
 }
 
 char *compile_flags[][2] = {
     { "-tokens", "print the tokens" },
-    { "-tree", "print the tree after parse and after analyze" },
+    { "-ast", "print the tree after parse and after analyze" },
     { "-ucg", "print the ucg instructions" },
     { "-ll", "print the LLVM IR" },
     { NULL, NULL },
