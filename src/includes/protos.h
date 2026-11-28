@@ -73,6 +73,8 @@ void ucg_check_errors(void);
 void ucg_compile(void);
 void ucg_error(ucgFile *file, int s, int e, char *msg, char *help);
 void ucg_finish(void);
+void ucg_print_fn(int start);
+void ucg_print_inst(Ucg *ucg, int depth);
 void ucg_print_insts(void);
 void ucg_print_ll(void);
 void ucg_start(char *name, UcgOutputMode mode);

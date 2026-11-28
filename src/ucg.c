@@ -6,7 +6,7 @@
 /*   | |_| |  _ <  / ___ \     mohammedxhrima@gmail.com        */
 /*    \___/|_| \_\/_/   \_\    created: 2026/11/24 21:39:29    */
 /*                                                             */
-/*   updated: 2026/11/27 23:33:37                              */
+/*   updated: 2026/11/28 02:05:20                              */
 /*                                                             */
 /* *********************************************************** */
 
@@ -848,13 +848,38 @@ void ucg_compile(void) {
 }
 
 void ucg_print_insts(void) {
+    bool has_printed = false;
+    for (int i = 0; i < gb_ucg.insts_count; i++) {
+        Ucg *fn = gb_ucg.insts[i];
+        bool is_proto_only = fn->type == FN_DEC && fn->end == NULL;
+        if (!is_proto_only)
+            continue;
+        ucg_print_inst(fn, 0);
+        has_printed = true;
+    }
+    for (int i = 0; i < gb_ucg.insts_count; i++) {
+        if (gb_ucg.insts[i]->type != FN_ENTRY)
+            continue;
+        if (has_printed)
+            print("\n");
+        ucg_print_fn(i);
+        has_printed = true;
+    }
+}
+
+void ucg_print_fn(int start) {
+    Ucg *fn = gb_ucg.insts[start]->to_enter;
     int depth = 0;
     unsigned long count = 0;
-    for (int i = 0; i < gb_ucg.insts_count; i++) {
+    for (int i = start; i < gb_ucg.insts_count; i++) {
         Ucg *ucg = gb_ucg.insts[i];
         Type type = ucg->type;
-        if (type == FN_ENTRY)
-            count = 0;
+        bool is_inner_fn = type == FN_ENTRY && ucg->to_enter != fn;
+        if (is_inner_fn) {
+            while (gb_ucg.insts[i] != ucg->to_enter->end)
+                i++;
+            continue;
+        }
         bool is_statement = includes(
             type,
             VAL_CREATE,
@@ -874,77 +899,83 @@ void ucg_print_insts(void) {
         );
         if (!is_statement && ucg->name == NULL)
             ucg->inst_index = count++;
+        bool is_hidden = type == VAL_CREATE || type == FN_DEC;
         bool is_else_then = type == THEN && ucg->stmt->cond == NULL;
-        if (type == VAL_CREATE || is_else_then)
-            continue;
         if (type == END)
             depth--;
-        bool is_branch = includes(type, THEN, ELIF, ELSE, NULL);
-        print("%*s", (is_branch ? depth - 1 : depth) * 4, "");
-
-        char *op = strdup2(to_string(type));
-        for (int j = 0; op[j]; j++)
-            op[j] = tolower(op[j]);
-        switch (type) { // clang-format off
-        case FN_DEC: case FN_ENTRY: { // clang-format on
-            Ucg *fn = ucg;
-            if (type == FN_ENTRY)
-                fn = ucg->to_enter;
-            print(CYAN("%s ") "%U(", type == FN_DEC ? "proto" : "fn", fn);
-            for (int j = 0; j < fn->fn.params_count; j++) {
-                Ucg *param = fn->fn.params[j];
-                print("%s%U %U", j ? ", " : "", param, param->data_type);
-            }
-            print(") %U%s\n", fn->fn.ret, type == FN_ENTRY ? ":" : "");
-            break;
-        }
-        // clang-format off
-        case VAR:         print(CYAN("declare ") "%U %U\n", ucg, ucg->data_type);             break;
-        case DREF:        print("%U = " CYAN("load ") "%U\n", ucg, ucg->to_dref);             break;
-        case ASSIGN:      print(CYAN("assign ") "%U, %U\n", ucg->left, ucg->right);           break;
-        case OWN:         print("%U = " CYAN("ref ") "%U\n", ucg, ucg->to_ref);               break;
-        case AS:          print("%U = " CYAN("cast ") "%U to %U\n", ucg, ucg->left, ucg->to_type); break;
-        case ATTR:        print("%U = " CYAN("field ") "%U, %d\n", ucg, ucg->base, ucg->obj.index); break;
-        case ACCESS:      print("%U = " CYAN("item ") "%U, %U\n", ucg, ucg->base, ucg->index); break;
-        case POINT_TO:    print("%U = " CYAN("deref ") "%U\n", ucg, ucg->base);               break;
-        case STACK_ALLOC: print("%U = " CYAN("stack_alloc ") "%U, %U\n", ucg, ucg->data_type, ucg->index); break;
-        // clang-format on
-        case FN_CALL: {
-            if (ucg->to_call->fn.ret->type != VOID)
-                print("%U = ", ucg);
-            print(CYAN("call ") "%U(", ucg->to_call);
-            for (int j = 0; j < ucg->fn.params_count; j++)
-                print("%s%U", j ? ", " : "", ucg->fn.params[j]);
-            print(")\n");
-            break;
-        }
-        case RETURN: {
-            print(CYAN("return"));
-            if (ucg->to_ret)
-                print(" %U", ucg->to_ret);
-            print("\n");
-            break;
-        } // clang-format off
-        case IF:   print(CYAN("if:") "\n");     break;
-        case LOOP: print(CYAN("while:") "\n");  break;
-        case ELIF: print(CYAN("elif:") "\n");   break;
-        case ELSE: print(CYAN("else:") "\n");   break;
-        case BRK:  print(CYAN("break") "\n");   break;
-        case CNT:  print(CYAN("continue") "\n"); break;
-        case END:  print(CYAN("end") "\n");     break;
-        // clang-format on
-        case THEN: {
-            char *word = ucg->stmt->type == LOOP ? "do" : "then";
-            print(CYAN("%s ") "%U:\n", word, ucg->stmt->cond);
-            break;
-        }
-        default: {
-            print("%U = " CYAN("%s ") "%U, %U\n", ucg, op, ucg->left, ucg->right);
-            break;
-        }
-        }
+        if (!is_hidden && !is_else_then)
+            ucg_print_inst(ucg, depth);
         if (includes(type, FN_ENTRY, IF, LOOP, NULL))
             depth++;
+        if (ucg == fn->end)
+            return;
+    }
+}
+
+void ucg_print_inst(Ucg *ucg, int depth) {
+    Type type = ucg->type;
+    bool is_branch = includes(type, THEN, ELIF, ELSE, NULL);
+    print("%*s", (is_branch ? depth - 1 : depth) * 4, "");
+    char *op = strdup2(to_string(type));
+    for (int j = 0; op[j]; j++)
+        op[j] = tolower(op[j]);
+    switch (type) { // clang-format off
+    case FN_DEC: case FN_ENTRY: { // clang-format on
+        Ucg *fn = ucg;
+        if (type == FN_ENTRY)
+            fn = ucg->to_enter;
+        print(CYAN("%s ") "%U(", type == FN_DEC ? "proto" : "fn", fn);
+        for (int j = 0; j < fn->fn.params_count; j++) {
+            Ucg *param = fn->fn.params[j];
+            print("%s%U %U", j ? ", " : "", param, param->data_type);
+        }
+        print(") %U%s\n", fn->fn.ret, type == FN_ENTRY ? ":" : "");
+        break;
+    }
+    // clang-format off
+    case VAR:         print(CYAN("declare ") "%U %U\n", ucg, ucg->data_type);             break;
+    case DREF:        print("%U = " CYAN("load ") "%U\n", ucg, ucg->to_dref);             break;
+    case ASSIGN:      print(CYAN("assign ") "%U, %U\n", ucg->left, ucg->right);           break;
+    case OWN:         print("%U = " CYAN("ref ") "%U\n", ucg, ucg->to_ref);               break;
+    case AS:          print("%U = " CYAN("cast ") "%U to %U\n", ucg, ucg->left, ucg->to_type); break;
+    case ATTR:        print("%U = " CYAN("field ") "%U, %d\n", ucg, ucg->base, ucg->obj.index); break;
+    case ACCESS:      print("%U = " CYAN("item ") "%U, %U\n", ucg, ucg->base, ucg->index); break;
+    case POINT_TO:    print("%U = " CYAN("deref ") "%U\n", ucg, ucg->base);               break;
+    case STACK_ALLOC: print("%U = " CYAN("stack_alloc ") "%U, %U\n", ucg, ucg->data_type, ucg->index); break;
+    // clang-format on
+    case FN_CALL: {
+        if (ucg->to_call->fn.ret->type != VOID)
+            print("%U = ", ucg);
+        print(CYAN("call ") "%U(", ucg->to_call);
+        for (int j = 0; j < ucg->fn.params_count; j++)
+            print("%s%U", j ? ", " : "", ucg->fn.params[j]);
+        print(")\n");
+        break;
+    }
+    case RETURN: {
+        print(CYAN("return"));
+        if (ucg->to_ret)
+            print(" %U", ucg->to_ret);
+        print("\n");
+        break;
+    } // clang-format off
+    case IF:   print(CYAN("if:") "\n");      break;
+    case LOOP: print(CYAN("while:") "\n");   break;
+    case ELIF: print(CYAN("elif:") "\n");    break;
+    case ELSE: print(CYAN("else:") "\n");    break;
+    case BRK:  print(CYAN("break") "\n");    break;
+    case CNT:  print(CYAN("continue") "\n"); break;
+    case END:  print(CYAN("end") "\n");      break;
+    // clang-format on
+    case THEN: {
+        char *word = ucg->stmt->type == LOOP ? "do" : "then";
+        print(CYAN("%s ") "%U:\n", word, ucg->stmt->cond);
+        break;
+    }
+    default: {
+        print("%U = " CYAN("%s ") "%U, %U\n", ucg, op, ucg->left, ucg->right);
+        break;
+    }
     }
 }
 
