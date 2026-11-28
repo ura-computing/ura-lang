@@ -53,13 +53,9 @@ void format_ucg(ioFile out, Ucg *ucg) {
         break;
     }
     // clang-format off
-    case DREF: case VAR: case PARAM: case ATTR: case ACCESS: case POINT_TO: case FN_DEC: {
-        // clang-format on
-        char *mark = "";
-        if (ucg->type == DREF)
-            mark = "$";
+    case VAR: case PARAM: case FN_DEC: { // clang-format on
         if (ucg->name)
-            fprintf(out, GREEN("%s%s"), mark, ucg->name);
+            fprintf(out, GREEN("%s"), ucg->name);
         else
             fprintf(out, GREEN("t%lu"), ucg->inst_index);
         break;

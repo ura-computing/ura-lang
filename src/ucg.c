@@ -897,7 +897,8 @@ void ucg_print_fn(int start) {
             END,
             NULL
         );
-        if (!is_statement && ucg->name == NULL)
+        bool is_slot = type == VAR && ucg->name;
+        if (!is_statement && !is_slot)
             ucg->inst_index = count++;
         bool is_hidden = type == VAL_CREATE || type == FN_DEC;
         bool is_else_then = type == THEN && ucg->stmt->cond == NULL;
