@@ -217,6 +217,8 @@ testing and platforms
     - tests / record / copy / run as a C program (src/test/runner.c)
     - test on every OS, LLVM 12 / 15 / 21 and other architectures (an emulator), wasm
     - ucg standalone, emits objects without the .ll
+    - ucg backend without LLVM, hand-written assembly: asm_* functions next to llvm_*, x86-64 first,
+      picked with a flag (ura main.ura -backend asm); then mem2reg (SSA), constant folding, dead code in ucg
     - header.h on Windows: fork / waitpid, open_memstream, realpath, dirname, symlink2 -> junction
 
 benchmark
@@ -275,12 +277,36 @@ projects
 - remove unused files, move helpers to lib/header.h
 - every repo: description + README
 - ura-lang README: closures (nested fns capture outer locals by reference, hidden pointer params; globals not captured)
+- ura-lang README: a History section, one snapshot per era (Claude drafts it), from git:
+    2023-12-13  first commit, file.hr, x86 assembly:   main:  num a = 10  output(a)
+    2024-01     int / char instead of num
+    2024-02     .w, func void ft_ft(ref int nbr):, main():   (the 42 pool in it)
+    2024-07     IR/ (the ancestor of ucg)
+    2025-04     struct User: chars name, int age
+    2025-08     if / else
+    2025-10-23  .ura, protoFunc int putchar(int str), chars
+    2026-02     inline if, and / or
+    2026-04     type after the name, fn, use "@/raylib", enum (Tetris in ura)
+    2026-08     fn main() i32:, i32, &T
+    2026-11-26  the rewrite (analyze, ucg printed like LLVM)
 - explain the compiler architecture on the website
 
 ## release (only when you say)
 
 - merge refactor -> dev -> main, tag the std repos
 - rewrite history: must not look AI generated, smaller (removed files gone, TODO.md gone), tags
+  today (2026-11-28): 45.5 MB packed, 732 commits; biggest: 0.old-code/build/ura (50 MB binary, gone),
+  build/ura, src/build/ura, src/ura, 42 subject pdfs, assets/ura-init.gif, old tests: all gone from the tree
+  1. git clone --mirror as a backup
+  2. git filter-repo (install it, one python script): keep only the files that exist at the end, no binaries;
+     commits that only touched removed files become empty and disappear
+  3. split the fat commits into small topic commits, grouped in topic branches with descriptive names,
+     merged as #N on GitHub; code written on disk and committed late in one dump gets its dates back:
+     each dump's window = from the previous real commit to the dump's date; the parts, ordered by what
+     depends on what, are dated inside that window in proportion to their size, at usual working hours;
+     never a date after the dump or outside its window
+  4. force push + tags, everyone re-clones (confirm in full sentences right before)
+  before that: bin/ and src/main in .gitignore + git rm --cached (each build adds ~2 MB to history)
 - versions 0.x.y until production, then 1.0.0; license: MIT (or change it?)
 - ura-computing -> ura-ecosystem
 - ura grammar in github-linguist (colours .ura on GitHub)

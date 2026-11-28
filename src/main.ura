@@ -1,73 +1,14 @@
-/*
-struct Point:
-    x i32
-    y i32
-
-fn sum(p Point) i32:
-    return p.x + p.y
-
 fn main() i32:
-    p Point
-    p.x = 40
-    p.y = 2
-    return sum(p)
-*/
+    count i32 = 10
 
-/*
-fn main() i32:
-    s char[] = "hello"
-    return s[1]
-*/
+    fn increment() i32:
+        count = count + 1
+        return count
 
-/*
-fn main() i32:
-    a i32[][] = i32[2][3]
-    a[0][1] = 40
-    a[1][2] = 2
-    return a[0][1] + a[1][2] + a[1][0]
-*/
+    a i32 = increment()
+    b i32 = increment()
+    c i32 = increment()
+    if a == 10:
+        return 10
 
-fn pick(b i32) i32:
-    return if b == 10: 12 else: 15
-
-fn main() i32:
-    x i32 = if pick(10) == 12: 30 elif False: 0 else: 1
-    y i32 = 7
-    if x == 30: y = 0 else: y = 100
-    return x + pick(10) + y
-
-/*
-fn main() i32:
-    a i32[] = [10, 20, 12]
-    m i32[][] = [[1, 2], [3, 4]]
-    return a[0] + a[1] + a[2] - m[1][1] + m[0][0] + 3
-*/
-
-/*
-fn main() i32:
-    step i32 = 2
-    fn down(x i32) i32:
-        if x == 0:
-            return 0
-        r i32 = down(x - 1)
-        return r + step
-    fn other() i32:
-        fn down() i32:
-            return 0
-        return down()
-    return down(21) + other()
-*/
-
-/*
-fn main() i32:
-    y i32 = 1
-    a i32 = 10
-    fn add(x i32) i32:
-        fn twice() i32:
-            a i32 = 5
-            a = 4
-            return y * 2
-        return x + twice()
-    y = 20
-    return add(2)
-*/
+    return a + b + c
